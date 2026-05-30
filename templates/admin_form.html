@@ -26,6 +26,12 @@
           <label class="mb-2 block text-sm text-zinc-400">{{ t "admin_password" }}</label>
           <input class="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-zinc-100 outline-none transition focus:border-white/30" name="password" type="password" autocomplete="current-password" required>
         </div>
+        {{ if .RequireSetupToken }}
+        <div>
+          <label class="mb-2 block text-sm text-zinc-400">{{ t "admin_setup_token" }}</label>
+          <input class="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-zinc-100 outline-none transition focus:border-white/30" name="setup_token" type="password" autocomplete="off" placeholder="{{ t "admin_setup_token_placeholder" }}" required>
+        </div>
+        {{ end }}
         <button class="w-full rounded-xl bg-zinc-100 px-4 py-3 font-semibold text-zinc-950 transition hover:bg-white" type="submit">{{ .Button }}</button>
       </form>
     </section>

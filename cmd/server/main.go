@@ -1,9 +1,11 @@
 package main
 
 import (
-	"encoding/json"
-	"encoding/base64"
 	"bytes"
+	"crypto/rand"
+	"crypto/subtle"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -22,15 +24,16 @@ import (
 )
 
 type app struct {
-	store        *pastebox.Store
-	index        *template.Template
-	paste        *template.Template
-	adminForm    *template.Template
-	adminList    *template.Template
-	passwordPage *template.Template
-	notFoundPage *template.Template
-	cloneResult  *template.Template
-	i18n         *localizer
+	store           *pastebox.Store
+	index           *template.Template
+	paste           *template.Template
+	adminForm       *template.Template
+	adminList       *template.Template
+	passwordPage    *template.Template
+	notFoundPage    *template.Template
+	cloneResult     *template.Template
+	i18n            *localizer
+	adminSetupToken string
 }
 
 const maxUploadSize int64 = 1 << 30 // 1 GiB
@@ -40,6 +43,10 @@ func main() {
 	dataDir := getenv("DATA_DIR", "/paste-data")
 	expireDays := getenvInt("EXPIRE_DAYS", 30)
 	i18n := loadLocalizer(getenv("LANGUAGE", "en"))
+	adminSetupToken, err := randomBootstrapToken()
+	if err != nil {
+		log.Fatalf("failed to generate admin setup token: %v", err)
+	}
 
 	store, err := pastebox.NewStore(dataDir, time.Duration(expireDays)*24*time.Hour)
 	if err != nil {
@@ -47,15 +54,16 @@ func main() {
 	}
 
 	a := &app{
-		store:        store,
-		index:        mustParseTemplate(i18n, "templates/index.html"),
-		paste:        mustParseTemplate(i18n, "templates/paste.html"),
-		adminForm:    mustParseTemplate(i18n, "templates/admin_form.html"),
-		adminList:    mustParseTemplate(i18n, "templates/admin_list.html"),
-		passwordPage: mustParseTemplate(i18n, "templates/password.html"),
-		notFoundPage: mustParseTemplate(i18n, "templates/404.html"),
-		cloneResult:  mustParseTemplate(i18n, "templates/clone.html"),
-		i18n:         i18n,
+		store:           store,
+		index:           mustParseTemplate(i18n, "templates/index.html"),
+		paste:           mustParseTemplate(i18n, "templates/paste.html"),
+		adminForm:       mustParseTemplate(i18n, "templates/admin_form.html"),
+		adminList:       mustParseTemplate(i18n, "templates/admin_list.html"),
+		passwordPage:    mustParseTemplate(i18n, "templates/password.html"),
+		notFoundPage:    mustParseTemplate(i18n, "templates/404.html"),
+		cloneResult:     mustParseTemplate(i18n, "templates/clone.html"),
+		i18n:            i18n,
+		adminSetupToken: adminSetupToken,
 	}
 
 	go func() {
@@ -74,10 +82,19 @@ func main() {
 	mux.HandleFunc("/", a.handle)
 
 	log.Printf("pastebox listening on %s, data=%s", listenAddr, dataDir)
+	log.Printf("admin setup token: %s", adminSetupToken)
 
 	if err := http.ListenAndServe(listenAddr, mux); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func randomBootstrapToken() (string, error) {
+	buf := make([]byte, 24)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
 func (a *app) handle(w http.ResponseWriter, r *http.Request) {
@@ -658,6 +675,12 @@ func (a *app) adminSetupHandler(w http.ResponseWriter, r *http.Request) {
 
 	username := r.FormValue("username")
 	password := r.FormValue("password")
+	setupToken := strings.TrimSpace(r.FormValue("setup_token"))
+
+	if subtle.ConstantTimeCompare([]byte(setupToken), []byte(a.adminSetupToken)) != 1 {
+		a.renderAdminForm(w, a.i18n.T("admin_setup_title"), "/admin/setup", a.i18n.T("admin_error_invalid_setup_token"), a.i18n.T("admin_create_button"))
+		return
+	}
 
 	if err := a.store.CreateAdmin(username, password); err != nil {
 		a.renderAdminForm(w, a.i18n.T("admin_setup_title"), "/admin/setup", err.Error(), a.i18n.T("admin_create_button"))
@@ -850,11 +873,12 @@ func (a *app) renderAdminForm(w http.ResponseWriter, title string, action string
 	}
 
 	_ = a.adminForm.Execute(w, map[string]any{
-		"Title":       title,
-		"Action":      action,
-		"Error":       errorMessage,
-		"Button":      button,
-		"Description": description,
+		"Title":             title,
+		"Action":            action,
+		"Error":             errorMessage,
+		"Button":            button,
+		"Description":       description,
+		"RequireSetupToken": action == "/admin/setup",
 	})
 }
 

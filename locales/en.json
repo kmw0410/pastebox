@@ -81,6 +81,14 @@
   "index_text_upload": "Text Upload",
   "index_file_upload": "File Upload",
   "index_password_links": "Password-protected Links",
+  "index_data_policy": "Data policy",
+  "index_data_policy_desc": "Use 'data-policy: permanent' to keep a paste permanently, or 'data-policy: once' to delete it immediately after the first successful view.",
+  "index_permanent_paste": "Permanent paste",
+  "index_one_time_paste": "One-time paste",
+  "index_expiration_info": "Expiration information",
+  "index_expiration_desc": "Temporary uploads include an expiration date in the upload response. Permanent uploads do not include an expiration date, and one-time uploads are deleted after the first successful view.",
+  "index_manual_deletion": "Manual deletion",
+  "index_manual_deletion_desc": "Each upload returns a delete URL. Open the URL or request it with curl to remove the uploaded content manually.",
   "index_permanent": "Save permanently",
   "index_copy_curl": "Copy curl example"
 }

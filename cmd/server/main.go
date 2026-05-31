@@ -560,7 +560,6 @@ func setAdminFlash(w http.ResponseWriter, message string) {
 		MaxAge:   60,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		Secure:   true,
 	})
 }
 
@@ -577,7 +576,6 @@ func popAdminFlash(w http.ResponseWriter, r *http.Request) string {
 		MaxAge:   -1,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		Secure:   true,
 	})
 
 	message, err := base64.RawURLEncoding.DecodeString(cookie.Value)
@@ -768,7 +766,6 @@ func (a *app) adminLogoutHandler(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   -1,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		Secure:   true,
 	})
 
 	http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
@@ -893,7 +890,6 @@ func setAdminCookie(w http.ResponseWriter, token string) {
 		MaxAge:   86400,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		Secure:   true,
 	})
 }
 

@@ -6,105 +6,105 @@
   <title>{{ t "admin_login_title" }} - Pastebox</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="min-h-screen bg-[#111111] text-zinc-100">
-  <main class="mx-auto flex min-h-screen max-w-6xl items-center px-6 py-12">
+<body class="dark min-h-screen bg-[#111111] text-[#E4E4E4]">
+  <main class="mx-auto flex min-h-screen w-full max-w-[98rem] items-center px-6 py-14 md:px-12 md:py-20">
     <div class="w-full rounded-3xl bg-[#111111] p-8 shadow-[0_18px_60px_rgba(0,0,0,0.45)] md:p-12">
       <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <p class="mb-3 inline-flex rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-400">{{ t "brand_admin" }}</p>
-          <h1 class="text-4xl font-bold tracking-tight text-white">{{ t "admin_links_title" }}</h1>
-          <p class="mt-3 text-sm text-zinc-400">{{ t "admin_links_description" }}</p>
+          <p class="mb-3 inline-flex rounded-full border border-white/20 px-3 py-1 text-xs text-[#A8DADC]">{{ t "brand_admin" }}</p>
+          <h1 class="text-4xl font-bold tracking-tight text-[#E4E4E4]">{{ t "admin_links_title" }}</h1>
+          <p class="mt-3 text-sm text-[#E4E4E4]/70">{{ t "admin_links_description" }}</p>
         </div>
         <div class="flex gap-3">
-          <a class="rounded-xl border border-white/10 px-4 py-2 text-zinc-300 transition hover:border-white/20 hover:text-white" href="/">{{ t "home" }}</a>
-          <a class="rounded-xl border border-white/10 px-4 py-2 text-zinc-300 transition hover:border-white/20 hover:text-white" href="/admin/logout">{{ t "logout" }}</a>
+          <a class="rounded-xl bg-[#B39CD0] px-4 py-2 font-semibold text-[#111111] transition hover:brightness-110" href="/">{{ t "home" }}</a>
+          <a class="rounded-xl border border-white/20 px-4 py-2 text-[#E4E4E4] transition hover:border-[#FFC1CC] hover:text-[#FFC1CC]" href="/admin/logout">{{ t "logout" }}</a>
         </div>
       </div>
 
       {{ if .Notice }}
-      <div class="mb-8 rounded-2xl border border-green-400/10 bg-green-500/[0.04] p-4 text-sm text-green-100">
+      <div class="mb-8 rounded-2xl border border-white/10 bg-[#111111] p-4 text-sm text-[#A8DADC]">
         {{ .Notice }}
       </div>
       {{ end }}
 
       <div class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-2xl border border-white/10 bg-black/25 p-5 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.03] hover:shadow-[0_0_24px_rgba(255,255,255,0.05)]">
-          <p class="text-xs uppercase tracking-[0.18em] text-zinc-500">{{ t "admin_total_links" }}</p>
-          <p class="mt-3 text-3xl font-bold text-white">{{ .Stats.Total }}</p>
-          <p class="mt-1 text-sm text-zinc-500">{{ t "admin_stored_pastes" }}</p>
+        <div class="rounded-2xl border border-white/10 bg-[#1a1a1a] p-5 transition-all duration-300 hover:border-[#A8DADC]/35 hover:bg-[#202020]">
+          <p class="text-xs uppercase tracking-[0.18em] text-[#E4E4E4]/55">{{ t "admin_total_links" }}</p>
+          <p class="mt-3 text-3xl font-bold text-[#E4E4E4]">{{ .Stats.Total }}</p>
+          <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_stored_pastes" }}</p>
         </div>
-        <div class="rounded-2xl border border-white/10 bg-black/25 p-5 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.03] hover:shadow-[0_0_24px_rgba(255,255,255,0.05)]">
-          <p class="text-xs uppercase tracking-[0.18em] text-zinc-500">{{ t "admin_storage" }}</p>
-          <p class="mt-3 text-3xl font-bold text-white">{{ .Stats.TotalSize }}</p>
-          <p class="mt-1 text-sm text-zinc-500">{{ t "admin_total_size" }}</p>
+        <div class="rounded-2xl border border-white/10 bg-[#1a1a1a] p-5 transition-all duration-300 hover:border-[#A8DADC]/35 hover:bg-[#202020]">
+          <p class="text-xs uppercase tracking-[0.18em] text-[#E4E4E4]/55">{{ t "admin_storage" }}</p>
+          <p class="mt-3 text-3xl font-bold text-[#E4E4E4]">{{ .Stats.TotalSize }}</p>
+          <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_total_size" }}</p>
         </div>
-        <div class="rounded-2xl border border-white/10 bg-black/25 p-5 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.03] hover:shadow-[0_0_24px_rgba(255,255,255,0.05)]">
-          <p class="text-xs uppercase tracking-[0.18em] text-zinc-500">{{ t "admin_policy" }}</p>
-          <p class="mt-3 text-3xl font-bold text-white">{{ .Stats.Temporary }} / {{ .Stats.Permanent }}</p>
-          <p class="mt-1 text-sm text-zinc-500">{{ t "admin_temp_permanent" }}</p>
+        <div class="rounded-2xl border border-white/10 bg-[#1a1a1a] p-5 transition-all duration-300 hover:border-[#FFC1CC]/35 hover:bg-[#202020]">
+          <p class="text-xs uppercase tracking-[0.18em] text-[#E4E4E4]/55">{{ t "admin_policy" }}</p>
+          <p class="mt-3 text-3xl font-bold text-[#E4E4E4]">{{ .Stats.Temporary }} / {{ .Stats.Permanent }}</p>
+          <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_temp_permanent" }}</p>
         </div>
-        <div class="rounded-2xl border border-white/10 bg-black/25 p-5 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.03] hover:shadow-[0_0_24px_rgba(255,255,255,0.05)]">
-          <p class="text-xs uppercase tracking-[0.18em] text-zinc-500">{{ t "admin_security" }}</p>
-          <p class="mt-3 text-3xl font-bold text-white">{{ .Stats.Protected }}</p>
-          <p class="mt-1 text-sm text-zinc-500">{{ t "admin_password_protected" }}</p>
+        <div class="rounded-2xl border border-white/10 bg-[#1a1a1a] p-5 transition-all duration-300 hover:border-[#B39CD0]/35 hover:bg-[#202020]">
+          <p class="text-xs uppercase tracking-[0.18em] text-[#E4E4E4]/55">{{ t "admin_security" }}</p>
+          <p class="mt-3 text-3xl font-bold text-[#E4E4E4]">{{ .Stats.Protected }}</p>
+          <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_password_protected" }}</p>
         </div>
       </div>
 
       <div class="mb-8 grid gap-4 sm:grid-cols-2">
-        <div class="rounded-2xl border border-yellow-400/10 bg-yellow-500/[0.04] p-5">
-          <p class="text-xs uppercase tracking-[0.18em] text-yellow-200/60">{{ t "admin_expiring_soon" }}</p>
-          <p class="mt-3 text-2xl font-bold text-yellow-100">{{ .Stats.Expiring24h }}</p>
-          <p class="mt-1 text-sm text-yellow-100/50">{{ t "admin_expiring_soon_desc" }}</p>
+        <div class="rounded-2xl border border-white/10 bg-[#111111] p-5">
+          <p class="text-xs uppercase tracking-[0.18em] text-[#A8DADC]/80">{{ t "admin_expiring_soon" }}</p>
+          <p class="mt-3 text-2xl font-bold text-[#A8DADC]">{{ .Stats.Expiring24h }}</p>
+          <p class="mt-1 text-sm text-[#A8DADC]/70">{{ t "admin_expiring_soon_desc" }}</p>
         </div>
-        <div class="rounded-2xl border border-red-400/10 bg-red-500/[0.04] p-5">
-          <p class="text-xs uppercase tracking-[0.18em] text-red-200/60">{{ t "admin_expired" }}</p>
-          <p class="mt-3 text-2xl font-bold text-red-100">{{ .Stats.Expired }}</p>
-          <p class="mt-1 text-sm text-red-100/50">{{ t "admin_expired_desc" }}</p>
+        <div class="rounded-2xl border border-white/10 bg-[#111111] p-5">
+          <p class="text-xs uppercase tracking-[0.18em] text-[#FFC1CC]/80">{{ t "admin_expired" }}</p>
+          <p class="mt-3 text-2xl font-bold text-[#FFC1CC]">{{ .Stats.Expired }}</p>
+          <p class="mt-1 text-sm text-[#FFC1CC]/70">{{ t "admin_expired_desc" }}</p>
         </div>
       </div>
 
-      <div class="mb-8 rounded-2xl border border-white/10 bg-black/25 p-5">
+      <div class="mb-8 rounded-2xl border border-white/10 bg-[#1a1a1a] p-5">
         <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p class="text-xs uppercase tracking-[0.18em] text-zinc-500">{{ t "admin_upload_control" }}</p>
+            <p class="text-xs uppercase tracking-[0.18em] text-[#E4E4E4]/55">{{ t "admin_upload_control" }}</p>
             {{ if .UploadsDisabled }}
-            <p class="mt-2 text-lg font-semibold text-red-100">{{ t "admin_uploads_disabled_title" }}</p>
-            <p class="mt-1 text-sm text-zinc-500">{{ t "admin_uploads_disabled_desc" }}</p>
+            <p class="mt-2 text-lg font-semibold text-[#FFC1CC]">{{ t "admin_uploads_disabled_title" }}</p>
+            <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_uploads_disabled_desc" }}</p>
             {{ else }}
-            <p class="mt-2 text-lg font-semibold text-white">{{ t "admin_uploads_enabled_title" }}</p>
-            <p class="mt-1 text-sm text-zinc-500">{{ t "admin_uploads_enabled_desc" }}</p>
+            <p class="mt-2 text-lg font-semibold text-[#E4E4E4]">{{ t "admin_uploads_enabled_title" }}</p>
+            <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_uploads_enabled_desc" }}</p>
             {{ end }}
           </div>
 
           <form method="post" action="/admin/uploads">
             {{ if .UploadsDisabled }}
             <input type="hidden" name="disabled" value="false">
-            <button class="rounded-xl border border-green-400/20 px-4 py-2 text-green-100 transition hover:bg-green-500/10" type="submit">{{ t "admin_enable_uploads" }}</button>
+            <button class="rounded-xl border border-[#A8DADC]/40 px-4 py-2 text-[#A8DADC] transition hover:bg-[#A8DADC]/10" type="submit">{{ t "admin_enable_uploads" }}</button>
             {{ else }}
             <input type="hidden" name="disabled" value="true">
-            <button class="rounded-xl border border-red-400/20 px-4 py-2 text-red-200 transition hover:bg-red-500/10" type="submit">{{ t "admin_disable_uploads" }}</button>
+            <button class="rounded-xl border border-[#FFC1CC]/40 px-4 py-2 text-[#FFC1CC] transition hover:bg-[#FFC1CC]/10" type="submit">{{ t "admin_disable_uploads" }}</button>
             {{ end }}
           </form>
         </div>
       </div>
 
-      <div class="mb-8 rounded-2xl border border-red-400/10 bg-red-500/[0.04] p-5">
+      <div class="mb-8 rounded-2xl border border-white/10 bg-[#111111] p-5">
         <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p class="text-xs uppercase tracking-[0.18em] text-red-200/60">{{ t "admin_danger_zone" }}</p>
-            <p class="mt-2 text-lg font-semibold text-red-100">{{ t "admin_delete_all_title" }}</p>
-            <p class="mt-1 text-sm text-red-100/60">{{ t "admin_delete_all_desc" }}</p>
+            <p class="text-xs uppercase tracking-[0.18em] text-[#FFC1CC]/80">{{ t "admin_danger_zone" }}</p>
+            <p class="mt-2 text-lg font-semibold text-[#FFC1CC]">{{ t "admin_delete_all_title" }}</p>
+            <p class="mt-1 text-sm text-[#FFC1CC]/75">{{ t "admin_delete_all_desc" }}</p>
           </div>
 
           <form method="post" action="/admin/delete-all" onsubmit="return confirm('{{ t "admin_delete_all_confirm" }}')">
-            <button class="rounded-xl border border-red-400/30 px-4 py-2 font-semibold text-red-100 transition hover:bg-red-500/10" type="submit">{{ t "admin_delete_all_button" }}</button>
+            <button class="rounded-xl border border-[#FFC1CC]/40 px-4 py-2 font-semibold text-[#FFC1CC] transition hover:bg-[#FFC1CC]/10" type="submit">{{ t "admin_delete_all_button" }}</button>
           </form>
         </div>
       </div>
 
       <div class="overflow-x-auto rounded-2xl border border-white/10">
         <table class="min-w-full divide-y divide-white/10 text-sm">
-          <thead class="bg-black/30 text-left text-xs uppercase tracking-wider text-zinc-500">
+          <thead class="bg-[#1a1a1a] text-left text-xs uppercase tracking-wider text-[#E4E4E4]/55">
             <tr>
               <th class="px-4 py-3">{{ t "admin_table_code" }}</th>
               <th class="px-4 py-3">{{ t "admin_table_filename" }}</th>
@@ -120,24 +120,24 @@
             {{ range .Items }}
             <tr class="transition hover:bg-white/[0.03]">
               <td class="whitespace-nowrap px-4 py-3">
-                <a class="font-mono text-zinc-100 underline decoration-zinc-700 underline-offset-4 hover:decoration-zinc-100" href="{{ $.BaseURL }}/{{ .ID }}" target="_blank">{{ .ID }}</a>
+                <a class="font-mono text-[#E4E4E4] underline decoration-[#A8DADC]/50 underline-offset-4 hover:decoration-[#A8DADC]" href="{{ $.BaseURL }}/{{ .ID }}" target="_blank">{{ .ID }}</a>
               </td>
-              <td class="max-w-xs truncate whitespace-nowrap px-4 py-3 text-zinc-300">{{ if .Filename }}{{ .Filename }}{{ else }}-{{ end }}</td>
-              <td class="whitespace-nowrap px-4 py-3 text-zinc-300">{{ .DataPolicy }}</td>
-              <td class="whitespace-nowrap px-4 py-3 text-zinc-300">{{ .Size }}</td>
-              <td class="whitespace-nowrap px-4 py-3 text-zinc-300">{{ .Protected }}</td>
-              <td class="whitespace-nowrap px-4 py-3 text-zinc-400">{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
-              <td class="whitespace-nowrap px-4 py-3 text-zinc-400">{{ if .ExpiresAt.IsZero }}-{{ else }}{{ .ExpiresAt.Format "2006-01-02 15:04:05" }}{{ end }}</td>
+              <td class="max-w-xs truncate whitespace-nowrap px-4 py-3 text-[#E4E4E4]/85">{{ if .Filename }}{{ .Filename }}{{ else }}-{{ end }}</td>
+              <td class="whitespace-nowrap px-4 py-3 text-[#E4E4E4]/85">{{ .DataPolicy }}</td>
+              <td class="whitespace-nowrap px-4 py-3 text-[#E4E4E4]/85">{{ .Size }}</td>
+              <td class="whitespace-nowrap px-4 py-3 text-[#E4E4E4]/85">{{ .Protected }}</td>
+              <td class="whitespace-nowrap px-4 py-3 text-[#E4E4E4]/65">{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
+              <td class="whitespace-nowrap px-4 py-3 text-[#E4E4E4]/65">{{ if .ExpiresAt.IsZero }}-{{ else }}{{ .ExpiresAt.Format "2006-01-02 15:04:05" }}{{ end }}</td>
               <td class="whitespace-nowrap px-4 py-3">
                 <form method="post" action="/admin/delete">
                   <input type="hidden" name="id" value="{{ .ID }}">
-                  <button class="rounded-lg border border-red-400/20 px-3 py-1.5 text-red-200 transition hover:bg-red-500/10" type="submit">{{ t "admin_delete_button" }}</button>
+                  <button class="rounded-lg border border-[#FFC1CC]/35 px-3 py-1.5 text-[#FFC1CC] transition hover:bg-[#FFC1CC]/10" type="submit">{{ t "admin_delete_button" }}</button>
                 </form>
               </td>
             </tr>
             {{ else }}
             <tr>
-              <td class="px-4 py-8 text-center text-zinc-500" colspan="8">{{ t "admin_no_pastes" }}</td>
+              <td class="px-4 py-8 text-center text-[#E4E4E4]/55" colspan="8">{{ t "admin_no_pastes" }}</td>
             </tr>
             {{ end }}
           </tbody>

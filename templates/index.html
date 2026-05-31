@@ -26,7 +26,6 @@
           <p class="mt-2 text-sm text-[#E4E4E4]/65">{{ t "index_text_only_notice" }}</p>
 
           <div class="mt-8 flex flex-wrap gap-3">
-            <a class="rounded-xl bg-[#B39CD0] px-4 py-2 font-semibold text-[#111111] transition hover:brightness-110" href="/">{{ t "home" }}</a>
             <a class="rounded-xl border border-white/20 px-4 py-2 text-[#E4E4E4] transition hover:border-[#A8DADC] hover:text-[#A8DADC]" href="https://github.com/kmw0410/pastebox" target="_blank" rel="noopener noreferrer">GitHub</a>
             <button class="rounded-xl border border-white/20 px-4 py-2 text-[#E4E4E4] transition hover:border-[#FFC1CC] hover:text-[#FFC1CC]" onclick="navigator.clipboard.writeText('curl -F &quot;file=@test.txt&quot; {{ .BaseURL }}/')">{{ t "index_copy_curl" }}</button>
           </div>

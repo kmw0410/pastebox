@@ -49,6 +49,15 @@
     .paste-viewer.show-lines > .paste-code {
       grid-column: 2;
     }
+    #lineNumbers {
+      margin: 0;
+      line-height: inherit;
+    }
+    #pasteContent.hljs {
+      padding: 0;
+      background: transparent;
+      line-height: inherit;
+    }
   </style>
 </head>
 <body class="min-h-screen bg-[#111111] text-zinc-100">
@@ -110,7 +119,7 @@
         <pre
           id="lineNumbers"
           aria-hidden="true"
-          class="hidden w-14 select-none border-r border-white/10 pr-4 text-right text-zinc-600"
+          class="hidden m-0 w-14 select-none border-r border-white/10 pr-4 text-right text-zinc-600"
         ></pre>
         <pre class="paste-code m-0 min-w-max whitespace-pre text-zinc-200"><code id="pasteContent" class="language-{{ .Language }} bg-transparent p-0">{{ .Content }}</code></pre>
       </div>

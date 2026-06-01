@@ -920,6 +920,28 @@ func (a *app) adminDeleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ids := r.Form["ids"]
+	if len(ids) > 0 {
+		deleted := 0
+		for _, id := range ids {
+			id = strings.TrimSpace(id)
+			if id == "" {
+				continue
+			}
+			if err := a.store.AdminDelete(id); err != nil {
+				http.Error(w, "delete failed", http.StatusBadRequest)
+				return
+			}
+			deleted++
+		}
+		if deleted > 0 {
+			log.Printf("admin deleted selected pastes: count=%d remote=%s", deleted, r.RemoteAddr)
+			setAdminFlash(w, fmt.Sprintf(a.i18n.T("admin_flash_delete_all"), deleted))
+		}
+		http.Redirect(w, r, "/admin", http.StatusSeeOther)
+		return
+	}
+
 	id := r.FormValue("id")
 	if err := a.store.AdminDelete(id); err != nil {
 		http.Error(w, "delete failed", http.StatusBadRequest)

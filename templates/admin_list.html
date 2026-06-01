@@ -102,6 +102,9 @@
       </div>
 
       <div class="overflow-x-auto rounded-2xl border border-white/10">
+        <form id="bulk-delete-form" method="post" action="/admin/delete" class="border-b border-white/10 bg-[#1a1a1a] px-4 py-3" onsubmit="return confirm('선택한 Paste를 삭제하시겠습니까? 삭제된 데이터는 복원할 수 없습니다.')">
+          <button id="bulk-delete-btn" class="hidden rounded-xl border border-[#FFC1CC]/40 px-4 py-2 font-semibold text-[#FFC1CC] transition hover:bg-[#FFC1CC]/10" type="submit"></button>
+        </form>
         <table class="min-w-full divide-y divide-white/10 text-sm">
           <thead class="bg-[#1a1a1a] text-left text-xs uppercase tracking-wider text-[#E4E4E4]/55">
             <tr>
@@ -119,6 +122,9 @@
             {{ range .Items }}
             <tr class="transition hover:bg-white/[0.03]">
               <td class="whitespace-nowrap px-4 py-3">
+                <label class="mr-2 inline-flex cursor-pointer items-center align-middle">
+                  <input class="bulk-delete-checkbox h-4 w-4 accent-[#FFC1CC]" type="checkbox" name="ids" value="{{ .ID }}" form="bulk-delete-form">
+                </label>
                 <a class="font-mono text-[#E4E4E4] underline decoration-[#A8DADC]/50 underline-offset-4 hover:decoration-[#A8DADC]" href="{{ $.BaseURL }}/{{ .ID }}" target="_blank">{{ .ID }}</a>
               </td>
               <td class="max-w-xs truncate whitespace-nowrap px-4 py-3 text-[#E4E4E4]/85">{{ if .Filename }}{{ .Filename }}{{ else }}-{{ end }}</td>
@@ -144,5 +150,29 @@
       </div>
     </div>
   </main>
+  <script>
+    (function () {
+      const checkboxes = Array.from(document.querySelectorAll(".bulk-delete-checkbox"));
+      const bulkDeleteBtn = document.getElementById("bulk-delete-btn");
+      if (!bulkDeleteBtn || checkboxes.length === 0) return;
+
+      const isKo = document.documentElement.lang === "ko";
+      const updateBulkButton = function () {
+        const count = checkboxes.filter(function (el) { return el.checked; }).length;
+        if (count > 0) {
+          bulkDeleteBtn.classList.remove("hidden");
+          bulkDeleteBtn.textContent = isKo ? (count + "개 삭제") : ("Delete " + count);
+          return;
+        }
+        bulkDeleteBtn.classList.add("hidden");
+        bulkDeleteBtn.textContent = "";
+      };
+
+      checkboxes.forEach(function (el) {
+        el.addEventListener("change", updateBulkButton);
+      });
+      updateBulkButton();
+    })();
+  </script>
 </body>
 </html>

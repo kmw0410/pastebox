@@ -79,7 +79,7 @@
   "clone_delete": "삭제",
   "clone_open_paste": "Paste 열기",
   "clone_copy_info": "정보 복사",
-  "index_badge": "curl 기반 파일 공유",
+  "index_subtitle": "curl 기반 파일 공유 서비스",
   "index_description": "curl을 사용하여 파일이나 텍스트를 업로드하면 5자리 랜덤 URL이 생성됩니다. 링크는 30일 후 자동으로 삭제됩니다.",
   "index_text_only_notice": "텍스트 기반 파일만 허용됩니다. 이미지, 미디어 파일, 압축 파일 및 바이너리 파일은 차단됩니다.",
   "index_text_upload": "텍스트 업로드",

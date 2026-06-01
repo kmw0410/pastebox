@@ -79,7 +79,7 @@
   "clone_delete": "Delete",
   "clone_open_paste": "Open paste",
   "clone_copy_info": "Copy info",
-  "index_badge": "curl-based file sharing",
+  "index_subtitle": "curl-based File Sharing Service",
   "index_description": "When you upload a file or text using curl, a 5-digit random URL is generated. The link will be automatically deleted after 30 days.",
   "index_text_only_notice": "Only text-based files are allowed. Images, media files, archives, and binary files are blocked.",
   "index_text_upload": "Text Upload",

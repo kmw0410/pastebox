@@ -95,16 +95,18 @@
             <p class="mt-1 text-sm text-[#FFC1CC]/75">{{ t "admin_delete_all_desc" }}</p>
           </div>
 
-          <form method="post" action="/admin/delete-all" onsubmit="return confirm('{{ t "admin_delete_all_confirm" }}')">
-            <button class="rounded-xl border border-[#FFC1CC]/40 px-4 py-2 font-semibold text-[#FFC1CC] transition hover:bg-[#FFC1CC]/10" type="submit">{{ t "admin_delete_all_button" }}</button>
-          </form>
+          <div class="flex items-center justify-end gap-3">
+            <form id="bulk-delete-form" method="post" action="/admin/delete" onsubmit="return confirm('{{ t "admin_delete_selected_confirm" }}')">
+              <button id="bulk-delete-btn" class="hidden rounded-xl border border-[#FFC1CC]/40 px-4 py-2 font-semibold text-[#FFC1CC] transition hover:bg-[#FFC1CC]/10" type="submit"></button>
+            </form>
+            <form method="post" action="/admin/delete-all" onsubmit="return confirm('{{ t "admin_delete_all_confirm" }}')">
+              <button class="rounded-xl border border-[#FFC1CC]/40 px-4 py-2 font-semibold text-[#FFC1CC] transition hover:bg-[#FFC1CC]/10" type="submit">{{ t "admin_delete_all_button" }}</button>
+            </form>
+          </div>
         </div>
       </div>
 
       <div class="overflow-x-auto rounded-2xl border border-white/10">
-        <form id="bulk-delete-form" method="post" action="/admin/delete" class="border-b border-white/10 bg-[#1a1a1a] px-4 py-3" onsubmit="return confirm('선택한 Paste를 삭제하시겠습니까? 삭제된 데이터는 복원할 수 없습니다.')">
-          <button id="bulk-delete-btn" class="hidden rounded-xl border border-[#FFC1CC]/40 px-4 py-2 font-semibold text-[#FFC1CC] transition hover:bg-[#FFC1CC]/10" type="submit"></button>
-        </form>
         <table class="min-w-full divide-y divide-white/10 text-sm">
           <thead class="bg-[#1a1a1a] text-left text-xs uppercase tracking-wider text-[#E4E4E4]/55">
             <tr>
@@ -161,7 +163,7 @@
         const count = checkboxes.filter(function (el) { return el.checked; }).length;
         if (count > 0) {
           bulkDeleteBtn.classList.remove("hidden");
-          bulkDeleteBtn.textContent = isKo ? (count + "개 삭제") : ("Delete " + count);
+          bulkDeleteBtn.textContent = isKo ? (count + "{{ t \"admin_delete_selected_suffix\" }}") : ("{{ t \"admin_delete_selected_prefix\" }} " + count);
           return;
         }
         bulkDeleteBtn.classList.add("hidden");

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/rand"
 	"crypto/subtle"
@@ -44,6 +45,7 @@ type app struct {
 const maxUploadSize int64 = 1 << 30 // 1 GiB
 const authFailureWindow = 10 * time.Minute
 const authFailureLimit = 20
+const uploadSampleSize = 64 * 1024
 
 func main() {
 	listenAddr := getenv("LISTEN_ADDR", ":8080")
@@ -223,18 +225,21 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	content, err := io.ReadAll(io.LimitReader(reader, maxUploadSize+1))
+	tempFile, sample, err := spoolUploadToTemp(reader, maxUploadSize, uploadSampleSize)
 	if err != nil {
+		if errors.Is(err, errUploadTooLarge) {
+			http.Error(w, "upload too large. maximum size is 1GB", http.StatusRequestEntityTooLarge)
+			return
+		}
 		http.Error(w, "failed to read upload", http.StatusBadRequest)
 		return
 	}
+	defer func() {
+		_ = os.Remove(tempFile.Name())
+		_ = tempFile.Close()
+	}()
 
-	if int64(len(content)) > maxUploadSize {
-		http.Error(w, "upload too large. maximum size is 1GB", http.StatusRequestEntityTooLarge)
-		return
-	}
-
-	allowed, reason := allowTextUpload(filename, contentType, content)
+	allowed, reason := allowTextUpload(filename, contentType, sample)
 	if !allowed {
 		log.Printf("upload blocked: remote=%s filename=%q content_type=%q reason=%s", r.RemoteAddr, filename, contentType, reason)
 		http.Error(w, "unsupported file type. only text-based files are allowed", http.StatusUnsupportedMediaType)
@@ -249,7 +254,12 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	once := policy == "once"
 	customCode := strings.TrimSpace(r.Header.Get("code"))
 
-	meta, password, deleteToken, err := a.store.Create(bytes.NewReader(content), filename, contentType, usePassword, permanent, once, customCode)
+	if _, err := tempFile.Seek(0, io.SeekStart); err != nil {
+		http.Error(w, "failed to process upload", http.StatusInternalServerError)
+		return
+	}
+
+	meta, password, deleteToken, err := a.store.Create(tempFile, filename, contentType, usePassword, permanent, once, customCode)
 	if err != nil {
 		log.Printf("upload failed: %v", err)
 
@@ -557,6 +567,7 @@ func (a *app) adminIndexHandler(w http.ResponseWriter, r *http.Request) {
 		"BaseURL":         requestBaseURL(r),
 		"UploadsDisabled": uploadsDisabled,
 		"Notice":          popAdminFlash(w, r),
+		"CSRFToken":       issueAdminCSRFToken(w, r),
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -701,6 +712,12 @@ func (a *app) adminSetupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !verifyAdminCSRFToken(w, r) {
+		log.Printf("csrf validation failed: path=%s remote=%s", r.URL.Path, r.RemoteAddr)
+		a.renderAdminForm(w, a.i18n.T("admin_setup_title"), "/admin/setup", a.i18n.T("admin_error_invalid_form"), a.i18n.T("admin_create_button"))
+		return
+	}
+
 	if err := r.ParseForm(); err != nil {
 		a.renderAdminForm(w, a.i18n.T("admin_setup_title"), "/admin/setup", a.i18n.T("admin_error_invalid_form"), a.i18n.T("admin_create_button"))
 		return
@@ -754,6 +771,12 @@ func (a *app) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !verifyAdminCSRFToken(w, r) {
+		log.Printf("csrf validation failed: path=%s remote=%s", r.URL.Path, r.RemoteAddr)
+		a.renderAdminForm(w, a.i18n.T("admin_login_title"), "/admin/login", a.i18n.T("admin_error_invalid_form"), a.i18n.T("admin_login_button"))
+		return
+	}
+
 	if err := r.ParseForm(); err != nil {
 		a.renderAdminForm(w, a.i18n.T("admin_login_title"), "/admin/login", a.i18n.T("admin_error_invalid_form"), a.i18n.T("admin_login_button"))
 		return
@@ -762,8 +785,11 @@ func (a *app) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 	clientIP := requestClientIP(r)
-	limitKey := "admin_login:" + clientIP
-	if retryAfter, blocked := a.authLimiter.retryAfter(limitKey, time.Now()); blocked {
+	usernameKey := "admin_login:user:" + strings.ToLower(strings.TrimSpace(username))
+	ipKey := "admin_login:ip:" + clientIP
+	pairKey := "admin_login:pair:" + clientIP + ":" + strings.ToLower(strings.TrimSpace(username))
+	if retryAfter, blocked := a.authLimiter.retryAfterAny([]string{ipKey, usernameKey, pairKey}, time.Now()); blocked {
+		log.Printf("admin login rate limited: ip=%s remote=%s retry_after=%s", clientIP, r.RemoteAddr, retryAfter.Round(time.Second))
 		w.Header().Set("Retry-After", strconv.Itoa(int(retryAfter.Seconds())+1))
 		http.Error(w, "too many failed attempts. try again later", http.StatusTooManyRequests)
 		return
@@ -776,12 +802,12 @@ func (a *app) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !ok {
-		a.authLimiter.recordFailure(limitKey, time.Now())
+		a.authLimiter.recordFailureMany([]string{ipKey, usernameKey, pairKey}, time.Now())
 		log.Printf("admin login failed: username=%s remote=%s", username, r.RemoteAddr)
 		a.renderAdminForm(w, a.i18n.T("admin_login_title"), "/admin/login", a.i18n.T("admin_error_invalid_credentials"), a.i18n.T("admin_login_button"))
 		return
 	}
-	a.authLimiter.clear(limitKey)
+	a.authLimiter.clearMany([]string{ipKey, usernameKey, pairKey})
 
 	token, err := a.store.CreateAdminSession()
 	if err != nil {
@@ -838,6 +864,12 @@ func (a *app) adminResetHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !verifyAdminCSRFToken(w, r) {
+		log.Printf("csrf validation failed: path=%s remote=%s", r.URL.Path, r.RemoteAddr)
+		a.renderAdminResetForm(w, a.i18n.T("admin_error_invalid_form"))
+		return
+	}
+
 	if err := r.ParseForm(); err != nil {
 		a.renderAdminResetForm(w, a.i18n.T("admin_error_invalid_form"))
 		return
@@ -888,6 +920,11 @@ func (a *app) adminUploadsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	if !verifyAdminCSRFToken(w, r) {
+		log.Printf("csrf validation failed: path=%s remote=%s", r.URL.Path, r.RemoteAddr)
+		http.Error(w, "invalid form", http.StatusBadRequest)
+		return
+	}
 
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "invalid form", http.StatusBadRequest)
@@ -915,6 +952,11 @@ func (a *app) adminDeleteAllHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	if !verifyAdminCSRFToken(w, r) {
+		log.Printf("csrf validation failed: path=%s remote=%s", r.URL.Path, r.RemoteAddr)
+		http.Error(w, "invalid form", http.StatusBadRequest)
+		return
+	}
 
 	count, err := a.store.AdminDeleteAll()
 	if err != nil {
@@ -936,6 +978,11 @@ func (a *app) adminDeleteHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if !verifyAdminCSRFToken(w, r) {
+		log.Printf("csrf validation failed: path=%s remote=%s", r.URL.Path, r.RemoteAddr)
+		http.Error(w, "invalid form", http.StatusBadRequest)
 		return
 	}
 
@@ -1009,6 +1056,7 @@ func (a *app) renderAdminForm(w http.ResponseWriter, title string, action string
 		"Button":            button,
 		"Description":       description,
 		"RequireSetupToken": action == "/admin/setup",
+		"CSRFToken":         issueAdminCSRFToken(w, nil),
 	})
 }
 
@@ -1020,6 +1068,7 @@ func (a *app) renderAdminResetForm(w http.ResponseWriter, errorMessage string) {
 		"Action":      "/admin/reset",
 		"Button":      a.i18n.T("admin_reset_button"),
 		"Description": a.i18n.T("admin_reset_description"),
+		"CSRFToken":   issueAdminCSRFToken(w, nil),
 	})
 }
 
@@ -1073,6 +1122,44 @@ func (l *authAttemptLimiter) recordFailure(key string, now time.Time) {
 	l.entries[key] = append(attempts, now)
 }
 
+func (l *authAttemptLimiter) retryAfterAny(keys []string, now time.Time) (time.Duration, bool) {
+	minRetry := time.Duration(0)
+	for _, key := range keys {
+		if strings.TrimSpace(key) == "" {
+			continue
+		}
+		retryAfter, blocked := l.retryAfter(key, now)
+		if !blocked {
+			continue
+		}
+		if minRetry == 0 || retryAfter < minRetry {
+			minRetry = retryAfter
+		}
+	}
+	if minRetry == 0 {
+		return 0, false
+	}
+	return minRetry, true
+}
+
+func (l *authAttemptLimiter) recordFailureMany(keys []string, now time.Time) {
+	for _, key := range keys {
+		if strings.TrimSpace(key) == "" {
+			continue
+		}
+		l.recordFailure(key, now)
+	}
+}
+
+func (l *authAttemptLimiter) clearMany(keys []string) {
+	for _, key := range keys {
+		if strings.TrimSpace(key) == "" {
+			continue
+		}
+		l.clear(key)
+	}
+}
+
 func (l *authAttemptLimiter) clear(key string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -1116,6 +1203,98 @@ func requestClientIP(r *http.Request) string {
 		return "unknown"
 	}
 	return remote
+}
+
+var errUploadTooLarge = errors.New("upload too large")
+
+func spoolUploadToTemp(reader io.Reader, maxBytes int64, sampleLimit int) (*os.File, []byte, error) {
+	tmp, err := os.CreateTemp("", "pastebox-upload-*")
+	if err != nil {
+		return nil, nil, err
+	}
+	buffered := bufio.NewReader(reader)
+	sample := make([]byte, 0, sampleLimit)
+	buf := make([]byte, 32*1024)
+	var total int64
+	for {
+		n, readErr := buffered.Read(buf)
+		if n > 0 {
+			total += int64(n)
+			if total > maxBytes {
+				_ = tmp.Close()
+				_ = os.Remove(tmp.Name())
+				return nil, nil, errUploadTooLarge
+			}
+			if _, err := tmp.Write(buf[:n]); err != nil {
+				_ = tmp.Close()
+				_ = os.Remove(tmp.Name())
+				return nil, nil, err
+			}
+			if len(sample) < sampleLimit {
+				need := sampleLimit - len(sample)
+				if need > n {
+					need = n
+				}
+				sample = append(sample, buf[:need]...)
+			}
+		}
+		if errors.Is(readErr, io.EOF) {
+			break
+		}
+		if readErr != nil {
+			_ = tmp.Close()
+			_ = os.Remove(tmp.Name())
+			return nil, nil, readErr
+		}
+	}
+	return tmp, sample, nil
+}
+
+const adminCSRFCookieName = "pastebox_admin_csrf"
+
+func issueAdminCSRFToken(w http.ResponseWriter, r *http.Request) string {
+	if r != nil {
+		if cookie, err := r.Cookie(adminCSRFCookieName); err == nil && strings.TrimSpace(cookie.Value) != "" {
+			return cookie.Value
+		}
+	}
+	token, err := randomCSRFToken()
+	if err != nil {
+		return ""
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     adminCSRFCookieName,
+		Value:    token,
+		Path:     "/admin",
+		MaxAge:   86400,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
+	return token
+}
+
+func randomCSRFToken() (string, error) {
+	buf := make([]byte, 36)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
+func verifyAdminCSRFToken(w http.ResponseWriter, r *http.Request) bool {
+	cookie, err := r.Cookie(adminCSRFCookieName)
+	if err != nil || strings.TrimSpace(cookie.Value) == "" {
+		return false
+	}
+	formToken := strings.TrimSpace(r.FormValue("csrf_token"))
+	if formToken == "" {
+		return false
+	}
+	if subtle.ConstantTimeCompare([]byte(cookie.Value), []byte(formToken)) != 1 {
+		return false
+	}
+	issueAdminCSRFToken(w, r)
+	return true
 }
 
 func allowTextUpload(filename string, contentType string, content []byte) (bool, string) {

@@ -17,6 +17,7 @@
       {{ end }}
 
       <form class="mt-6 space-y-4" method="post" action="{{ .Action }}">
+        <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
         <div>
           <label class="mb-2 block text-sm text-[#E4E4E4]/70">{{ t "admin_username" }}</label>
           <input class="w-full rounded-xl border border-white/10 bg-[#1a1a1a] px-4 py-3 text-[#E4E4E4] outline-none transition focus:border-[#A8DADC]/50" name="username" autocomplete="username" required>

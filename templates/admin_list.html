@@ -163,7 +163,7 @@
         const count = checkboxes.filter(function (el) { return el.checked; }).length;
         if (count > 0) {
           bulkDeleteBtn.classList.remove("hidden");
-          bulkDeleteBtn.textContent = isKo ? (count + "{{ t \"admin_delete_selected_suffix\" }}") : ("{{ t \"admin_delete_selected_prefix\" }} " + count);
+          bulkDeleteBtn.textContent = isKo ? (count + "{{ t "admin_delete_selected_suffix" }}") : ("{{ t "admin_delete_selected_prefix" }} " + count);
           return;
         }
         bulkDeleteBtn.classList.add("hidden");

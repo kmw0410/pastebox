@@ -169,7 +169,6 @@ func (s *Store) createFromReader(r io.Reader, filename string, contentType strin
 	return meta, password, deleteToken, nil
 }
 
-
 func (s *Store) Open(id string, password string) (*Entry, error) {
 	if !validID(id) {
 		return nil, ErrNotFound
@@ -572,6 +571,66 @@ func (s *Store) CreateAdmin(username string, password string) error {
 	`, username, hash, salt, time.Now().UTC().Unix())
 
 	return err
+}
+
+func (s *Store) ForceResetAdminPassword(password string) error {
+	password = strings.TrimSpace(password)
+	if password == "" {
+		return errors.New("password required")
+	}
+
+	exists, err := s.AdminExists()
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return errors.New("admin account not found")
+	}
+
+	salt, err := randomString(tokenAlphabet, 32)
+	if err != nil {
+		return err
+	}
+
+	hash := hashAdminPassword(password, salt)
+
+	tx, err := s.adminDB.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if tx != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	result, err := tx.Exec(`
+		UPDATE pastebox_admin
+		SET password_hash = ?, salt = ?
+		WHERE id = 1
+	`, hash, salt)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return errors.New("admin account not found")
+	}
+
+	if _, err := tx.Exec(`DELETE FROM admin_sessions`); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	tx = nil
+
+	return nil
 }
 
 func (s *Store) AuthenticateAdmin(username string, password string) (bool, error) {

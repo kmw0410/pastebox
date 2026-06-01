@@ -28,12 +28,14 @@ type app struct {
 	index           *template.Template
 	paste           *template.Template
 	adminForm       *template.Template
+	adminReset      *template.Template
 	adminList       *template.Template
 	passwordPage    *template.Template
 	notFoundPage    *template.Template
 	cloneResult     *template.Template
 	i18n            *localizer
 	adminSetupToken string
+	adminResetToken string
 }
 
 const maxUploadSize int64 = 1 << 30 // 1 GiB
@@ -47,6 +49,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to generate admin setup token: %v", err)
 	}
+	adminResetToken := strings.TrimSpace(os.Getenv("ADMIN_RESET_TOKEN"))
 
 	store, err := pastebox.NewStore(dataDir, time.Duration(expireDays)*24*time.Hour)
 	if err != nil {
@@ -58,12 +61,14 @@ func main() {
 		index:           mustParseTemplate(i18n, "templates/index.html"),
 		paste:           mustParseTemplate(i18n, "templates/paste.html"),
 		adminForm:       mustParseTemplate(i18n, "templates/admin_form.html"),
+		adminReset:      mustParseTemplate(i18n, "templates/admin_reset.html"),
 		adminList:       mustParseTemplate(i18n, "templates/admin_list.html"),
 		passwordPage:    mustParseTemplate(i18n, "templates/password.html"),
 		notFoundPage:    mustParseTemplate(i18n, "templates/404.html"),
 		cloneResult:     mustParseTemplate(i18n, "templates/clone.html"),
 		i18n:            i18n,
 		adminSetupToken: adminSetupToken,
+		adminResetToken: adminResetToken,
 	}
 
 	go func() {
@@ -495,6 +500,8 @@ func (a *app) adminHandler(w http.ResponseWriter, r *http.Request) {
 		a.adminSetupHandler(w, r)
 	case "/admin/login":
 		a.adminLoginHandler(w, r)
+	case "/admin/reset":
+		a.adminResetHandler(w, r)
 	case "/admin/logout":
 		a.adminLogoutHandler(w, r)
 	case "/admin/delete":
@@ -790,6 +797,63 @@ func (a *app) adminLogoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
 }
 
+func (a *app) adminResetHandler(w http.ResponseWriter, r *http.Request) {
+	exists, err := a.store.AdminExists()
+	if err != nil {
+		http.Error(w, "admin database error", http.StatusInternalServerError)
+		return
+	}
+	if !exists {
+		http.Redirect(w, r, "/admin/setup", http.StatusSeeOther)
+		return
+	}
+
+	if strings.TrimSpace(a.adminResetToken) == "" {
+		http.NotFound(w, r)
+		return
+	}
+
+	if r.Method == http.MethodGet {
+		a.renderAdminResetForm(w, "")
+		return
+	}
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		a.renderAdminResetForm(w, a.i18n.T("admin_error_invalid_form"))
+		return
+	}
+
+	resetToken := strings.TrimSpace(r.FormValue("reset_token"))
+	password := r.FormValue("password")
+	passwordConfirm := r.FormValue("password_confirm")
+
+	if subtle.ConstantTimeCompare([]byte(resetToken), []byte(a.adminResetToken)) != 1 {
+		a.renderAdminResetForm(w, a.i18n.T("admin_reset_error_invalid_token"))
+		return
+	}
+
+	if strings.TrimSpace(password) == "" {
+		a.renderAdminResetForm(w, a.i18n.T("admin_reset_error_password_required"))
+		return
+	}
+	if password != passwordConfirm {
+		a.renderAdminResetForm(w, a.i18n.T("admin_reset_error_password_mismatch"))
+		return
+	}
+
+	if err := a.store.ForceResetAdminPassword(password); err != nil {
+		http.Error(w, "failed to reset password", http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("admin password reset: remote=%s", r.RemoteAddr)
+	http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
+}
+
 func (a *app) adminUploadsHandler(w http.ResponseWriter, r *http.Request) {
 	if !a.requireAdmin(w, r) {
 		return
@@ -898,6 +962,17 @@ func (a *app) renderAdminForm(w http.ResponseWriter, title string, action string
 		"Button":            button,
 		"Description":       description,
 		"RequireSetupToken": action == "/admin/setup",
+	})
+}
+
+func (a *app) renderAdminResetForm(w http.ResponseWriter, errorMessage string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_ = a.adminReset.Execute(w, map[string]any{
+		"Title":       a.i18n.T("admin_reset_title"),
+		"Error":       errorMessage,
+		"Action":      "/admin/reset",
+		"Button":      a.i18n.T("admin_reset_button"),
+		"Description": a.i18n.T("admin_reset_description"),
 	})
 }
 

@@ -76,6 +76,7 @@
           </div>
 
           <form method="post" action="/admin/uploads">
+            <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
             {{ if .UploadsDisabled }}
             <input type="hidden" name="disabled" value="false">
             <button class="rounded-xl border border-[#A8DADC]/40 px-4 py-2 text-[#A8DADC] transition hover:bg-[#A8DADC]/10" type="submit">{{ t "admin_enable_uploads" }}</button>
@@ -97,9 +98,11 @@
 
           <div class="flex items-center justify-end gap-3">
             <form id="bulk-delete-form" method="post" action="/admin/delete" onsubmit="return confirm('{{ t "admin_delete_selected_confirm" }}')">
+              <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
               <button id="bulk-delete-btn" class="hidden rounded-xl border border-[#FFC1CC]/40 px-4 py-2 font-semibold text-[#FFC1CC] transition hover:bg-[#FFC1CC]/10" type="submit"></button>
             </form>
             <form method="post" action="/admin/delete-all" onsubmit="return confirm('{{ t "admin_delete_all_confirm" }}')">
+              <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
               <button class="rounded-xl border border-[#FFC1CC]/40 px-4 py-2 font-semibold text-[#FFC1CC] transition hover:bg-[#FFC1CC]/10" type="submit">{{ t "admin_delete_all_button" }}</button>
             </form>
           </div>
@@ -137,6 +140,7 @@
               <td class="whitespace-nowrap px-4 py-3 text-[#E4E4E4]/65">{{ if .ExpiresAt.IsZero }}-{{ else }}{{ .ExpiresAt.Format "2006-01-02 15:04:05" }}{{ end }}</td>
               <td class="whitespace-nowrap px-4 py-3">
                 <form method="post" action="/admin/delete">
+                  <input type="hidden" name="csrf_token" value="{{ $.CSRFToken }}">
                   <input type="hidden" name="id" value="{{ .ID }}">
                   <button class="rounded-lg border border-[#FFC1CC]/35 px-3 py-1.5 text-[#FFC1CC] transition hover:bg-[#FFC1CC]/10" type="submit">{{ t "admin_delete_button" }}</button>
                 </form>

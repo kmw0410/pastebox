@@ -997,6 +997,12 @@ func allowTextUpload(filename string, contentType string, content []byte) (bool,
 	}
 
 	if isBlockedUploadContentType(lowerContentType) {
+		if lowerContentType == "application/octet-stream" {
+			if looksLikeText(content) {
+				return true, ""
+			}
+			return false, "octet-stream binary content"
+		}
 		return false, "blocked content type"
 	}
 

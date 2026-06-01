@@ -203,10 +203,11 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
+			if partType := strings.TrimSpace(header.Header.Get("Content-Type")); partType != "" {
+				contentType = partType
+			}
 			if detected := mime.TypeByExtension(strings.ToLower(filepath.Ext(header.Filename))); detected != "" {
 				contentType = detected
-			} else {
-				contentType = "application/octet-stream"
 			}
 		}
 	} else {

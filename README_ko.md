@@ -168,7 +168,7 @@ pastebox/
 
 15. **관리 페이지 제공**: IP, 도메인 뒤에 `/admin`을 추가하여 관리페이지 접근이 가능합니다. 계정이 없는 경우 첫 생성된 계정이 관리자로 들어가며 이후 신규생성이 중단됩니다. DB의 경우 `/paste-data/pastebox.db (호스트의 경우 ./data/pastebox.db)`에 기록되며 비밀번호의 경우 암호화되어 저장됩니다. 또한 업로드 비활성화 기능을 제공하여 신규 업로드를 중단할 수 있습니다.
 
-16. **문법 강조 지원**: 확장자가 `.txt`, `.md`, `.log`, `.csv`, `.go`, `.rs`, `.js`, `.py`, `.ts`, `.php`, `.html`, `.css`인 경우 문법 강조(Syntax Highlighting)을 지원합니다.
+16. **문법 강조 지원**: 확장자가 `.txt`, `.md`, `.log`, `.csv`, `.conf`, `.yaml`, `.go`, `.rs`, `.js`, `.py`, `.ts`, `.php`, `.html`, `.css`인 경우 문법 강조(Syntax Highlighting)을 지원합니다.
 
 17. **Paste 복제 지원**: 보기 페이지에서 `Clone` 버튼을 눌러 현재 Paste 내용을 새로운 링크로 복제할 수 있습니다.
 

@@ -529,6 +529,7 @@ func (a *app) adminIndexHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to list pastes", http.StatusInternalServerError)
 		return
 	}
+	items = localizeAdminPasteItems(items, time.Local)
 
 	uploadsDisabled, err := a.store.UploadsDisabled()
 	if err != nil {
@@ -627,6 +628,24 @@ func buildAdminStats(items []pastebox.AdminPasteItem) adminStats {
 
 	stats.TotalSize = formatBytes(stats.TotalSizeBytes)
 	return stats
+}
+
+func localizeAdminPasteItems(items []pastebox.AdminPasteItem, loc *time.Location) []pastebox.AdminPasteItem {
+	if loc == nil {
+		return items
+	}
+
+	out := make([]pastebox.AdminPasteItem, len(items))
+	copy(out, items)
+
+	for i := range out {
+		out[i].CreatedAt = out[i].CreatedAt.In(loc)
+		if !out[i].ExpiresAt.IsZero() {
+			out[i].ExpiresAt = out[i].ExpiresAt.In(loc)
+		}
+	}
+
+	return out
 }
 
 func formatBytes(size int64) string {
@@ -901,13 +920,6 @@ func allowTextUpload(filename string, contentType string, content []byte) (bool,
 		return false, "blocked extension"
 	}
 
-	if isKnownTextExtension(ext) {
-		if looksLikeText(content) {
-			return true, ""
-		}
-		return false, "text extension but binary content"
-	}
-
 	if isBlockedUploadContentType(lowerContentType) {
 		return false, "blocked content type"
 	}
@@ -933,6 +945,8 @@ func normalizeTextContentType(filename string, contentType string) string {
 	switch ext {
 	case ".log":
 		return "text/x-log; charset=utf-8"
+	case ".conf", ".cfg", ".ini", ".properties", ".env":
+		return "text/x-ini; charset=utf-8"
 	case ".rs":
 		return "text/x-rust; charset=utf-8"
 	case ".go":
@@ -989,23 +1003,26 @@ func normalizedUploadExt(filename string) string {
 		return ".tar.bz2"
 	}
 
-	return filepath.Ext(name)
-}
-
-func isKnownTextExtension(ext string) bool {
-	switch ext {
-	case "",
-		".txt", ".text", ".log", ".md", ".markdown", ".csv", ".tsv",
-		".json", ".jsonl", ".xml", ".yaml", ".yml", ".toml", ".ini", ".env",
-		".conf", ".cfg", ".properties", ".sql",
-		".html", ".htm", ".css", ".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx",
-		".go", ".py", ".rb", ".php", ".java", ".kt", ".kts", ".c", ".h", ".cpp", ".hpp",
-		".rs", ".swift", ".cs", ".sh", ".bash", ".zsh", ".fish", ".ps1", ".bat",
-		".dockerfile", ".gitignore", ".gitattributes", ".editorconfig":
-		return true
-	default:
-		return false
+	if strings.HasSuffix(name, ".log") {
+		return ".log"
 	}
+
+	base := filepath.Base(name)
+	baseExt := filepath.Ext(base)
+	if len(baseExt) > 1 {
+		numericOnly := true
+		for _, ch := range baseExt[1:] {
+			if ch < '0' || ch > '9' {
+				numericOnly = false
+				break
+			}
+		}
+		if numericOnly && strings.HasSuffix(strings.TrimSuffix(base, baseExt), ".log") {
+			return ".log"
+		}
+	}
+
+	return filepath.Ext(name)
 }
 
 func isBlockedUploadExtension(ext string) bool {
@@ -1081,6 +1098,10 @@ func syntaxLanguage(contentType string) string {
 	switch {
 	case strings.Contains(contentType, "x-log"):
 		return "logs"
+	case strings.Contains(contentType, "yaml"):
+		return "yaml"
+	case strings.Contains(contentType, "x-ini"):
+		return "ini"
 	case strings.Contains(contentType, "x-rust"):
 		return "rust"
 	case strings.Contains(contentType, "x-go"):

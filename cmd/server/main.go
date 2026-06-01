@@ -12,11 +12,13 @@ import (
 	"io"
 	"log"
 	"mime"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -36,9 +38,12 @@ type app struct {
 	i18n            *localizer
 	adminSetupToken string
 	adminResetToken string
+	authLimiter     *authAttemptLimiter
 }
 
 const maxUploadSize int64 = 1 << 30 // 1 GiB
+const authFailureWindow = 10 * time.Minute
+const authFailureLimit = 20
 
 func main() {
 	listenAddr := getenv("LISTEN_ADDR", ":8080")
@@ -69,6 +74,7 @@ func main() {
 		i18n:            i18n,
 		adminSetupToken: adminSetupToken,
 		adminResetToken: adminResetToken,
+		authLimiter:     newAuthAttemptLimiter(authFailureWindow, authFailureLimit),
 	}
 
 	go func() {
@@ -755,6 +761,13 @@ func (a *app) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	username := r.FormValue("username")
 	password := r.FormValue("password")
+	clientIP := requestClientIP(r)
+	limitKey := "admin_login:" + clientIP
+	if retryAfter, blocked := a.authLimiter.retryAfter(limitKey, time.Now()); blocked {
+		w.Header().Set("Retry-After", strconv.Itoa(int(retryAfter.Seconds())+1))
+		http.Error(w, "too many failed attempts. try again later", http.StatusTooManyRequests)
+		return
+	}
 
 	ok, err := a.store.AuthenticateAdmin(username, password)
 	if err != nil {
@@ -763,10 +776,12 @@ func (a *app) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !ok {
+		a.authLimiter.recordFailure(limitKey, time.Now())
 		log.Printf("admin login failed: username=%s remote=%s", username, r.RemoteAddr)
 		a.renderAdminForm(w, a.i18n.T("admin_login_title"), "/admin/login", a.i18n.T("admin_error_invalid_credentials"), a.i18n.T("admin_login_button"))
 		return
 	}
+	a.authLimiter.clear(limitKey)
 
 	token, err := a.store.CreateAdminSession()
 	if err != nil {
@@ -831,8 +846,16 @@ func (a *app) adminResetHandler(w http.ResponseWriter, r *http.Request) {
 	resetToken := strings.TrimSpace(r.FormValue("reset_token"))
 	password := r.FormValue("password")
 	passwordConfirm := r.FormValue("password_confirm")
+	clientIP := requestClientIP(r)
+	limitKey := "admin_reset:" + clientIP
+	if retryAfter, blocked := a.authLimiter.retryAfter(limitKey, time.Now()); blocked {
+		w.Header().Set("Retry-After", strconv.Itoa(int(retryAfter.Seconds())+1))
+		http.Error(w, "too many failed attempts. try again later", http.StatusTooManyRequests)
+		return
+	}
 
 	if subtle.ConstantTimeCompare([]byte(resetToken), []byte(a.adminResetToken)) != 1 {
+		a.authLimiter.recordFailure(limitKey, time.Now())
 		a.renderAdminResetForm(w, a.i18n.T("admin_reset_error_invalid_token"))
 		return
 	}
@@ -850,6 +873,7 @@ func (a *app) adminResetHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to reset password", http.StatusInternalServerError)
 		return
 	}
+	a.authLimiter.clear(limitKey)
 
 	log.Printf("admin password reset: remote=%s", r.RemoteAddr)
 	http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
@@ -1008,6 +1032,90 @@ func setAdminCookie(w http.ResponseWriter, token string) {
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 	})
+}
+
+type authAttemptLimiter struct {
+	mu      sync.Mutex
+	window  time.Duration
+	limit   int
+	entries map[string][]time.Time
+}
+
+func newAuthAttemptLimiter(window time.Duration, limit int) *authAttemptLimiter {
+	return &authAttemptLimiter{
+		window:  window,
+		limit:   limit,
+		entries: make(map[string][]time.Time),
+	}
+}
+
+func (l *authAttemptLimiter) retryAfter(key string, now time.Time) (time.Duration, bool) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	attempts := l.pruneLocked(key, now)
+	if len(attempts) < l.limit {
+		return 0, false
+	}
+
+	retryAfter := attempts[0].Add(l.window).Sub(now)
+	if retryAfter < 0 {
+		return 0, false
+	}
+	return retryAfter, true
+}
+
+func (l *authAttemptLimiter) recordFailure(key string, now time.Time) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	attempts := l.pruneLocked(key, now)
+	l.entries[key] = append(attempts, now)
+}
+
+func (l *authAttemptLimiter) clear(key string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	delete(l.entries, key)
+}
+
+func (l *authAttemptLimiter) pruneLocked(key string, now time.Time) []time.Time {
+	attempts := l.entries[key]
+	if len(attempts) == 0 {
+		return nil
+	}
+
+	cutoff := now.Add(-l.window)
+	keep := attempts[:0]
+	for _, at := range attempts {
+		if at.After(cutoff) {
+			keep = append(keep, at)
+		}
+	}
+
+	if len(keep) == 0 {
+		delete(l.entries, key)
+		return nil
+	}
+
+	l.entries[key] = keep
+	return keep
+}
+
+func requestClientIP(r *http.Request) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err == nil {
+		host = strings.TrimSpace(host)
+		if host != "" {
+			return host
+		}
+	}
+
+	remote := strings.TrimSpace(r.RemoteAddr)
+	if remote == "" {
+		return "unknown"
+	}
+	return remote
 }
 
 func allowTextUpload(filename string, contentType string, content []byte) (bool, string) {

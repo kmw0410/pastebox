@@ -162,9 +162,11 @@ pastebox/
 
 15. **Admin Page**: You can access the admin page by adding `/admin` after the IP address or domain. If no account exists, the first created account becomes the administrator account, and additional account creation is disabled afterward. The admin database is stored at `/paste-data/pastebox.db` inside the container, or `./data/pastebox.db` on the host. Passwords are stored in encrypted form. The admin page also provides an upload disable feature, allowing administrators to stop new uploads.
 
-16. **Syntax Highlighting Support**: Syntax highlighting is supported for files with the extensions `.txt`, `.md`, `.log`, `.csv`, `.conf`, `.yaml`, `.go`, `.rs`, `.js`, `.py`, `.ts`, `.php`, `.html`, and `.css`.
+16. **Admin Password Reset**: If you lose the admin password, set `ADMIN_RESET_TOKEN` in `docker-compose.yml` (or `docker-compose-dockerhub.yml`), restart the container, and open `/admin/reset`. Enter the reset token and a new password. After reset, existing admin sessions are invalidated and you must log in again with the new password.
 
-17. **Paste Clone**: You can clone the current paste into a new link by clicking the `Clone` button on the view page.
+17. **Syntax Highlighting Support**: Syntax highlighting is supported for files with the extensions `.txt`, `.md`, `.log`, `.csv`, `.conf`, `.yaml`, `.go`, `.rs`, `.js`, `.py`, `.ts`, `.php`, `.html`, and `.css`.
+
+18. **Paste Clone**: You can clone the current paste into a new link by clicking the `Clone` button on the view page.
 
 ### Data Policy
 For details about the data policy header, see [DATA_POLICY.md](./DATA_POLICY.md)

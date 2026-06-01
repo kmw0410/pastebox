@@ -168,9 +168,11 @@ pastebox/
 
 15. **관리 페이지 제공**: IP, 도메인 뒤에 `/admin`을 추가하여 관리페이지 접근이 가능합니다. 계정이 없는 경우 첫 생성된 계정이 관리자로 들어가며 이후 신규생성이 중단됩니다. DB의 경우 `/paste-data/pastebox.db (호스트의 경우 ./data/pastebox.db)`에 기록되며 비밀번호의 경우 암호화되어 저장됩니다. 또한 업로드 비활성화 기능을 제공하여 신규 업로드를 중단할 수 있습니다.
 
-16. **문법 강조 지원**: 확장자가 `.txt`, `.md`, `.log`, `.csv`, `.conf`, `.yaml`, `.go`, `.rs`, `.js`, `.py`, `.ts`, `.php`, `.html`, `.css`인 경우 문법 강조(Syntax Highlighting)을 지원합니다.
+16. **관리자 비밀번호 초기화**: 관리자 비밀번호를 분실한 경우 `docker-compose.yml`(또는 `docker-compose-dockerhub.yml`)에 `ADMIN_RESET_TOKEN`을 설정한 뒤 컨테이너를 재시작하고 `/admin/reset`에 접속하세요. 초기화 토큰과 새 비밀번호를 입력하면 비밀번호가 재설정되며, 기존 관리자 세션은 모두 만료되어 새 비밀번호로 다시 로그인해야 합니다.
 
-17. **Paste 복제 지원**: 보기 페이지에서 `Clone` 버튼을 눌러 현재 Paste 내용을 새로운 링크로 복제할 수 있습니다.
+17. **문법 강조 지원**: 확장자가 `.txt`, `.md`, `.log`, `.csv`, `.conf`, `.yaml`, `.go`, `.rs`, `.js`, `.py`, `.ts`, `.php`, `.html`, `.css`인 경우 문법 강조(Syntax Highlighting)을 지원합니다.
+
+18. **Paste 복제 지원**: 보기 페이지에서 `Clone` 버튼을 눌러 현재 Paste 내용을 새로운 링크로 복제할 수 있습니다.
 
 ### 데이터 정책
 데이터 정책 헤더에 대한 설명은 [DATA_POLICY_ko.md](./DATA_POLICY_ko.md)를 참고하세요.

@@ -11,12 +11,11 @@
     <div class="w-full rounded-3xl bg-[#111111] p-8 shadow-[0_18px_60px_rgba(0,0,0,0.45)] md:p-12">
       <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <p class="mb-3 inline-flex rounded-full border border-white/20 px-3 py-1 text-xs text-[#A8DADC]">{{ t "brand_admin" }}</p>
-          <h1 class="text-4xl font-bold tracking-tight text-[#E4E4E4]">{{ t "admin_links_title" }}</h1>
-          <p class="mt-3 text-sm text-[#E4E4E4]/70">{{ t "admin_links_description" }}</p>
+          <h1 class="text-4xl font-bold tracking-tight text-[#E4E4E4]">{{ t "admin_page_title" }}</h1>
+          <p class="mt-3 text-sm text-[#E4E4E4]/70">{{ t "admin_page_description" }}</p>
         </div>
         <div class="flex gap-3">
-          <a class="rounded-xl bg-[#B39CD0] px-4 py-2 font-semibold text-[#111111] transition hover:brightness-110" href="/">{{ t "home" }}</a>
+          <a class="rounded-xl border border-white/20 px-4 py-2 text-[#E4E4E4] transition hover:border-[#A8DADC] hover:text-[#A8DADC]" href="/">{{ t "home" }}</a>
           <a class="rounded-xl border border-white/20 px-4 py-2 text-[#E4E4E4] transition hover:border-[#FFC1CC] hover:text-[#FFC1CC]" href="/admin/logout">{{ t "logout" }}</a>
         </div>
       </div>
@@ -28,22 +27,22 @@
       {{ end }}
 
       <div class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-2xl border border-white/10 bg-[#1a1a1a] p-5 transition-all duration-300 hover:border-[#A8DADC]/35 hover:bg-[#202020]">
+        <div class="rounded-2xl border border-white/10 bg-[#111111] p-5">
           <p class="text-xs uppercase tracking-[0.18em] text-[#E4E4E4]/55">{{ t "admin_total_links" }}</p>
           <p class="mt-3 text-3xl font-bold text-[#E4E4E4]">{{ .Stats.Total }}</p>
           <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_stored_pastes" }}</p>
         </div>
-        <div class="rounded-2xl border border-white/10 bg-[#1a1a1a] p-5 transition-all duration-300 hover:border-[#A8DADC]/35 hover:bg-[#202020]">
+        <div class="rounded-2xl border border-white/10 bg-[#111111] p-5">
           <p class="text-xs uppercase tracking-[0.18em] text-[#E4E4E4]/55">{{ t "admin_storage" }}</p>
           <p class="mt-3 text-3xl font-bold text-[#E4E4E4]">{{ .Stats.TotalSize }}</p>
           <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_total_size" }}</p>
         </div>
-        <div class="rounded-2xl border border-white/10 bg-[#1a1a1a] p-5 transition-all duration-300 hover:border-[#FFC1CC]/35 hover:bg-[#202020]">
+        <div class="rounded-2xl border border-white/10 bg-[#111111] p-5">
           <p class="text-xs uppercase tracking-[0.18em] text-[#E4E4E4]/55">{{ t "admin_policy" }}</p>
           <p class="mt-3 text-3xl font-bold text-[#E4E4E4]">{{ .Stats.Temporary }} / {{ .Stats.Permanent }}</p>
           <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_temp_permanent" }}</p>
         </div>
-        <div class="rounded-2xl border border-white/10 bg-[#1a1a1a] p-5 transition-all duration-300 hover:border-[#B39CD0]/35 hover:bg-[#202020]">
+        <div class="rounded-2xl border border-white/10 bg-[#111111] p-5">
           <p class="text-xs uppercase tracking-[0.18em] text-[#E4E4E4]/55">{{ t "admin_security" }}</p>
           <p class="mt-3 text-3xl font-bold text-[#E4E4E4]">{{ .Stats.Protected }}</p>
           <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_password_protected" }}</p>
@@ -63,7 +62,7 @@
         </div>
       </div>
 
-      <div class="mb-8 rounded-2xl border border-white/10 bg-[#1a1a1a] p-5">
+      <div class="mb-8 rounded-2xl border border-white/10 bg-[#111111] p-5">
         <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <p class="text-xs uppercase tracking-[0.18em] text-[#E4E4E4]/55">{{ t "admin_upload_control" }}</p>

@@ -5,6 +5,8 @@
   "logout": "Logout",
   "admin_links_title": "Links",
   "admin_links_description": "Manage currently stored local paste files.",
+  "admin_page_title": "Pastebox Admin",
+  "admin_page_description": "Manage currently stored local paste files.",
   "admin_total_links": "Total Links",
   "admin_stored_pastes": "stored pastes",
   "admin_storage": "Storage",

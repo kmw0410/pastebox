@@ -5,6 +5,8 @@
   "logout": "로그아웃",
   "admin_links_title": "링크",
   "admin_links_description": "현재 저장된 로컬 Paste 파일을 관리합니다.",
+  "admin_page_title": "Pastebox 관리자",
+  "admin_page_description": "현재 저장된 로컬 Paste 파일을 관리합니다.",
   "admin_total_links": "전체 링크",
   "admin_stored_pastes": "저장된 Paste",
   "admin_storage": "저장소",

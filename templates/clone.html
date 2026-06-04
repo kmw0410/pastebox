@@ -34,6 +34,11 @@
         {{ end }}
 
         <div class="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+          <p class="text-xs uppercase tracking-[0.18em] text-zinc-600">{{ t "clone_manage" }}</p>
+          <a class="mt-2 block break-all font-mono text-sm text-zinc-200 underline decoration-zinc-700 underline-offset-4 hover:decoration-zinc-100" href="{{ .ManageURL }}">{{ .ManageURL }}</a>
+        </div>
+
+        <div class="rounded-xl border border-white/10 bg-white/[0.02] p-4">
           <p class="text-xs uppercase tracking-[0.18em] text-zinc-600">{{ t "clone_delete" }}</p>
           <p class="mt-2 break-all font-mono text-sm text-zinc-300">{{ .DeleteURL }}</p>
         </div>
@@ -61,6 +66,7 @@
         "url: {{ .URL }}",
         {{ if .Expires }}"expires: {{ .Expires }}",{{ end }}
         {{ if .Password }}"password: {{ .Password }}",{{ end }}
+        "manage: {{ .ManageURL }}",
         "delete: {{ .DeleteURL }}"
       ].join("\n");
 

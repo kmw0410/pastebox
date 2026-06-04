@@ -22,7 +22,10 @@ import (
 var (
 	ErrNotFound           = errors.New("not found")
 	ErrInvalidPassword    = errors.New("invalid password")
+	ErrInvalidManageToken = errors.New("invalid manage token")
 	ErrInvalidDeleteToken = errors.New("invalid delete token")
+	ErrAlreadyProtected   = errors.New("paste is already password protected")
+	ErrInvalidPolicy      = errors.New("invalid policy")
 	ErrInvalidCode        = errors.New("invalid code")
 	ErrCodeExists         = errors.New("code already exists")
 )
@@ -38,6 +41,7 @@ type Metadata struct {
 	ID              string    `json:"id"`
 	Filename        string    `json:"filename,omitempty"`
 	PasswordHash    string    `json:"password_hash,omitempty"`
+	ManageTokenHash string    `json:"manage_token_hash,omitempty"`
 	DeleteTokenHash string    `json:"delete_token_hash,omitempty"`
 	CreatedAt       time.Time `json:"created_at"`
 	ExpiresAt       time.Time `json:"expires_at,omitempty"`
@@ -80,24 +84,24 @@ func NewStore(dataDir string, ttl time.Duration) (*Store, error) {
 	}, nil
 }
 
-func (s *Store) Create(r io.Reader, filename string, contentType string, usePassword bool, permanent bool, once bool, customCode string) (Metadata, string, string, error) {
+func (s *Store) Create(r io.Reader, filename string, contentType string, usePassword bool, permanent bool, once bool, customCode string) (Metadata, string, string, string, error) {
 	return s.createFromReader(r, filename, contentType, usePassword, permanent, once, customCode)
 }
 
-func (s *Store) Clone(id string, password string, usePassword bool, permanent bool, once bool, customCode string) (Metadata, string, string, error) {
+func (s *Store) Clone(id string, password string, usePassword bool, permanent bool, once bool, customCode string) (Metadata, string, string, string, error) {
 	entry, err := s.Open(id, password)
 	if err != nil {
-		return Metadata{}, "", "", err
+		return Metadata{}, "", "", "", err
 	}
 	defer entry.File.Close()
 
 	return s.createFromReader(entry.File, entry.Meta.Filename, entry.Meta.ContentType, usePassword, permanent, once, customCode)
 }
 
-func (s *Store) createFromReader(r io.Reader, filename string, contentType string, usePassword bool, permanent bool, once bool, customCode string) (Metadata, string, string, error) {
+func (s *Store) createFromReader(r io.Reader, filename string, contentType string, usePassword bool, permanent bool, once bool, customCode string) (Metadata, string, string, string, error) {
 	id, path, err := s.reservePath(customCode)
 	if err != nil {
-		return Metadata{}, "", "", err
+		return Metadata{}, "", "", "", err
 	}
 
 	unlock := s.locks.Lock(id)
@@ -106,10 +110,10 @@ func (s *Store) createFromReader(r io.Reader, filename string, contentType strin
 	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
 	if err != nil {
 		if errors.Is(err, os.ErrExist) {
-			return Metadata{}, "", "", ErrCodeExists
+			return Metadata{}, "", "", "", ErrCodeExists
 		}
 
-		return Metadata{}, "", "", err
+		return Metadata{}, "", "", "", err
 	}
 
 	size, copyErr := io.Copy(file, r)
@@ -117,24 +121,30 @@ func (s *Store) createFromReader(r io.Reader, filename string, contentType strin
 
 	if copyErr != nil {
 		_ = os.Remove(path)
-		return Metadata{}, "", "", copyErr
+		return Metadata{}, "", "", "", copyErr
 	}
 
 	if closeErr != nil {
 		_ = os.Remove(path)
-		return Metadata{}, "", "", closeErr
+		return Metadata{}, "", "", "", closeErr
 	}
 
 	password, passwordHash, err := maybeCreatePassword(usePassword)
 	if err != nil {
 		_ = os.Remove(path)
-		return Metadata{}, "", "", err
+		return Metadata{}, "", "", "", err
+	}
+
+	manageToken, err := randomString(tokenAlphabet, 32)
+	if err != nil {
+		_ = os.Remove(path)
+		return Metadata{}, "", "", "", err
 	}
 
 	deleteToken, err := randomString(tokenAlphabet, 32)
 	if err != nil {
 		_ = os.Remove(path)
-		return Metadata{}, "", "", err
+		return Metadata{}, "", "", "", err
 	}
 
 	now := time.Now().UTC()
@@ -153,6 +163,7 @@ func (s *Store) createFromReader(r io.Reader, filename string, contentType strin
 		ID:              id,
 		Filename:        strings.TrimSpace(filename),
 		PasswordHash:    passwordHash,
+		ManageTokenHash: hashSecret(manageToken),
 		DeleteTokenHash: hashSecret(deleteToken),
 		CreatedAt:       now,
 		ExpiresAt:       expiresAt,
@@ -163,10 +174,10 @@ func (s *Store) createFromReader(r io.Reader, filename string, contentType strin
 
 	if err := s.writeMetadata(meta); err != nil {
 		_ = os.Remove(path)
-		return Metadata{}, "", "", err
+		return Metadata{}, "", "", "", err
 	}
 
-	return meta, password, deleteToken, nil
+	return meta, password, deleteToken, manageToken, nil
 }
 
 func (s *Store) Open(id string, password string) (*Entry, error) {
@@ -231,6 +242,50 @@ func (s *Store) Delete(id string, token string) error {
 	}
 
 	if err := checkDeleteToken(meta, token); err != nil {
+		return err
+	}
+
+	fileErr := os.Remove(path)
+	metaErr := os.Remove(metaPath(path))
+
+	if fileErr != nil && !errors.Is(fileErr, os.ErrNotExist) {
+		return fileErr
+	}
+
+	if metaErr != nil && !errors.Is(metaErr, os.ErrNotExist) {
+		return metaErr
+	}
+
+	return nil
+}
+
+func (s *Store) DeleteManaged(id string, token string) error {
+	if !validID(id) {
+		return ErrNotFound
+	}
+
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return ErrInvalidManageToken
+	}
+
+	unlock := s.locks.Lock(id)
+	defer unlock()
+
+	path := s.path(id)
+
+	meta, err := s.readMetadata(id)
+	if err != nil {
+		return ErrNotFound
+	}
+
+	if isExpired(meta, time.Now().UTC()) {
+		_ = os.Remove(path)
+		_ = os.Remove(metaPath(path))
+		return ErrNotFound
+	}
+
+	if err := checkManageToken(meta, token); err != nil {
 		return err
 	}
 
@@ -398,6 +453,180 @@ func (s *Store) ListPastes() ([]AdminPasteItem, error) {
 	}
 
 	return items, nil
+}
+
+func (s *Store) ManageMetadata(id string, token string) (Metadata, error) {
+	if !validID(id) {
+		return Metadata{}, ErrNotFound
+	}
+
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return Metadata{}, ErrInvalidManageToken
+	}
+
+	unlock := s.locks.Lock(id)
+	defer unlock()
+
+	meta, err := s.readMetadata(id)
+	if err != nil {
+		return Metadata{}, ErrNotFound
+	}
+
+	if isExpired(meta, time.Now().UTC()) {
+		path := s.path(id)
+		_ = os.Remove(path)
+		_ = os.Remove(metaPath(path))
+		return Metadata{}, ErrNotFound
+	}
+
+	if err := checkManageToken(meta, token); err != nil {
+		return Metadata{}, err
+	}
+
+	return meta, nil
+}
+
+func (s *Store) SetPasswordProtection(id string, token string) (Metadata, string, error) {
+	if !validID(id) {
+		return Metadata{}, "", ErrNotFound
+	}
+
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return Metadata{}, "", ErrInvalidManageToken
+	}
+
+	unlock := s.locks.Lock(id)
+	defer unlock()
+
+	path := s.path(id)
+
+	meta, err := s.readMetadata(id)
+	if err != nil {
+		return Metadata{}, "", ErrNotFound
+	}
+
+	if isExpired(meta, time.Now().UTC()) {
+		_ = os.Remove(path)
+		_ = os.Remove(metaPath(path))
+		return Metadata{}, "", ErrNotFound
+	}
+
+	if err := checkManageToken(meta, token); err != nil {
+		return Metadata{}, "", err
+	}
+
+	if meta.PasswordHash != "" {
+		return Metadata{}, "", ErrAlreadyProtected
+	}
+
+	password, passwordHash, err := maybeCreatePassword(true)
+	if err != nil {
+		return Metadata{}, "", err
+	}
+
+	meta.PasswordHash = passwordHash
+
+	if err := s.writeMetadata(meta); err != nil {
+		return Metadata{}, "", err
+	}
+
+	return meta, password, nil
+}
+
+func (s *Store) ClearPasswordProtection(id string, token string, password string) (Metadata, error) {
+	if !validID(id) {
+		return Metadata{}, ErrNotFound
+	}
+
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return Metadata{}, ErrInvalidManageToken
+	}
+
+	unlock := s.locks.Lock(id)
+	defer unlock()
+
+	path := s.path(id)
+
+	meta, err := s.readMetadata(id)
+	if err != nil {
+		return Metadata{}, ErrNotFound
+	}
+
+	if isExpired(meta, time.Now().UTC()) {
+		_ = os.Remove(path)
+		_ = os.Remove(metaPath(path))
+		return Metadata{}, ErrNotFound
+	}
+
+	if err := checkManageToken(meta, token); err != nil {
+		return Metadata{}, err
+	}
+
+	if err := checkPassword(meta, password); err != nil {
+		return Metadata{}, err
+	}
+
+	meta.PasswordHash = ""
+
+	if err := s.writeMetadata(meta); err != nil {
+		return Metadata{}, err
+	}
+
+	return meta, nil
+}
+
+func (s *Store) SetDataPolicy(id string, token string, policy string) (Metadata, error) {
+	if !validID(id) {
+		return Metadata{}, ErrNotFound
+	}
+
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return Metadata{}, ErrInvalidManageToken
+	}
+
+	policy = strings.ToLower(strings.TrimSpace(policy))
+	if policy != "temporary" && policy != "permanent" && policy != "once" {
+		return Metadata{}, ErrInvalidPolicy
+	}
+
+	unlock := s.locks.Lock(id)
+	defer unlock()
+
+	path := s.path(id)
+	now := time.Now().UTC()
+
+	meta, err := s.readMetadata(id)
+	if err != nil {
+		return Metadata{}, ErrNotFound
+	}
+
+	if isExpired(meta, now) {
+		_ = os.Remove(path)
+		_ = os.Remove(metaPath(path))
+		return Metadata{}, ErrNotFound
+	}
+
+	if err := checkManageToken(meta, token); err != nil {
+		return Metadata{}, err
+	}
+
+	meta.DataPolicy = policy
+	switch policy {
+	case "permanent":
+		meta.ExpiresAt = time.Time{}
+	case "temporary", "once":
+		meta.ExpiresAt = now.Add(s.TTL)
+	}
+
+	if err := s.writeMetadata(meta); err != nil {
+		return Metadata{}, err
+	}
+
+	return meta, nil
 }
 
 func (s *Store) reservePath(customCode string) (string, string, error) {
@@ -792,6 +1021,14 @@ func checkPassword(meta Metadata, password string) error {
 func checkDeleteToken(meta Metadata, token string) error {
 	if meta.DeleteTokenHash == "" || hashSecret(token) != meta.DeleteTokenHash {
 		return ErrInvalidDeleteToken
+	}
+
+	return nil
+}
+
+func checkManageToken(meta Metadata, token string) error {
+	if meta.ManageTokenHash == "" || hashSecret(token) != meta.ManageTokenHash {
+		return ErrInvalidManageToken
 	}
 
 	return nil

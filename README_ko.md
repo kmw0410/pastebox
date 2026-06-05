@@ -116,6 +116,22 @@ pastebox/
    delete: http://localhost:8080/RANDOM_CODE?delete=DELETE_TOKEN
    ```
 
+   스크립트나 다른 도구에서 파싱할 수 있도록 JSON 응답이 필요하면 업로드 요청에 `?format=json`을 붙이면 됩니다.
+
+   ```bash
+   curl -F "file=@test.txt" "http://localhost:8080/?format=json"
+   ```
+
+   ```json
+   {
+     "url": "http://localhost:8080/RANDOM_CODE",
+     "expires": "2026-06-24T05:10:26Z",
+     "password": "RANDOM_PASSWORD",
+     "manage": "http://localhost:8080/RANDOM_CODE?manage=MANAGE_TOKEN",
+     "delete": "http://localhost:8080/RANDOM_CODE?delete=DELETE_TOKEN"
+   }
+   ```
+
 7. **수동 삭제**: 업로드 시 발급되는 삭제 URL을 사용하여 파일을 직접 삭제할 수 있습니다. 삭제 요청은 컨테이너 로그에도 기록됩니다.
 
    ```bash
@@ -166,7 +182,7 @@ pastebox/
 
 12. **브라우저에서 내용 복사**: 텍스트 기반 업로드 링크를 브라우저에서 열면 `Raw` 버튼 옆의 `Copy` 버튼으로 내용을 클립보드에 복사할 수 있습니다.
 
-13. **텍스트 파일 브라우저 표시**: `.txt`, `.log` 같은 텍스트 기반 파일은 다운로드되지 않고 브라우저에서 바로 표시됩니다. 원본 raw 응답이 필요하면 `?raw=1`을 사용할 수 있습니다.
+13. **텍스트 파일 브라우저 표시**: `.txt`, `.log` 같은 텍스트 기반 파일은 다운로드되지 않고 브라우저에서 바로 표시됩니다. 원본 raw 응답이 필요하면 `?format=raw`를 사용할 수 있습니다.
 
 14. **생성/삭제 로그**: 파일 생성 및 삭제 시 컨테이너 로그에 기록됩니다.
 

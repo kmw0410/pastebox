@@ -148,6 +148,22 @@ pastebox/
    delete: http://localhost:8080/RANDOM_CODE?delete=DELETE_TOKEN
    ```
 
+   If you need a JSON response for parsing by scripts or other tools, append `?format=json` to the upload request:
+
+   ```bash
+   curl -F "file=@test.txt" "http://localhost:8080/?format=json"
+   ```
+
+   ```json
+   {
+     "url": "http://localhost:8080/RANDOM_CODE",
+     "expires": "2026-06-24T05:10:26Z",
+     "password": "RANDOM_PASSWORD",
+     "manage": "http://localhost:8080/RANDOM_CODE?manage=MANAGE_TOKEN",
+     "delete": "http://localhost:8080/RANDOM_CODE?delete=DELETE_TOKEN"
+   }
+   ```
+
 11. **Paste Management Link**: Each successful upload now also generates a private management URL. The link is delivered as a query parameter in the upload response using `?manage=...`. Anyone with that token can access the management page directly without entering a password. Later requests must continue to include the same `manage` token in the URL.
 
    The management link can be used to:
@@ -160,7 +176,7 @@ pastebox/
 
 12. **Copy Content in Browser**: When opening a text-based upload link in the browser, you can copy the content to your clipboard using the `Copy` button next to the `Raw` button.
 
-13. **Text File Rendering in Browser**: Text-based files such as `.txt` and `.log` are displayed directly in the browser instead of being downloaded. If you need the original raw response, use `?raw=1`.
+13. **Text File Rendering in Browser**: Text-based files such as `.txt` and `.log` are displayed directly in the browser instead of being downloaded. If you need the original raw response, use `?format=raw`.
 
 14. **Creation and Deletion Logs**: File creation and deletion events are recorded in the container logs.
 

@@ -186,7 +186,7 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if disabled {
-		http.Error(w, "new uploads are currently disabled", http.StatusServiceUnavailable)
+		a.respondRequestError(w, r, http.StatusServiceUnavailable, "new uploads are currently disabled")
 		return
 	}
 
@@ -197,17 +197,17 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	if strings.HasPrefix(strings.ToLower(contentType), "multipart/form-data") {
 		if err := r.ParseMultipartForm(64 << 20); err != nil {
 			if strings.Contains(strings.ToLower(err.Error()), "request body too large") {
-				http.Error(w, "upload too large. maximum size is 1GB", http.StatusRequestEntityTooLarge)
+				a.respondRequestError(w, r, http.StatusRequestEntityTooLarge, "upload too large. maximum size is 1GB")
 				return
 			}
 
-			http.Error(w, "invalid multipart form", http.StatusBadRequest)
+			a.respondRequestError(w, r, http.StatusBadRequest, "invalid multipart form")
 			return
 		}
 
 		file, header, err := r.FormFile("file")
 		if err != nil {
-			http.Error(w, "missing file field", http.StatusBadRequest)
+			a.respondRequestError(w, r, http.StatusBadRequest, "missing file field")
 			return
 		}
 		defer file.Close()
@@ -218,7 +218,7 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 			filename = header.Filename
 
 			if header.Size > maxUploadSize {
-				http.Error(w, "upload too large. maximum size is 1GB", http.StatusRequestEntityTooLarge)
+				a.respondRequestError(w, r, http.StatusRequestEntityTooLarge, "upload too large. maximum size is 1GB")
 				return
 			}
 
@@ -239,10 +239,10 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	tempFile, sample, err := spoolUploadToTemp(reader, maxUploadSize, uploadSampleSize)
 	if err != nil {
 		if errors.Is(err, errUploadTooLarge) {
-			http.Error(w, "upload too large. maximum size is 1GB", http.StatusRequestEntityTooLarge)
+			a.respondRequestError(w, r, http.StatusRequestEntityTooLarge, "upload too large. maximum size is 1GB")
 			return
 		}
-		http.Error(w, "failed to read upload", http.StatusBadRequest)
+		a.respondRequestError(w, r, http.StatusBadRequest, "failed to read upload")
 		return
 	}
 	defer func() {
@@ -253,7 +253,7 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	allowed, reason := allowTextUpload(filename, contentType, sample)
 	if !allowed {
 		log.Printf("upload blocked: remote=%s filename=%q content_type=%q reason=%s", r.RemoteAddr, filename, contentType, reason)
-		http.Error(w, "unsupported file type. only text-based files are allowed", http.StatusUnsupportedMediaType)
+		a.respondRequestError(w, r, http.StatusUnsupportedMediaType, "unsupported file type. only text-based files are allowed")
 		return
 	}
 
@@ -266,7 +266,7 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	customCode := strings.TrimSpace(r.Header.Get("code"))
 
 	if _, err := tempFile.Seek(0, io.SeekStart); err != nil {
-		http.Error(w, "failed to process upload", http.StatusInternalServerError)
+		a.respondRequestError(w, r, http.StatusInternalServerError, "failed to process upload")
 		return
 	}
 
@@ -275,16 +275,16 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("upload failed: %v", err)
 
 		if errors.Is(err, pastebox.ErrInvalidCode) {
-			http.Error(w, "invalid code. use 1-10 characters: letters, numbers, underscore, or hyphen", http.StatusBadRequest)
+			a.respondRequestError(w, r, http.StatusBadRequest, "invalid code. use 1-10 characters: letters, numbers, underscore, or hyphen")
 			return
 		}
 
 		if errors.Is(err, pastebox.ErrCodeExists) {
-			http.Error(w, "code already exists", http.StatusConflict)
+			a.respondRequestError(w, r, http.StatusConflict, "code already exists")
 			return
 		}
 
-		http.Error(w, "upload failed", http.StatusInternalServerError)
+		a.respondRequestError(w, r, http.StatusInternalServerError, "upload failed")
 		return
 	}
 
@@ -314,10 +314,26 @@ func (a *app) writeUploadResponseWithMode(w http.ResponseWriter, r *http.Request
 	url := strings.TrimRight(requestBaseURL(r), "/") + "/" + meta.ID
 	deleteURL := url + "?delete=" + deleteToken
 	manageURL := url + "?manage=" + manageToken
+	format := responseFormat(r)
 
 	expires := ""
 	if !strings.EqualFold(meta.DataPolicy, "permanent") && !meta.ExpiresAt.IsZero() {
 		expires = meta.ExpiresAt.Format(time.RFC3339)
+	}
+
+	if format == "json" {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+
+		resp := uploadResponse{
+			URL:      url,
+			Expires:  expires,
+			Password: password,
+			Manage:   manageURL,
+			Delete:   deleteURL,
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+		return
 	}
 
 	if clone && isBrowserRequest(r) {
@@ -349,6 +365,14 @@ func (a *app) writeUploadResponseWithMode(w http.ResponseWriter, r *http.Request
 	fmt.Fprintf(w, "delete: %s\n", deleteURL)
 }
 
+type uploadResponse struct {
+	URL      string `json:"url"`
+	Expires  string `json:"expires,omitempty"`
+	Password string `json:"password,omitempty"`
+	Manage   string `json:"manage,omitempty"`
+	Delete   string `json:"delete,omitempty"`
+}
+
 func (a *app) cloneHandler(w http.ResponseWriter, r *http.Request, id string) {
 	disabled, err := a.store.UploadsDisabled()
 	if err != nil {
@@ -358,7 +382,7 @@ func (a *app) cloneHandler(w http.ResponseWriter, r *http.Request, id string) {
 	}
 
 	if disabled {
-		http.Error(w, "new uploads are currently disabled", http.StatusServiceUnavailable)
+		a.respondRequestError(w, r, http.StatusServiceUnavailable, "new uploads are currently disabled")
 		return
 	}
 
@@ -379,17 +403,17 @@ func (a *app) cloneHandler(w http.ResponseWriter, r *http.Request, id string) {
 	meta, newPassword, deleteToken, manageToken, err := a.store.Clone(id, password, usePassword, permanent, once, customCode)
 	if err != nil {
 		if errors.Is(err, pastebox.ErrInvalidPassword) {
-			http.Error(w, "password required or invalid. use ?password=... or paste-password header", http.StatusUnauthorized)
+			a.respondRequestError(w, r, http.StatusUnauthorized, "password required or invalid. use ?password=... or paste-password header")
 			return
 		}
 
 		if errors.Is(err, pastebox.ErrInvalidCode) {
-			http.Error(w, "invalid code. use 1-10 characters: letters, numbers, underscore, or hyphen", http.StatusBadRequest)
+			a.respondRequestError(w, r, http.StatusBadRequest, "invalid code. use 1-10 characters: letters, numbers, underscore, or hyphen")
 			return
 		}
 
 		if errors.Is(err, pastebox.ErrCodeExists) {
-			http.Error(w, "code already exists", http.StatusConflict)
+			a.respondRequestError(w, r, http.StatusConflict, "code already exists")
 			return
 		}
 
@@ -597,7 +621,7 @@ func (a *app) viewHandler(w http.ResponseWriter, r *http.Request, id string) {
 	}
 	defer entry.File.Close()
 
-	raw := r.URL.Query().Get("raw") == "1"
+	raw := responseFormat(r) == "raw"
 	browser := isBrowserRequest(r)
 
 	if !raw && browser && isTextEntry(entry) {
@@ -1683,6 +1707,33 @@ func isBrowserRequest(r *http.Request) bool {
 
 	accept := strings.ToLower(r.Header.Get("Accept"))
 	return strings.Contains(accept, "text/html") || accept == ""
+}
+
+func responseFormat(r *http.Request) string {
+	format := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("format")))
+	switch format {
+	case "json", "raw":
+		return format
+	}
+
+	if r.URL.Query().Get("raw") == "1" {
+		return "raw"
+	}
+
+	return ""
+}
+
+func (a *app) respondRequestError(w http.ResponseWriter, r *http.Request, status int, message string) {
+	if responseFormat(r) == "json" {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(status)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"error": message,
+		})
+		return
+	}
+
+	http.Error(w, message, status)
 }
 
 func isTextEntry(entry *pastebox.Entry) bool {

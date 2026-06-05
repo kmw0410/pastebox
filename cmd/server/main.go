@@ -332,7 +332,7 @@ func (a *app) writeUploadResponseWithMode(w http.ResponseWriter, r *http.Request
 			Manage:   manageURL,
 			Delete:   deleteURL,
 		}
-		_ = json.NewEncoder(w).Encode(resp)
+		_ = writePrettyJSON(w, resp)
 		return
 	}
 
@@ -1727,13 +1727,19 @@ func (a *app) respondRequestError(w http.ResponseWriter, r *http.Request, status
 	if responseFormat(r) == "json" {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(status)
-		_ = json.NewEncoder(w).Encode(map[string]string{
+		_ = writePrettyJSON(w, map[string]string{
 			"error": message,
 		})
 		return
 	}
 
 	http.Error(w, message, status)
+}
+
+func writePrettyJSON(w http.ResponseWriter, v any) error {
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	return enc.Encode(v)
 }
 
 func isTextEntry(entry *pastebox.Entry) bool {

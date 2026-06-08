@@ -3,7 +3,27 @@ curl 기반 파일 공유 서비스
 
 [English](./README.md) | Korean
 
-![](./preview.png)
+![](./main.png)
+
+<details>
+<summary>미리보기</summary>
+
+### Paste
+
+![](./paste.png)
+
+### 비밀번호 보호
+
+![](./password-protected.png)
+
+### 관리자 페이지
+
+![](./admin.png)
+
+### 404
+
+![](./404.png)
+</details>
 
 ### 기술 스택
 | 레이어 | 스택 |

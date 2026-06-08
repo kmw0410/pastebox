@@ -3,7 +3,27 @@ curl-based file sharing service
 
 English | [Korean](./README_ko.md)
 
-![](./preview.png)
+![](./main.png)
+
+<details>
+<summary>Previews</summary>
+
+### Paste
+
+![](./paste.png)
+
+### Password-protected
+
+![](./password-protected.png)
+
+### Admin Page
+
+![](./admin.png)
+
+### 404
+
+![](./404.png)
+</details>
 
 ### Tech stack
 | Layer | Stack |

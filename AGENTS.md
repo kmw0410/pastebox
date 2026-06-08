@@ -36,8 +36,10 @@ pastebox/
     ├── 404.html
     ├── admin_form.html
     ├── admin_list.html
+    ├── admin_reset.html
     ├── clone.html
     ├── index.html
+    ├── manage.html
     ├── password.html
     ├── paste.html
     └── (optional design prototypes)
@@ -45,7 +47,7 @@ pastebox/
 
 ## 3. Architecture
 - HTTP server: `cmd/server/main.go`
-  - Routing, upload handling, paste view/raw view, password checks, clone flow, admin auth and controls, template rendering, i18n loading.
+  - Routing, upload handling, paste view/raw view, password checks, clone flow, manage flow, admin auth/reset/controls, template rendering, i18n loading.
 - Storage layer: `internal/store.go`, `internal/metadata.go`
   - File persistence, metadata persistence, admin/session/settings persistence in SQLite, cleanup, locking.
 
@@ -93,7 +95,7 @@ Policies:
 - Temporary (default): expires by configured TTL.
 - Permanent: `data-policy: permanent` (no automatic expiration).
 - One-time: `data-policy: once` (deleted after first successful view).
-- Password-protected: `usepassword: true`.
+- Password-protected: `usepassword: true` with an 8-character generated password.
 
 Password access methods:
 - Query: `?password=<password>`
@@ -107,12 +109,17 @@ Custom code:
 
 Successful upload response should include:
 - `url`
+- `manage`
 - `expires` (when applicable; omitted for permanent)
 - `delete`
 - `password` (when applicable)
 
+Response formats:
+- Upload success and upload error responses may return JSON when `?format=json` is present.
+- Raw paste responses use `?raw=1` on the paste URL.
+
 Delete token handling:
-- Never log delete tokens.
+- Never log delete tokens or manage tokens.
 - Never expose delete tokens in admin UI.
 
 ## 7. Paste Viewing
@@ -136,12 +143,16 @@ Behavior rules:
 - `.log` files should display language as `logs` (not `plaintext`).
 - Markdown must be shown as highlighted code, not rendered preview.
 
-## 8. Clone Behavior
+## 8. Clone and Management Behavior
 - Clone must be triggered from the paste view page UX.
 - Do not require users to manually use `/clone` or `?clone=1` as a primary UX.
 - Clone must preserve original filename.
 - Clone must be blocked when uploads are disabled.
-- Clone result page (`templates/clone.html`) should show URL, expiration (if any), generated password (if any), and delete URL.
+- Clone result page (`templates/clone.html`) should show URL, expiration (if any), generated password (if any), manage URL, and delete URL.
+- Every successful upload and clone also produces a private manage URL using `?manage=<token>`.
+- Manage page (`templates/manage.html`) should allow viewing paste metadata, copying the public/manage URLs, enabling or disabling password protection, changing the retention policy, and deleting the paste.
+- Disabling password protection from the manage page requires the current password.
+- When password protection is enabled from the manage page, the generated password must be shown once and then only stored hashed.
 
 ## 9. Admin Behavior
 Admin entry point: `/admin`.
@@ -150,6 +161,9 @@ Admin account rules:
 - If no admin exists, the first created account becomes the only administrator account.
 - Additional admin registration must remain disabled afterward.
 - Admin passwords must never be stored in plain text.
+- Admin sessions are stored in SQLite, issued as HttpOnly cookies, and expire after 24 hours.
+- Setup, login, and reset forms are CSRF-protected.
+- Admin login and reset attempts are rate limited.
 
 Upload disable behavior:
 - State must be stored in SQLite.
@@ -164,6 +178,7 @@ Delete controls:
 - Bulk delete must keep a confirmation popup and clear irreversible warning.
 - Delete result messages must not use query params like `/admin?deleted=...`.
 - Use internal flash messages (for example short-lived HttpOnly cookie) for delete results.
+- Admin delete should support both a single paste and a multi-select bulk delete action.
 
 Required admin copy:
 - Setup page: `The first account becomes the only administrator account.`
@@ -256,7 +271,9 @@ Docker publish workflow requirements:
 Never log secrets:
 - Paste passwords
 - Delete tokens
+- Manage tokens
 - Admin passwords
+- Admin setup/reset tokens
 - Admin session tokens
 
 Allowed logs are operational metadata only (IDs, counters, failures, blocked reasons) without secret material.

@@ -111,6 +111,10 @@ jobs:
           tags: |
             ${{ steps.image.outputs.image }}:latest
             ${{ steps.image.outputs.image }}:${{ steps.version.outputs.tag }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.description=Pastebox
+            org.opencontainers.image.licenses=MIT
 
       - name: Create git tag
         shell: bash

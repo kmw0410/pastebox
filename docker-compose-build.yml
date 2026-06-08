@@ -1,6 +1,7 @@
 services:
   pastebox:
-    image: ghcr.io/kmw0410/pastebox:latest
+    build: .
+    image: pastebox:latest
     container_name: pastebox
     restart: unless-stopped
     ports:

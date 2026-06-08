@@ -170,9 +170,6 @@ pastebox/
    # 파일 확인: 쿼리 파라미터 방식
    curl "http://localhost:8080/RANDOM_CODE?password=RANDOM_PASSWORD"
    ```
-   
-   ![](./preview2.png)
-   ![](./preview3.png)
 
 9. **사용자 지정 코드**: `custom: ...` 헤더를 사용하면 무작위로 생성된 코드 대신 원하는 코드를 사용하여 링크를 만들 수 있습니다. **영문 대문자와 소문자, 숫자, 특수 문자 `_` 및 `-`를 지원합니다.** 10자를 초과하는 코드나 중복된 코드는 생성할 수 없습니다.
 

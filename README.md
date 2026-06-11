@@ -140,7 +140,7 @@ pastebox/
    curl "http://localhost:8080/RANDOM_CODE?delete=DELETE_TOKEN"
    ```
 
-8. **Password-Protected Links**: Private upload link creation using the `usepassword: true` header is supported. When this header is used, an 8-character password is issued, generated from a combination of uppercase English letters, lowercase English letters, numbers, and special characters. Files can be viewed directly using the `?password=...` query parameter or the `paste-password: ...` header, or by entering the password manually when accessing the link in a browser.
+8. **Password-Protected Links**: Private upload link creation using the `usepassword: true` header is supported. When this header is used, an 8-character password is issued from a URL-friendly character set, and it never includes `=`. Files can be viewed directly using the `?password=...` query parameter or the `paste-password: ...` header, or by entering the password manually when accessing the link in a browser.
 
    ```bash
    # Create password-protected link
@@ -153,7 +153,7 @@ pastebox/
    curl "http://localhost:8080/RANDOM_CODE?password=RANDOM_PASSWORD"
    ```
 
-9. **Custom Code**: You can use the `custom: ...` header to create a link with a code of your choice instead of a randomly generated code. **Uppercase and lowercase English letters, numbers, and the special characters `_` and `-` are supported.** Codes longer than 10 characters or duplicate codes cannot be created.
+9. **Custom Code**: You can use the `code: ...` header to create a link with a code of your choice instead of a randomly generated code. **Uppercase and lowercase English letters, numbers, and the special characters `_` and `-` are supported.** Codes longer than 10 characters or duplicate codes cannot be created.
 
 10. **Upload Response Format**: When an upload succeeds, Pastebox returns the URL, expiration time, and delete link. If the upload is password-protected, the `password` field is also included.
 
@@ -211,6 +211,40 @@ pastebox/
 18. **Syntax Highlighting Support**: Syntax highlighting is supported for files with the extensions `.txt`, `.md`, `.log`, `.csv`, `.conf`, `.yaml`, `.go`, `.rs`, `.js`, `.py`, `.ts`, `.php`, `.html`, and `.css`.
 
 19. **Paste Clone**: You can clone the current paste into a new link by clicking the `Clone` button on the view page.
+
+### Request reference
+
+Pastebox is designed for curl-first use, so the request and response shapes stay simple:
+
+- Upload methods:
+  - Raw text via stdin: `echo "hello" | curl -X POST --data-binary @- http://localhost:8080/`
+  - Multipart file upload: `curl -F "file=@test.txt" http://localhost:8080/`
+- Upload headers:
+  - `data-policy: temporary` is the default behavior.
+  - `data-policy: permanent` disables automatic expiration.
+  - `data-policy: once` deletes the paste after the first successful view.
+  - `usepassword: true` enables password protection and returns an 8-character password.
+  - `code: <custom-code>` sets a custom paste code up to 10 characters.
+- View parameters:
+  - `?password=<password>` or `paste-password: <password>` opens password-protected pastes.
+  - `?format=raw` returns the original text response instead of the HTML viewer.
+- Upload success response:
+  - `url`
+  - `manage`
+  - `delete`
+  - `expires` when the paste is temporary
+  - `password` when password protection is enabled
+- JSON output:
+  - Append `?format=json` to an upload request to receive JSON.
+  - Error responses also return JSON with an `error` field when `?format=json` is present.
+- Common HTTP status codes:
+  - `200 OK` for successful uploads and paste responses
+  - `400 Bad Request` for invalid forms, invalid policies, or invalid custom codes
+  - `401 Unauthorized` for missing or invalid paste passwords
+  - `409 Conflict` for duplicate custom codes
+  - `413 Payload Too Large` for uploads over 1 GiB
+  - `415 Unsupported Media Type` for blocked binary, media, or archive uploads
+  - `503 Service Unavailable` when uploads are disabled
 
 ### Data Policy
 For details about the data policy header, see [DATA_POLICY.md](./DATA_POLICY.md)

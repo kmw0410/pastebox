@@ -158,7 +158,7 @@ pastebox/
    curl "http://localhost:8080/RANDOM_CODE?delete=DELETE_TOKEN"
    ```
 
-8. **비밀번호 링크**: `usepassword: true` 헤더를 사용한 비공개 업로드 링크 생성을 지원합니다. 헤더 사용 시 URL 친화적인 문자 집합으로 생성된 8자리 비밀번호가 발급되며 `=`는 포함되지 않습니다. 파일은 `?password=...` 쿼리 파라미터 또는 `paste-password: ...` 헤더를 사용하여 바로 확인하거나 브라우저에서 접근 시 직접 비밀번호를 입력하여 확인할 수 있습니다.
+8. **비밀번호 링크**: `usepassword: true` 헤더를 사용한 비공개 업로드 링크 생성을 지원합니다. 헤더 사용 시 **영문 대문자 + 영문 소문자 + 숫자 + 특수문자** 조합으로 생성된 8자리 비밀번호가 발급됩니다. 파일은 `?password=...` 쿼리 파라미터 또는 `paste-password: ...` 헤더를 사용하여 바로 확인하거나 브라우저에서 접근 시 직접 비밀번호를 입력하여 확인할 수 있습니다.
 
    ```bash
    # 비밀번호 링크 생성
@@ -171,10 +171,10 @@ pastebox/
    curl "http://localhost:8080/RANDOM_CODE?password=RANDOM_PASSWORD"
    ```
 
-9. **사용자 지정 코드**: `code: ...` 헤더를 사용하면 무작위로 생성된 코드 대신 원하는 코드를 사용하여 링크를 만들 수 있습니다. **영문 대문자와 소문자, 숫자, 특수 문자 `_` 및 `-`를 지원합니다.** 10자를 초과하는 코드나 중복된 코드는 생성할 수 없습니다.
+9. **사용자 지정 코드**: `custom: ...` 헤더를 사용하면 무작위로 생성된 코드 대신 원하는 코드를 사용하여 링크를 만들 수 있습니다. **영문 대문자와 소문자, 숫자, 특수 문자 `_` 및 `-`를 지원합니다.** 10자를 초과하는 코드나 중복된 코드는 생성할 수 없습니다.
 
    ```bash
-   curl -H "code: custom123" -F "file=@secret.txt" http://localhost:8080/
+   curl -H "custom: custom123" -F "file=@secret.txt" http://localhost:8080/
    ```
   
 10. **업로드 응답 형식**: 업로드가 성공하면 URL, 만료 시간, 삭제 링크가 반환됩니다. 비밀번호 링크인 경우 `password` 항목도 함께 반환됩니다.
@@ -199,7 +199,7 @@ pastebox/
 
 12. **브라우저에서 내용 복사**: 텍스트 기반 업로드 링크를 브라우저에서 열면 `Raw` 버튼 옆의 `Copy` 버튼으로 내용을 클립보드에 복사할 수 있습니다.
 
-13. **텍스트 파일 브라우저 표시**: `.txt`, `.log` 같은 텍스트 기반 파일은 다운로드되지 않고 브라우저에서 바로 표시됩니다. 원본 raw 응답이 필요하면 `?format=raw`를 사용하면 됩니다.
+13. **텍스트 파일 브라우저 표시**: `.txt`, `.log` 같은 텍스트 기반 파일은 다운로드되지 않고 브라우저에서 바로 표시됩니다. 원본 raw 응답이 필요하면 `?format=raw`를 사용할 수 있습니다.
 
 14. **생성/삭제 로그**: 파일 생성 및 삭제 시 컨테이너 로그에 기록됩니다.
 
@@ -217,40 +217,6 @@ pastebox/
 18. **문법 강조 지원**: 확장자가 `.txt`, `.md`, `.log`, `.csv`, `.conf`, `.yaml`, `.go`, `.rs`, `.js`, `.py`, `.ts`, `.php`, `.html`, `.css`인 경우 문법 강조(Syntax Highlighting)을 지원합니다.
 
 19. **Paste 복제 지원**: 보기 페이지에서 `Clone` 버튼을 눌러 현재 Paste 내용을 새로운 링크로 복제할 수 있습니다.
-
-### 요청/응답 참고
-
-Pastebox는 curl 기반 사용을 기준으로 요청과 응답 형식을 단순하게 유지합니다.
-
-- 업로드 방법
-  - 표준 입력으로 텍스트 업로드: `echo "hello" | curl -X POST --data-binary @- http://localhost:8080/`
-  - multipart 파일 업로드: `curl -F "file=@test.txt" http://localhost:8080/`
-- 업로드 헤더
-  - `data-policy: temporary`는 기본 동작입니다.
-  - `data-policy: permanent`는 자동 만료를 끕니다.
-  - `data-policy: once`는 첫 번째 성공적인 열람 후 삭제됩니다.
-  - `usepassword: true`는 비밀번호 보호를 켜고 8자리 비밀번호를 반환합니다.
-  - `code: <custom-code>`는 최대 10자까지의 사용자 지정 Paste 코드를 설정합니다.
-- 조회 파라미터
-  - `?password=<password>` 또는 `paste-password: <password>`로 비밀번호 보호 Paste를 열 수 있습니다.
-  - `?format=raw`는 HTML 뷰어 대신 원본 텍스트 응답을 반환합니다.
-- 업로드 성공 응답
-  - `url`
-  - `manage`
-  - `delete`
-  - 임시 업로드일 때만 `expires`
-  - 비밀번호 보호일 때만 `password`
-- JSON 응답
-  - 업로드 요청에 `?format=json`을 붙이면 JSON으로 응답합니다.
-  - `?format=json`이 있으면 에러 응답도 `error` 필드가 들어간 JSON으로 반환됩니다.
-- 주요 HTTP 상태 코드
-  - `200 OK`: 업로드 성공, Paste 조회 성공
-  - `400 Bad Request`: 잘못된 form, 잘못된 정책, 잘못된 사용자 지정 코드
-  - `401 Unauthorized`: Paste 비밀번호가 없거나 잘못된 경우
-  - `409 Conflict`: 사용자 지정 코드가 중복된 경우
-  - `413 Payload Too Large`: 1GiB를 초과한 업로드
-  - `415 Unsupported Media Type`: 차단된 바이너리, 미디어, 아카이브 업로드
-  - `503 Service Unavailable`: 업로드가 비활성화된 경우
 
 ### 데이터 정책
 데이터 정책 헤더에 대한 설명은 [DATA_POLICY_ko.md](./DATA_POLICY_ko.md)를 참고하세요.

@@ -1716,6 +1716,10 @@ func responseFormat(r *http.Request) string {
 		return format
 	}
 
+	if r.URL.Query().Get("raw") == "1" {
+		return "raw"
+	}
+
 	return ""
 }
 

@@ -610,7 +610,48 @@ func (a *app) viewHandler(w http.ResponseWriter, r *http.Request, id string) {
 		password = r.Header.Get("paste-password")
 	}
 
-	entry, err := a.store.Open(id, password)
+	if r.Method == http.MethodHead {
+		entry, err := a.store.Open(id, password)
+		if err != nil {
+			if errors.Is(err, pastebox.ErrInvalidPassword) {
+				a.passwordRequiredHandler(w, r, id)
+				return
+			}
+			a.notFoundHandler(w, r)
+			return
+		}
+		defer entry.File.Close()
+
+		a.writeViewHeaders(w, entry)
+		return
+	}
+
+	err := a.store.View(id, password, func(entry *pastebox.Entry) error {
+		raw := responseFormat(r) == "raw"
+		browser := isBrowserRequest(r)
+
+		if !raw && browser && isTextEntry(entry) {
+			content, err := io.ReadAll(entry.File)
+			if err != nil {
+				return err
+			}
+
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.WriteHeader(http.StatusOK)
+
+			return a.paste.Execute(w, map[string]any{
+				"ID":       entry.Meta.ID,
+				"Filename": entry.Meta.Filename,
+				"Content":  string(content),
+				"Language": syntaxLanguage(entry.Meta.ContentType),
+				"Password": password,
+			})
+		}
+
+		a.writeViewHeaders(w, entry)
+		_, err := io.Copy(w, entry.File)
+		return err
+	})
 	if err != nil {
 		if errors.Is(err, pastebox.ErrInvalidPassword) {
 			a.passwordRequiredHandler(w, r, id)
@@ -619,31 +660,9 @@ func (a *app) viewHandler(w http.ResponseWriter, r *http.Request, id string) {
 		a.notFoundHandler(w, r)
 		return
 	}
-	defer entry.File.Close()
+}
 
-	raw := responseFormat(r) == "raw"
-	browser := isBrowserRequest(r)
-
-	if !raw && browser && isTextEntry(entry) {
-		content, err := io.ReadAll(entry.File)
-		if err != nil {
-			http.Error(w, "failed to read file", http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-
-		_ = a.paste.Execute(w, map[string]any{
-			"ID":       entry.Meta.ID,
-			"Filename": entry.Meta.Filename,
-			"Content":  string(content),
-			"Language": syntaxLanguage(entry.Meta.ContentType),
-			"Password": password,
-		})
-		return
-	}
-
+func (a *app) writeViewHeaders(w http.ResponseWriter, entry *pastebox.Entry) {
 	contentType := entry.Meta.ContentType
 	if contentType == "" {
 		contentType = "application/octet-stream"
@@ -651,16 +670,11 @@ func (a *app) viewHandler(w http.ResponseWriter, r *http.Request, id string) {
 
 	if isTextEntry(entry) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	} else {
-		w.Header().Set("Content-Type", contentType)
-		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, entry.Meta.ID))
-	}
-
-	if r.Method == http.MethodHead {
 		return
 	}
 
-	_, _ = io.Copy(w, entry.File)
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, entry.Meta.ID))
 }
 
 func (a *app) passwordRequiredHandler(w http.ResponseWriter, r *http.Request, id string) {

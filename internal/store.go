@@ -210,15 +210,72 @@ func (s *Store) Open(id string, password string) (*Entry, error) {
 		return nil, ErrNotFound
 	}
 
-	if strings.EqualFold(meta.DataPolicy, "once") {
-		_ = os.Remove(path)
-		_ = os.Remove(metaPath(path))
-	}
-
 	return &Entry{
 		Meta: meta,
 		File: file,
 	}, nil
+}
+
+func (s *Store) View(id string, password string, fn func(*Entry) error) error {
+	if !validID(id) {
+		return ErrNotFound
+	}
+
+	unlock := s.locks.Lock(id)
+	defer unlock()
+
+	path := s.path(id)
+
+	meta, err := s.readMetadata(id)
+	if err != nil {
+		return ErrNotFound
+	}
+
+	if isExpired(meta, time.Now().UTC()) {
+		_ = os.Remove(path)
+		_ = os.Remove(metaPath(path))
+		return ErrNotFound
+	}
+
+	if err := checkPassword(meta, password); err != nil {
+		return err
+	}
+
+	file, err := os.Open(path)
+	if err != nil {
+		return ErrNotFound
+	}
+
+	entry := &Entry{
+		Meta: meta,
+		File: file,
+	}
+
+	callbackErr := fn(entry)
+	closeErr := file.Close()
+
+	if callbackErr != nil {
+		return callbackErr
+	}
+
+	if closeErr != nil {
+		return closeErr
+	}
+
+	if strings.EqualFold(meta.DataPolicy, "once") {
+		fileErr := os.Remove(path)
+		metaErr := os.Remove(metaPath(path))
+
+		if fileErr != nil && !errors.Is(fileErr, os.ErrNotExist) {
+			return fileErr
+		}
+
+		if metaErr != nil && !errors.Is(metaErr, os.ErrNotExist) {
+			return metaErr
+		}
+	}
+
+	return nil
 }
 
 func (s *Store) Delete(id string, token string) error {

@@ -27,7 +27,7 @@ curl -H "data-policy: permanent" -F "file=@test.txt" http://localhost:8080
 ```
 
 ## 일회성 저장
-링크가 발급된 이후 첫 조회시 자동으로 삭제됩니다. 일회성으로 공유해야 하는 내용이나 복사가 불가능한 환경에서 민감한 내용을 공유할 때 사용할 수 있습니다.
+링크가 발급된 이후 첫 성공 조회 후 자동으로 삭제됩니다. 일회성으로 공유해야 하는 내용이나 복사가 불가능한 환경에서 민감한 내용을 공유할 때 사용할 수 있습니다.
 
 ```bash
 curl -H "data-policy: once" -F "file=@test.txt" http://localhost:8080

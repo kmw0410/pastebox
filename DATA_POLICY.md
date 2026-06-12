@@ -27,7 +27,7 @@ curl -H "data-policy: permanent" -F "file=@test.txt" http://localhost:8080
 ```
 
 ## One-Time Storage
-After the link is issued, the file is automatically deleted upon the first access. This can be used for sharing one-time content or sensitive content in environments where copying is not possible.
+After the link is issued, the file is automatically deleted after the first successful view. This can be used for sharing one-time content or sensitive content in environments where copying is not possible.
 
 ```bash
 curl -H "data-policy: once" -F "file=@test.txt" http://localhost:8080

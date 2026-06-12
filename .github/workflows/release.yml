@@ -1,0 +1,56 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate release notes
+        id: notes
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+
+          {
+            echo "## Container Images"
+            echo
+            echo "- \`kmw0410/pastebox:latest\`"
+            echo "- \`kmw0410/pastebox:${TAG}\`"
+            echo
+            echo "## Supported Platforms"
+            echo
+            echo "- linux/amd64"
+            echo "- linux/arm64"
+            echo
+            echo "## Changes"
+            echo
+            PREVIOUS_TAG="$(git tag --sort=-v:refname | grep '^v' | grep -vx "$TAG" | head -n 1)"
+            if [ -n "$PREVIOUS_TAG" ]; then
+              git log "${PREVIOUS_TAG}..${TAG}" --pretty=format:"- %s (%h)" --no-merges
+            else
+              git log "$TAG" --pretty=format:"- %s (%h)" --no-merges
+            fi
+            echo
+          } > release-notes.md
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --notes-file release-notes.md

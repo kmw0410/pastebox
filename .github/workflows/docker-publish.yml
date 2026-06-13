@@ -19,6 +19,7 @@ jobs:
 
     permissions:
       contents: write
+      packages: write
 
     steps:
       - name: Checkout
@@ -30,8 +31,10 @@ jobs:
         id: image
         shell: bash
         run: |
-          echo "image=kmw0410/pastebox" >> "$GITHUB_OUTPUT"
-          echo "Using image: kmw0410/pastebox"
+          REPO="${GITHUB_REPOSITORY,,}"
+          IMAGE="ghcr.io/${REPO}"
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+          echo "Using image: ${IMAGE}"
 
       - name: Set image tag
         id: version
@@ -57,11 +60,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to Docker Hub
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push container image
         uses: docker/build-push-action@v6

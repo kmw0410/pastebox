@@ -23,12 +23,14 @@ jobs:
         shell: bash
         run: |
           TAG="${GITHUB_REF_NAME}"
+          REPO="${GITHUB_REPOSITORY,,}"
+          IMAGE="ghcr.io/${REPO}"
 
           {
             echo "## Container Images"
             echo
-            echo "- \`kmw0410/pastebox:latest\`"
-            echo "- \`kmw0410/pastebox:${TAG}\`"
+            echo "- \`${IMAGE}:latest\`"
+            echo "- \`${IMAGE}:${TAG}\`"
             echo
             echo "## Supported Platforms"
             echo

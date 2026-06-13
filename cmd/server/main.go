@@ -1160,12 +1160,18 @@ func (a *app) adminUploadsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !verifyAdminCSRFToken(w, r) {
-		log.Printf("csrf validation failed: path=%s remote=%s", r.URL.Path, r.RemoteAddr)
+		a.logAdminAction("uploads.set", actor, "denied", map[string]any{
+			"path":   r.URL.Path,
+			"reason": "invalid_csrf",
+		})
 		http.Error(w, "invalid form", http.StatusBadRequest)
 		return
 	}
 
 	if err := r.ParseForm(); err != nil {
+		a.logAdminAction("uploads.set", actor, "failure", map[string]any{
+			"error": err,
+		})
 		http.Error(w, "invalid form", http.StatusBadRequest)
 		return
 	}
@@ -1195,14 +1201,20 @@ func (a *app) adminDeleteAllHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !verifyAdminCSRFToken(w, r) {
-		log.Printf("csrf validation failed: path=%s remote=%s", r.URL.Path, r.RemoteAddr)
+		a.logAdminAction("pastes.delete_all", actor, "denied", map[string]any{
+			"path":   r.URL.Path,
+			"reason": "invalid_csrf",
+		})
 		http.Error(w, "invalid form", http.StatusBadRequest)
 		return
 	}
 
 	count, err := a.store.AdminDeleteAll()
 	if err != nil {
-		log.Printf("admin delete all failed: remote=%s deleted=%d err=%v", r.RemoteAddr, count, err)
+		a.logAdminAction("pastes.delete_all", actor, "failure", map[string]any{
+			"deleted_count": count,
+			"error":         err,
+		})
 		http.Error(w, "delete all failed", http.StatusInternalServerError)
 		return
 	}
@@ -1226,12 +1238,18 @@ func (a *app) adminDeleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !verifyAdminCSRFToken(w, r) {
-		log.Printf("csrf validation failed: path=%s remote=%s", r.URL.Path, r.RemoteAddr)
+		a.logAdminAction("paste.delete", actor, "denied", map[string]any{
+			"path":   r.URL.Path,
+			"reason": "invalid_csrf",
+		})
 		http.Error(w, "invalid form", http.StatusBadRequest)
 		return
 	}
 
 	if err := r.ParseForm(); err != nil {
+		a.logAdminAction("paste.delete", actor, "failure", map[string]any{
+			"error": err,
+		})
 		http.Error(w, "invalid form", http.StatusBadRequest)
 		return
 	}
@@ -1245,6 +1263,10 @@ func (a *app) adminDeleteHandler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			if err := a.store.AdminDelete(id); err != nil {
+				a.logAdminAction("pastes.delete_selected", actor, "failure", map[string]any{
+					"deleted_count": deleted,
+					"error":         err,
+				})
 				http.Error(w, "delete failed", http.StatusBadRequest)
 				return
 			}
@@ -1262,6 +1284,10 @@ func (a *app) adminDeleteHandler(w http.ResponseWriter, r *http.Request) {
 
 	id := r.FormValue("id")
 	if err := a.store.AdminDelete(id); err != nil {
+		a.logAdminAction("paste.delete", actor, "failure", map[string]any{
+			"error": err,
+			"id":    strings.TrimSpace(id),
+		})
 		http.Error(w, "delete failed", http.StatusBadRequest)
 		return
 	}
@@ -1282,18 +1308,38 @@ func (a *app) requireAdmin(w http.ResponseWriter, r *http.Request) (adminActor, 
 
 	cookie, err := r.Cookie("pastebox_admin")
 	if err != nil {
+		a.logAdminAction("admin.access", actor, "denied", map[string]any{
+			"path":   r.URL.Path,
+			"reason": "missing_session_cookie",
+		})
 		http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
 		return actor, false
 	}
 
 	ok, err := a.store.ValidAdminSession(cookie.Value)
-	if err != nil || !ok {
+	if err != nil {
+		a.logAdminAction("admin.access", actor, "failure", map[string]any{
+			"error": err,
+			"path":  r.URL.Path,
+		})
+		http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
+		return actor, false
+	}
+	if !ok {
+		a.logAdminAction("admin.access", actor, "denied", map[string]any{
+			"path":   r.URL.Path,
+			"reason": "invalid_session",
+		})
 		http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
 		return actor, false
 	}
 
 	username, err := a.store.AdminUsername()
 	if err != nil {
+		a.logAdminAction("admin.access", actor, "failure", map[string]any{
+			"error": err,
+			"path":  r.URL.Path,
+		})
 		http.Error(w, "admin database error", http.StatusInternalServerError)
 		return actor, false
 	}

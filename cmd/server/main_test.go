@@ -76,3 +76,39 @@ func TestViewHandlerGetConsumesOncePaste(t *testing.T) {
 		t.Fatalf("expected ErrNotFound after GET, got entry=%v err=%v", entry != nil, err)
 	}
 }
+
+func TestSummarizeAdminIDs(t *testing.T) {
+	tests := []struct {
+		name string
+		ids  []string
+		want string
+	}{
+		{
+			name: "empty",
+			ids:  nil,
+			want: "",
+		},
+		{
+			name: "trim and join",
+			ids:  []string{" one ", "", "two"},
+			want: "one,two",
+		},
+		{
+			name: "truncate long list",
+			ids: []string{
+				"1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
+				"11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
+				"21", "22",
+			},
+			want: "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,...(+2 more)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := summarizeAdminIDs(tt.ids); got != tt.want {
+				t.Fatalf("summarizeAdminIDs() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

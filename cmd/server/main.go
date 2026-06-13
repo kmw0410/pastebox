@@ -928,6 +928,28 @@ func sortedKeys(fields map[string]any) []string {
 	return keys
 }
 
+func summarizeAdminIDs(ids []string) string {
+	trimmed := make([]string, 0, len(ids))
+	for _, id := range ids {
+		id = strings.TrimSpace(id)
+		if id == "" {
+			continue
+		}
+		trimmed = append(trimmed, id)
+	}
+
+	if len(trimmed) == 0 {
+		return ""
+	}
+
+	const maxIDs = 20
+	if len(trimmed) <= maxIDs {
+		return strings.Join(trimmed, ",")
+	}
+
+	return fmt.Sprintf("%s,...(+%d more)", strings.Join(trimmed[:maxIDs], ","), len(trimmed)-maxIDs)
+}
+
 func (a *app) adminSetupHandler(w http.ResponseWriter, r *http.Request) {
 	exists, err := a.store.AdminExists()
 	if err != nil {
@@ -1257,15 +1279,18 @@ func (a *app) adminDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	ids := r.Form["ids"]
 	if len(ids) > 0 {
 		deleted := 0
+		selectedIDs := make([]string, 0, len(ids))
 		for _, id := range ids {
 			id = strings.TrimSpace(id)
 			if id == "" {
 				continue
 			}
+			selectedIDs = append(selectedIDs, id)
 			if err := a.store.AdminDelete(id); err != nil {
 				a.logAdminAction("pastes.delete_selected", actor, "failure", map[string]any{
 					"deleted_count": deleted,
 					"error":         err,
+					"ids":           summarizeAdminIDs(selectedIDs),
 				})
 				http.Error(w, "delete failed", http.StatusBadRequest)
 				return
@@ -1275,6 +1300,7 @@ func (a *app) adminDeleteHandler(w http.ResponseWriter, r *http.Request) {
 		if deleted > 0 {
 			a.logAdminAction("pastes.delete_selected", actor, "success", map[string]any{
 				"deleted_count": deleted,
+				"ids":           summarizeAdminIDs(selectedIDs),
 			})
 			setAdminFlash(w, fmt.Sprintf(a.i18n.T("admin_flash_delete_all"), deleted))
 		}

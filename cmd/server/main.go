@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -893,6 +894,40 @@ func formatBytes(size int64) string {
 	return fmt.Sprintf("%.1f %ciB", float64(size)/float64(div), "KMGTPE"[exp])
 }
 
+func (a *app) logAdminAction(action string, actor adminActor, outcome string, fields map[string]any) {
+	parts := []string{
+		fmt.Sprintf("action=%s", action),
+		fmt.Sprintf("outcome=%s", outcome),
+		fmt.Sprintf("username=%q", actor.Username),
+		fmt.Sprintf("client_ip=%q", actor.ClientIP),
+		fmt.Sprintf("remote=%q", actor.Remote),
+	}
+
+	for _, key := range sortedKeys(fields) {
+		value := fields[key]
+		if err, ok := value.(error); ok && err != nil {
+			parts = append(parts, fmt.Sprintf("%s=%q", key, err.Error()))
+			continue
+		}
+		parts = append(parts, fmt.Sprintf("%s=%q", key, fmt.Sprint(value)))
+	}
+
+	log.Printf("admin audit: %s", strings.Join(parts, " "))
+}
+
+func sortedKeys(fields map[string]any) []string {
+	if len(fields) == 0 {
+		return nil
+	}
+
+	keys := make([]string, 0, len(fields))
+	for key := range fields {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
 func (a *app) adminSetupHandler(w http.ResponseWriter, r *http.Request) {
 	exists, err := a.store.AdminExists()
 	if err != nil {
@@ -1115,7 +1150,8 @@ func (a *app) adminResetHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) adminUploadsHandler(w http.ResponseWriter, r *http.Request) {
-	if _, ok := a.requireAdmin(w, r); !ok {
+	actor, ok := a.requireAdmin(w, r)
+	if !ok {
 		return
 	}
 
@@ -1141,13 +1177,16 @@ func (a *app) adminUploadsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("admin upload status changed: disabled=%t remote=%s", disabled, r.RemoteAddr)
+	a.logAdminAction("uploads.set", actor, "success", map[string]any{
+		"disabled": disabled,
+	})
 
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 }
 
 func (a *app) adminDeleteAllHandler(w http.ResponseWriter, r *http.Request) {
-	if _, ok := a.requireAdmin(w, r); !ok {
+	actor, ok := a.requireAdmin(w, r)
+	if !ok {
 		return
 	}
 
@@ -1168,14 +1207,17 @@ func (a *app) adminDeleteAllHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("admin deleted all pastes: count=%d remote=%s", count, r.RemoteAddr)
+	a.logAdminAction("pastes.delete_all", actor, "success", map[string]any{
+		"deleted_count": count,
+	})
 
 	setAdminFlash(w, fmt.Sprintf(a.i18n.T("admin_flash_delete_all"), count))
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 }
 
 func (a *app) adminDeleteHandler(w http.ResponseWriter, r *http.Request) {
-	if _, ok := a.requireAdmin(w, r); !ok {
+	actor, ok := a.requireAdmin(w, r)
+	if !ok {
 		return
 	}
 
@@ -1209,7 +1251,9 @@ func (a *app) adminDeleteHandler(w http.ResponseWriter, r *http.Request) {
 			deleted++
 		}
 		if deleted > 0 {
-			log.Printf("admin deleted selected pastes: count=%d remote=%s", deleted, r.RemoteAddr)
+			a.logAdminAction("pastes.delete_selected", actor, "success", map[string]any{
+				"deleted_count": deleted,
+			})
 			setAdminFlash(w, fmt.Sprintf(a.i18n.T("admin_flash_delete_all"), deleted))
 		}
 		http.Redirect(w, r, "/admin", http.StatusSeeOther)
@@ -1222,7 +1266,9 @@ func (a *app) adminDeleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("admin deleted: id=%s remote=%s", id, r.RemoteAddr)
+	a.logAdminAction("paste.delete", actor, "success", map[string]any{
+		"id": id,
+	})
 
 	setAdminFlash(w, fmt.Sprintf(a.i18n.T("admin_flash_delete_one"), id))
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)

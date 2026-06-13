@@ -43,6 +43,12 @@ type app struct {
 	authLimiter     *authAttemptLimiter
 }
 
+type adminActor struct {
+	Username string
+	ClientIP string
+	Remote   string
+}
+
 const maxUploadSize int64 = 1 << 30 // 1 GiB
 const authFailureWindow = 10 * time.Minute
 const authFailureLimit = 20
@@ -741,7 +747,7 @@ func (a *app) adminIndexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !a.requireAdmin(w, r) {
+	if _, ok := a.requireAdmin(w, r); !ok {
 		return
 	}
 
@@ -1109,7 +1115,7 @@ func (a *app) adminResetHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) adminUploadsHandler(w http.ResponseWriter, r *http.Request) {
-	if !a.requireAdmin(w, r) {
+	if _, ok := a.requireAdmin(w, r); !ok {
 		return
 	}
 
@@ -1141,7 +1147,7 @@ func (a *app) adminUploadsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) adminDeleteAllHandler(w http.ResponseWriter, r *http.Request) {
-	if !a.requireAdmin(w, r) {
+	if _, ok := a.requireAdmin(w, r); !ok {
 		return
 	}
 
@@ -1169,7 +1175,7 @@ func (a *app) adminDeleteAllHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) adminDeleteHandler(w http.ResponseWriter, r *http.Request) {
-	if !a.requireAdmin(w, r) {
+	if _, ok := a.requireAdmin(w, r); !ok {
 		return
 	}
 
@@ -1222,20 +1228,32 @@ func (a *app) adminDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 }
 
-func (a *app) requireAdmin(w http.ResponseWriter, r *http.Request) bool {
+func (a *app) requireAdmin(w http.ResponseWriter, r *http.Request) (adminActor, bool) {
+	actor := adminActor{
+		ClientIP: requestClientIP(r),
+		Remote:   r.RemoteAddr,
+	}
+
 	cookie, err := r.Cookie("pastebox_admin")
 	if err != nil {
 		http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
-		return false
+		return actor, false
 	}
 
 	ok, err := a.store.ValidAdminSession(cookie.Value)
 	if err != nil || !ok {
 		http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
-		return false
+		return actor, false
 	}
 
-	return true
+	username, err := a.store.AdminUsername()
+	if err != nil {
+		http.Error(w, "admin database error", http.StatusInternalServerError)
+		return actor, false
+	}
+
+	actor.Username = username
+	return actor, true
 }
 
 func (a *app) renderAdminForm(w http.ResponseWriter, title string, action string, errorMessage string, button string) {

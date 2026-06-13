@@ -822,6 +822,24 @@ func (s *Store) AdminExists() (bool, error) {
 	return count > 0, nil
 }
 
+func (s *Store) AdminUsername() (string, error) {
+	var username string
+
+	err := s.adminDB.QueryRow(`
+		SELECT username
+		FROM pastebox_admin
+		WHERE id = 1
+	`).Scan(&username)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", errors.New("admin account not found")
+	}
+	if err != nil {
+		return "", err
+	}
+
+	return username, nil
+}
+
 func (s *Store) CreateAdmin(username string, password string) error {
 	username = strings.TrimSpace(username)
 	password = strings.TrimSpace(password)

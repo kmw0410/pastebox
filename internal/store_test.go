@@ -98,3 +98,19 @@ func TestStoreCloneDoesNotConsumeOnceSource(t *testing.T) {
 	}
 	_ = entry.File.Close()
 }
+
+func TestStoreAdminUsername(t *testing.T) {
+	store := newTestStore(t)
+
+	if err := store.CreateAdmin("admin", "secret"); err != nil {
+		t.Fatalf("CreateAdmin failed: %v", err)
+	}
+
+	username, err := store.AdminUsername()
+	if err != nil {
+		t.Fatalf("AdminUsername failed: %v", err)
+	}
+	if username != "admin" {
+		t.Fatalf("AdminUsername = %q, want %q", username, "admin")
+	}
+}

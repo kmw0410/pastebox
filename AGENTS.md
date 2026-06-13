@@ -66,6 +66,9 @@ Host mapping is typically `./data:/paste-data`.
 - HTML must remain in external template files under `templates/`; do not inline large templates in Go code.
 - Preserve fine-grained per-paste locking in the store layer; do not replace with a single global lock.
 - When asked which files were modified, respond only with files changed in the most recent edit scope.
+- When committing, exclude `WORK.md` and `AGENTS.md` unless the user explicitly asks to include them.
+- Before starting work, always consult `WORK.md` alongside `AGENTS.md` so recent task history is part of the working context.
+- After any commit+push sequence, record in `WORK.md` what work was done and what mostly changed, using the existing date-based log format.
 
 ## 5. Upload Behavior
 Supported upload methods:

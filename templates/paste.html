@@ -49,14 +49,33 @@
     .paste-viewer.show-lines > .paste-code {
       grid-column: 2;
     }
+    .paste-viewer.wrapped {
+      grid-template-columns: minmax(0, 1fr);
+      width: 100%;
+    }
+    .paste-viewer.wrapped.show-lines {
+      grid-template-columns: 3.5rem minmax(0, 1fr);
+    }
     #lineNumbers {
       margin: 0;
       line-height: inherit;
+    }
+    #lineNumbers.lines-disabled {
+      opacity: 0.45;
     }
     #pasteContent.hljs {
       padding: 0;
       background: transparent;
       line-height: inherit;
+    }
+    .paste-code.wrap-long-lines {
+      min-width: 100%;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .paste-code.wrap-long-lines #pasteContent.hljs {
+      white-space: inherit;
     }
   </style>
 </head>
@@ -72,6 +91,7 @@
           <span class="max-w-[13rem] truncate text-xs text-zinc-500">{{ .Filename }}</span>
           {{ end }}
           <span class="rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[11px] text-[#E4E4E4]/75">{{ .Language }}</span>
+          <span id="longLineHint" class="hidden rounded-full border border-[#F0C674]/30 bg-[#F0C674]/10 px-2 py-0.5 text-[11px] text-[#F0C674]">Long line detected</span>
         </div>
       </div>
 
@@ -104,6 +124,15 @@
         >
           Lines
         </button>
+        <button
+          id="wrapToggle"
+          type="button"
+          class="rounded-lg border border-white/15 px-2.5 py-1.5 text-[11px] font-medium text-[#E4E4E4] transition hover:border-[#F0C674] hover:text-[#F0C674]"
+          onclick="toggleWrapMode()"
+          aria-pressed="false"
+        >
+          Wrap
+        </button>
         <a
           class="rounded-lg border border-white/15 px-2.5 py-1.5 text-[11px] font-medium text-[#E4E4E4] transition hover:border-[#B9AECB] hover:text-[#B9AECB]"
           href="?format=raw"
@@ -131,17 +160,23 @@
     const viewer = document.getElementById("viewer");
     const lineNumbers = document.getElementById("lineNumbers");
     const lineToggle = document.getElementById("lineToggle");
+    const wrapToggle = document.getElementById("wrapToggle");
+    const longLineHint = document.getElementById("longLineHint");
+    const pasteCode = document.querySelector(".paste-code");
     const pasteContent = document.getElementById("pasteContent");
     const rawText = pasteContent.textContent || "";
+    const lines = rawText.split("\n");
+    const longestLineLength = lines.reduce((max, line) => Math.max(max, line.length), 0);
+    const longLineThreshold = 200;
+    let wrapEnabled = false;
 
     function renderLineNumbers() {
-      const lineCount = Math.max(1, rawText.split("\n").length);
+      const lineCount = Math.max(1, lines.length);
       lineNumbers.textContent = Array.from({ length: lineCount }, (_, index) => index + 1).join("\n");
     }
 
-    function toggleLineNumbers() {
-      const enabled = lineNumbers.classList.toggle("hidden") === false;
-
+    function setLineNumbersEnabled(enabled) {
+      lineNumbers.classList.toggle("hidden", !enabled);
       viewer.classList.toggle("show-lines", enabled);
       lineToggle.classList.toggle("border-white/25", enabled);
       lineToggle.classList.toggle("bg-white/[0.07]", enabled);
@@ -149,7 +184,44 @@
       lineToggle.setAttribute("aria-pressed", enabled ? "true" : "false");
     }
 
+    function toggleLineNumbers() {
+      if (wrapEnabled) {
+        return;
+      }
+
+      const enabled = lineNumbers.classList.contains("hidden");
+      setLineNumbersEnabled(enabled);
+    }
+
+    function toggleWrapMode() {
+      wrapEnabled = !wrapEnabled;
+
+      viewer.classList.toggle("wrapped", wrapEnabled);
+      pasteCode.classList.toggle("wrap-long-lines", wrapEnabled);
+      wrapToggle.classList.toggle("border-white/25", wrapEnabled);
+      wrapToggle.classList.toggle("bg-white/[0.07]", wrapEnabled);
+      wrapToggle.classList.toggle("text-white", wrapEnabled);
+      wrapToggle.setAttribute("aria-pressed", wrapEnabled ? "true" : "false");
+
+      if (wrapEnabled) {
+        setLineNumbersEnabled(false);
+        lineToggle.classList.add("opacity-50", "cursor-not-allowed");
+        lineNumbers.classList.add("lines-disabled");
+        lineToggle.setAttribute("title", "Line numbers are disabled while wrap mode is on");
+      } else {
+        lineToggle.classList.remove("opacity-50", "cursor-not-allowed");
+        lineNumbers.classList.remove("lines-disabled");
+        lineToggle.removeAttribute("title");
+      }
+    }
+
     renderLineNumbers();
+
+    if (longestLineLength >= longLineThreshold) {
+      longLineHint.classList.remove("hidden");
+      wrapToggle.classList.add("border-[#F0C674]/40", "text-[#F0C674]");
+      wrapToggle.setAttribute("title", "Wrap very long lines for easier reading");
+    }
 
     if (window.hljs && "{{ .Language }}" !== "logs") {
       hljs.highlightElement(pasteContent);

@@ -100,6 +100,12 @@ func isTextEntry(entry *pastebox.Entry) bool {
 }
 
 func normalizeTextContentType(filename string, contentType string) string {
+	switch detected := specialFilenameContentType(filename); detected {
+	case "":
+	default:
+		return detected
+	}
+
 	ext := normalizedUploadExt(filename)
 	lowerContentType := strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
 
@@ -134,6 +140,12 @@ func normalizeTextContentType(filename string, contentType string) string {
 		return "application/xml; charset=utf-8"
 	case ".yaml", ".yml":
 		return "application/yaml; charset=utf-8"
+	case ".sql":
+		return "application/sql; charset=utf-8"
+	case ".lua":
+		return "text/x-lua; charset=utf-8"
+	case ".toml":
+		return "application/toml; charset=utf-8"
 	case ".sh", ".bash", ".zsh":
 		return "text/x-shellscript; charset=utf-8"
 	}
@@ -146,6 +158,18 @@ func normalizeTextContentType(filename string, contentType string) string {
 	}
 
 	return "text/plain; charset=utf-8"
+}
+
+func specialFilenameContentType(filename string) string {
+	base := strings.ToLower(strings.TrimSpace(filepath.Base(filename)))
+	switch {
+	case base == "dockerfile" || strings.HasSuffix(base, ".dockerfile"):
+		return "text/x-dockerfile; charset=utf-8"
+	case base == "nginx.conf" || strings.HasSuffix(base, ".nginx.conf"):
+		return "text/x-nginx-conf; charset=utf-8"
+	default:
+		return ""
+	}
 }
 
 func normalizedUploadExt(filename string) string {
@@ -186,7 +210,13 @@ func normalizedUploadExt(filename string) string {
 	return filepath.Ext(name)
 }
 
-func syntaxLanguage(contentType string) string {
+func syntaxLanguage(filename string, contentType string) string {
+	switch detected := specialFilenameLanguage(filename); detected {
+	case "":
+	default:
+		return detected
+	}
+
 	contentType = strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
 
 	switch {
@@ -200,6 +230,8 @@ func syntaxLanguage(contentType string) string {
 		return "rust"
 	case strings.Contains(contentType, "x-go"):
 		return "go"
+	case strings.Contains(contentType, "x-shellscript"):
+		return "bash"
 	case strings.Contains(contentType, "javascript"):
 		return "javascript"
 	case strings.Contains(contentType, "x-python"):
@@ -208,6 +240,12 @@ func syntaxLanguage(contentType string) string {
 		return "markdown"
 	case strings.Contains(contentType, "typescript"):
 		return "typescript"
+	case strings.Contains(contentType, "sql"):
+		return "sql"
+	case strings.Contains(contentType, "x-lua"):
+		return "lua"
+	case strings.Contains(contentType, "toml"):
+		return "toml"
 	case strings.Contains(contentType, "php"):
 		return "php"
 	case contentType == "text/html":
@@ -216,6 +254,18 @@ func syntaxLanguage(contentType string) string {
 		return "css"
 	default:
 		return "plaintext"
+	}
+}
+
+func specialFilenameLanguage(filename string) string {
+	base := strings.ToLower(strings.TrimSpace(filepath.Base(filename)))
+	switch {
+	case base == "dockerfile" || strings.HasSuffix(base, ".dockerfile"):
+		return "dockerfile"
+	case base == "nginx.conf" || strings.HasSuffix(base, ".nginx.conf"):
+		return "nginx"
+	default:
+		return ""
 	}
 }
 

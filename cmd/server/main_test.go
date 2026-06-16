@@ -112,3 +112,51 @@ func TestSummarizeAdminIDs(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizeTextContentType(t *testing.T) {
+	tests := []struct {
+		name        string
+		filename    string
+		contentType string
+		want        string
+	}{
+		{name: "dockerfile by name", filename: "Dockerfile", want: "text/x-dockerfile; charset=utf-8"},
+		{name: "sql by ext", filename: "schema.sql", want: "application/sql; charset=utf-8"},
+		{name: "nginx by name", filename: "nginx.conf", want: "text/x-nginx-conf; charset=utf-8"},
+		{name: "lua by ext", filename: "init.lua", want: "text/x-lua; charset=utf-8"},
+		{name: "toml by ext", filename: "pyproject.toml", want: "application/toml; charset=utf-8"},
+		{name: "bash by ext", filename: "deploy.sh", want: "text/x-shellscript; charset=utf-8"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := normalizeTextContentType(tt.filename, tt.contentType); got != tt.want {
+				t.Fatalf("normalizeTextContentType() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSyntaxLanguage(t *testing.T) {
+	tests := []struct {
+		name        string
+		filename    string
+		contentType string
+		want        string
+	}{
+		{name: "dockerfile by name", filename: "Dockerfile", contentType: "text/plain; charset=utf-8", want: "dockerfile"},
+		{name: "sql by content type", filename: "query.sql", contentType: "application/sql; charset=utf-8", want: "sql"},
+		{name: "nginx by name", filename: "nginx.conf", contentType: "text/plain; charset=utf-8", want: "nginx"},
+		{name: "lua by content type", filename: "init.lua", contentType: "text/x-lua; charset=utf-8", want: "lua"},
+		{name: "toml by content type", filename: "Cargo.toml", contentType: "application/toml; charset=utf-8", want: "toml"},
+		{name: "bash by content type", filename: "entrypoint.sh", contentType: "text/x-shellscript; charset=utf-8", want: "bash"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := syntaxLanguage(tt.filename, tt.contentType); got != tt.want {
+				t.Fatalf("syntaxLanguage() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

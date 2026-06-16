@@ -77,7 +77,7 @@ func (a *app) viewHandler(w http.ResponseWriter, r *http.Request, id string) {
 				"ID":       entry.Meta.ID,
 				"Filename": entry.Meta.Filename,
 				"Content":  string(content),
-				"Language": syntaxLanguage(entry.Meta.ContentType),
+				"Language": syntaxLanguage(entry.Meta.Filename, entry.Meta.ContentType),
 				"Password": password,
 			})
 		}

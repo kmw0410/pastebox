@@ -165,6 +165,14 @@ func specialFilenameContentType(filename string) string {
 	switch {
 	case base == "dockerfile" || strings.HasSuffix(base, ".dockerfile"):
 		return "text/x-dockerfile; charset=utf-8"
+	case base == "makefile":
+		return "text/x-makefile; charset=utf-8"
+	case base == ".env.example":
+		return "text/x-ini; charset=utf-8"
+	case base == ".gitignore":
+		return "text/x-gitignore; charset=utf-8"
+	case base == "compose.yaml" || base == "compose.yml" || base == "docker-compose.yaml" || base == "docker-compose.yml":
+		return "application/yaml; charset=utf-8"
 	case base == "nginx.conf" || strings.HasSuffix(base, ".nginx.conf"):
 		return "text/x-nginx-conf; charset=utf-8"
 	default:
@@ -224,8 +232,12 @@ func syntaxLanguage(filename string, contentType string) string {
 		return "logs"
 	case strings.Contains(contentType, "yaml"):
 		return "yaml"
+	case strings.Contains(contentType, "x-makefile"):
+		return "makefile"
 	case strings.Contains(contentType, "x-ini"):
 		return "ini"
+	case strings.Contains(contentType, "x-gitignore"):
+		return "gitignore"
 	case strings.Contains(contentType, "x-rust"):
 		return "rust"
 	case strings.Contains(contentType, "x-go"):
@@ -262,6 +274,14 @@ func specialFilenameLanguage(filename string) string {
 	switch {
 	case base == "dockerfile" || strings.HasSuffix(base, ".dockerfile"):
 		return "dockerfile"
+	case base == "makefile":
+		return "makefile"
+	case base == ".env.example":
+		return "ini"
+	case base == ".gitignore":
+		return "gitignore"
+	case base == "compose.yaml" || base == "compose.yml" || base == "docker-compose.yaml" || base == "docker-compose.yml":
+		return "yaml"
 	case base == "nginx.conf" || strings.HasSuffix(base, ".nginx.conf"):
 		return "nginx"
 	default:

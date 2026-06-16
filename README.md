@@ -212,7 +212,7 @@ pastebox/
 
 17. **Admin Password Reset**: If you lose the admin password, set `ADMIN_RESET_TOKEN` in `docker-compose-build.yml` (or `docker-compose.yml`), restart the container, and open `/admin/reset`. Enter the reset token and a new password. After reset, existing admin sessions are invalidated and you must log in again with the new password.
 
-18. **Syntax Highlighting Support**: Syntax highlighting is supported for common text formats including `.txt`, `.md`, `.log`, `.csv`, `.conf`, `.yaml`, `.toml`, `.go`, `.rs`, `.js`, `.py`, `.ts`, `.php`, `.html`, `.css`, `.sql`, `.lua`, and shell scripts such as `.sh`. `Dockerfile`, `*.Dockerfile`, `nginx.conf`, and `*.nginx.conf` are also detected by filename.
+18. **Syntax Highlighting Support**: Syntax highlighting is supported for common text formats including `.txt`, `.md`, `.log`, `.csv`, `.conf`, `.yaml`, `.toml`, `.go`, `.rs`, `.js`, `.py`, `.ts`, `.php`, `.html`, `.css`, `.sql`, `.lua`, and shell scripts such as `.sh`. `Dockerfile`, `*.Dockerfile`, `Makefile`, `.env.example`, `.gitignore`, `compose.yaml`, `compose.yml`, `docker-compose.yaml`, `docker-compose.yml`, `nginx.conf`, and `*.nginx.conf` are also detected by filename.
 
 19. **Long-line Wrap Mode**: When a paste contains a very long single line, the view page shows a `Long line detected` hint and provides a `Wrap` button so you can switch from horizontal scrolling to wrapped reading mode in the browser.
 

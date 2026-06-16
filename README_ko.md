@@ -214,7 +214,7 @@ pastebox/
 
 17. **관리자 비밀번호 초기화**: 관리자 비밀번호를 분실한 경우 `docker-compose-build.yml`(또는 `docker-compose.yml`)에 `ADMIN_RESET_TOKEN`을 설정한 뒤 컨테이너를 재시작하고 `/admin/reset`에 접속하세요. 초기화 토큰과 새 비밀번호를 입력하면 비밀번호가 재설정되며, 기존 관리자 세션은 모두 만료되어 새 비밀번호로 다시 로그인해야 합니다.
 
-18. **문법 강조 지원**: `.txt`, `.md`, `.log`, `.csv`, `.conf`, `.yaml`, `.toml`, `.go`, `.rs`, `.js`, `.py`, `.ts`, `.php`, `.html`, `.css`, `.sql`, `.lua`, `.sh` 같은 자주 쓰는 텍스트 형식에 문법 강조를 지원합니다. `Dockerfile`, `*.Dockerfile`, `nginx.conf`, `*.nginx.conf`도 파일명 기준으로 감지합니다.
+18. **문법 강조 지원**: `.txt`, `.md`, `.log`, `.csv`, `.conf`, `.yaml`, `.toml`, `.go`, `.rs`, `.js`, `.py`, `.ts`, `.php`, `.html`, `.css`, `.sql`, `.lua`, `.sh` 같은 자주 쓰는 텍스트 형식에 문법 강조를 지원합니다. `Dockerfile`, `*.Dockerfile`, `Makefile`, `.env.example`, `.gitignore`, `compose.yaml`, `compose.yml`, `docker-compose.yaml`, `docker-compose.yml`, `nginx.conf`, `*.nginx.conf`도 파일명 기준으로 감지합니다.
 
 19. **긴 한 줄 Wrap 모드**: Paste에 매우 긴 한 줄이 포함되어 있으면 보기 페이지에 `Long line detected` 힌트와 `Wrap` 버튼이 표시되어, 가로 스크롤 대신 줄바꿈된 읽기 모드로 전환할 수 있습니다.
 

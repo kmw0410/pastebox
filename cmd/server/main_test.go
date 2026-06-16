@@ -121,6 +121,10 @@ func TestNormalizeTextContentType(t *testing.T) {
 		want        string
 	}{
 		{name: "dockerfile by name", filename: "Dockerfile", want: "text/x-dockerfile; charset=utf-8"},
+		{name: "makefile by name", filename: "Makefile", want: "text/x-makefile; charset=utf-8"},
+		{name: "env example by name", filename: ".env.example", want: "text/x-ini; charset=utf-8"},
+		{name: "gitignore by name", filename: ".gitignore", want: "text/x-gitignore; charset=utf-8"},
+		{name: "compose yaml by name", filename: "compose.yaml", want: "application/yaml; charset=utf-8"},
 		{name: "sql by ext", filename: "schema.sql", want: "application/sql; charset=utf-8"},
 		{name: "nginx by name", filename: "nginx.conf", want: "text/x-nginx-conf; charset=utf-8"},
 		{name: "lua by ext", filename: "init.lua", want: "text/x-lua; charset=utf-8"},
@@ -145,6 +149,10 @@ func TestSyntaxLanguage(t *testing.T) {
 		want        string
 	}{
 		{name: "dockerfile by name", filename: "Dockerfile", contentType: "text/plain; charset=utf-8", want: "dockerfile"},
+		{name: "makefile by name", filename: "Makefile", contentType: "text/plain; charset=utf-8", want: "makefile"},
+		{name: "env example by name", filename: ".env.example", contentType: "text/plain; charset=utf-8", want: "ini"},
+		{name: "gitignore by name", filename: ".gitignore", contentType: "text/plain; charset=utf-8", want: "gitignore"},
+		{name: "compose yaml by name", filename: "compose.yaml", contentType: "text/plain; charset=utf-8", want: "yaml"},
 		{name: "sql by content type", filename: "query.sql", contentType: "application/sql; charset=utf-8", want: "sql"},
 		{name: "nginx by name", filename: "nginx.conf", contentType: "text/plain; charset=utf-8", want: "nginx"},
 		{name: "lua by content type", filename: "init.lua", contentType: "text/x-lua; charset=utf-8", want: "lua"},

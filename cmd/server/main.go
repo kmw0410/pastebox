@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -19,12 +18,17 @@ func main() {
 
 	store, err := pastebox.NewStore(dataDir, time.Duration(expireDays)*24*time.Hour)
 	if err != nil {
-		log.Fatalf("failed to initialize store: %v", err)
+		logFatalEvent("server.init_store_failed", map[string]any{
+			"data_dir": dataDir,
+			"error":    err,
+		})
 	}
 
 	a, err := newApp(store, i18n, adminResetToken)
 	if err != nil {
-		log.Fatalf("failed to initialize app: %v", err)
+		logFatalEvent("server.init_app_failed", map[string]any{
+			"error": err,
+		})
 	}
 
 	go func() {
@@ -33,7 +37,9 @@ func main() {
 
 		for {
 			if err := store.CleanupExpired(); err != nil {
-				log.Printf("cleanup failed: %v", err)
+				logEvent("store.cleanup_failed", map[string]any{
+					"error": err,
+				})
 			}
 			<-ticker.C
 		}
@@ -42,10 +48,18 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", a.handle)
 
-	log.Printf("pastebox listening on %s, data=%s", listenAddr, dataDir)
-	log.Printf("admin setup token: %s", a.adminSetupToken)
+	logEvent("server.started", map[string]any{
+		"data_dir":    dataDir,
+		"listen_addr": listenAddr,
+	})
+	logEvent("admin.setup_token_generated", map[string]any{
+		"token": a.adminSetupToken,
+	})
 
 	if err := http.ListenAndServe(listenAddr, mux); err != nil {
-		log.Fatal(err)
+		logFatalEvent("server.listen_failed", map[string]any{
+			"error":       err,
+			"listen_addr": listenAddr,
+		})
 	}
 }

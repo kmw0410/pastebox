@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"strings"
 
@@ -12,7 +11,9 @@ import (
 func (a *app) cloneHandler(w http.ResponseWriter, r *http.Request, id string) {
 	disabled, err := a.store.UploadsDisabled()
 	if err != nil {
-		log.Printf("failed to read upload status: %v", err)
+		logEvent("uploads.status_read_failed", map[string]any{
+			"error": err,
+		})
 		http.Error(w, "upload status unavailable", http.StatusInternalServerError)
 		return
 	}
@@ -57,17 +58,16 @@ func (a *app) cloneHandler(w http.ResponseWriter, r *http.Request, id string) {
 		return
 	}
 
-	log.Printf(
-		"cloned: source=%s id=%s remote=%s size=%d content_type=%q policy=%s expires=%s protected=%t",
-		id,
-		meta.ID,
-		r.RemoteAddr,
-		meta.Size,
-		meta.ContentType,
-		meta.DataPolicy,
-		formatExpiresForLog(meta),
-		newPassword != "",
-	)
+	logEvent("paste.cloned", map[string]any{
+		"content_type": meta.ContentType,
+		"expires":      formatExpiresForLog(meta),
+		"id":           meta.ID,
+		"policy":       meta.DataPolicy,
+		"protected":    newPassword != "",
+		"remote":       r.RemoteAddr,
+		"size":         meta.Size,
+		"source":       id,
+	})
 
 	a.writeCloneResponse(w, r, meta, newPassword, deleteToken, manageToken)
 }

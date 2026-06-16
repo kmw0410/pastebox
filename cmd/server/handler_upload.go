@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"mime"
 	"net/http"
 	"os"
@@ -20,7 +19,9 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	disabled, err := a.store.UploadsDisabled()
 	if err != nil {
-		log.Printf("failed to read upload status: %v", err)
+		logEvent("uploads.status_read_failed", map[string]any{
+			"error": err,
+		})
 		http.Error(w, "upload status unavailable", http.StatusInternalServerError)
 		return
 	}
@@ -92,7 +93,12 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	allowed, reason := allowTextUpload(filename, contentType, sample)
 	if !allowed {
-		log.Printf("upload blocked: remote=%s filename=%q content_type=%q reason=%s", r.RemoteAddr, filename, contentType, reason)
+		logEvent("upload.blocked", map[string]any{
+			"content_type": contentType,
+			"filename":     filename,
+			"reason":       reason,
+			"remote":       r.RemoteAddr,
+		})
 		a.respondRequestError(w, r, http.StatusUnsupportedMediaType, "unsupported file type. only text-based files are allowed")
 		return
 	}
@@ -112,7 +118,9 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	meta, password, deleteToken, manageToken, err := a.store.Create(tempFile, filename, contentType, usePassword, permanent, once, customCode)
 	if err != nil {
-		log.Printf("upload failed: %v", err)
+		logEvent("upload.create_failed", map[string]any{
+			"error": err,
+		})
 
 		if errors.Is(err, pastebox.ErrInvalidCode) {
 			a.respondRequestError(w, r, http.StatusBadRequest, "invalid code. use 1-10 characters: letters, numbers, underscore, or hyphen")
@@ -128,16 +136,15 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf(
-		"created: id=%s remote=%s size=%d content_type=%q policy=%s expires=%s protected=%t",
-		meta.ID,
-		r.RemoteAddr,
-		meta.Size,
-		meta.ContentType,
-		meta.DataPolicy,
-		formatExpiresForLog(meta),
-		password != "",
-	)
+	logEvent("paste.created", map[string]any{
+		"content_type": meta.ContentType,
+		"expires":      formatExpiresForLog(meta),
+		"id":           meta.ID,
+		"policy":       meta.DataPolicy,
+		"protected":    password != "",
+		"remote":       r.RemoteAddr,
+		"size":         meta.Size,
+	})
 
 	a.writeUploadResponse(w, r, meta, password, deleteToken, manageToken)
 }

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 
 	pastebox "pastebox/internal"
@@ -18,7 +17,10 @@ func (a *app) deleteHandler(w http.ResponseWriter, r *http.Request, id string, t
 
 	if err := a.store.Delete(id, token); err != nil {
 		if errors.Is(err, pastebox.ErrInvalidDeleteToken) {
-			log.Printf("delete denied: id=%s remote=%s", id, r.RemoteAddr)
+			logEvent("paste.delete_denied", map[string]any{
+				"id":     id,
+				"remote": r.RemoteAddr,
+			})
 			http.Error(w, "delete token required or invalid", http.StatusUnauthorized)
 			return
 		}
@@ -27,7 +29,10 @@ func (a *app) deleteHandler(w http.ResponseWriter, r *http.Request, id string, t
 		return
 	}
 
-	log.Printf("deleted: id=%s remote=%s", id, r.RemoteAddr)
+	logEvent("paste.deleted", map[string]any{
+		"id":     id,
+		"remote": r.RemoteAddr,
+	})
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	fmt.Fprintln(w, "deleted")

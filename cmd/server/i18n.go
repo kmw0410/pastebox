@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"html/template"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -43,21 +42,33 @@ func loadMessages(messages map[string]string, path string, optional bool) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if optional {
-			log.Printf("translation file not loaded: %s: %v", path, err)
+			logEvent("i18n.translation_file_not_loaded", map[string]any{
+				"error": err,
+				"path":  path,
+			})
 			return
 		}
 
-		log.Fatalf("failed to read translation file %s: %v", path, err)
+		logFatalEvent("i18n.translation_file_read_failed", map[string]any{
+			"error": err,
+			"path":  path,
+		})
 	}
 
 	var loaded map[string]string
 	if err := json.Unmarshal(data, &loaded); err != nil {
 		if optional {
-			log.Printf("translation file not parsed: %s: %v", path, err)
+			logEvent("i18n.translation_file_not_parsed", map[string]any{
+				"error": err,
+				"path":  path,
+			})
 			return
 		}
 
-		log.Fatalf("failed to parse translation file %s: %v", path, err)
+		logFatalEvent("i18n.translation_file_parse_failed", map[string]any{
+			"error": err,
+			"path":  path,
+		})
 	}
 
 	for key, value := range loaded {
@@ -87,7 +98,10 @@ func mustParseTemplate(i18n *localizer, path string) *template.Template {
 		"t": i18n.T,
 	}).ParseFiles(path)
 	if err != nil {
-		log.Fatalf("failed to parse template %s: %v", path, err)
+		logFatalEvent("template.parse_failed", map[string]any{
+			"error": err,
+			"path":  path,
+		})
 	}
 
 	return tpl

@@ -4,9 +4,7 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"fmt"
-	"log"
 	"net/http"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -196,37 +194,18 @@ func formatBytes(size int64) string {
 }
 
 func (a *app) logAdminAction(action string, actor adminActor, outcome string, fields map[string]any) {
-	parts := []string{
-		fmt.Sprintf("action=%s", action),
-		fmt.Sprintf("outcome=%s", outcome),
-		fmt.Sprintf("username=%q", actor.Username),
-		fmt.Sprintf("client_ip=%q", actor.ClientIP),
-		fmt.Sprintf("remote=%q", actor.Remote),
+	payload := map[string]any{
+		"action":    action,
+		"client_ip": actor.ClientIP,
+		"outcome":   outcome,
+		"remote":    actor.Remote,
+		"username":  actor.Username,
+	}
+	for key, value := range fields {
+		payload[key] = value
 	}
 
-	for _, key := range sortedKeys(fields) {
-		value := fields[key]
-		if err, ok := value.(error); ok && err != nil {
-			parts = append(parts, fmt.Sprintf("%s=%q", key, err.Error()))
-			continue
-		}
-		parts = append(parts, fmt.Sprintf("%s=%q", key, fmt.Sprint(value)))
-	}
-
-	log.Printf("admin audit: %s", strings.Join(parts, " "))
-}
-
-func sortedKeys(fields map[string]any) []string {
-	if len(fields) == 0 {
-		return nil
-	}
-
-	keys := make([]string, 0, len(fields))
-	for key := range fields {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	return keys
+	logEvent("admin.audit", payload)
 }
 
 func summarizeAdminIDs(ids []string) string {
@@ -274,7 +253,10 @@ func (a *app) adminSetupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !verifyAdminCSRFToken(w, r) {
-		log.Printf("csrf validation failed: path=%s remote=%s", r.URL.Path, r.RemoteAddr)
+		logEvent("admin.csrf_validation_failed", map[string]any{
+			"path":   r.URL.Path,
+			"remote": r.RemoteAddr,
+		})
 		a.renderAdminForm(w, a.i18n.T("admin_setup_title"), "/admin/setup", a.i18n.T("admin_error_invalid_form"), a.i18n.T("admin_create_button"))
 		return
 	}
@@ -298,7 +280,10 @@ func (a *app) adminSetupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("admin created: username=%s remote=%s", username, r.RemoteAddr)
+	logEvent("admin.created", map[string]any{
+		"remote":   r.RemoteAddr,
+		"username": username,
+	})
 
 	token, err := a.store.CreateAdminSession()
 	if err != nil {
@@ -333,7 +318,10 @@ func (a *app) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !verifyAdminCSRFToken(w, r) {
-		log.Printf("csrf validation failed: path=%s remote=%s", r.URL.Path, r.RemoteAddr)
+		logEvent("admin.csrf_validation_failed", map[string]any{
+			"path":   r.URL.Path,
+			"remote": r.RemoteAddr,
+		})
 		a.renderAdminForm(w, a.i18n.T("admin_login_title"), "/admin/login", a.i18n.T("admin_error_invalid_form"), a.i18n.T("admin_login_button"))
 		return
 	}
@@ -350,7 +338,11 @@ func (a *app) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 	ipKey := "admin_login:ip:" + clientIP
 	pairKey := "admin_login:pair:" + clientIP + ":" + strings.ToLower(strings.TrimSpace(username))
 	if retryAfter, blocked := a.authLimiter.retryAfterAny([]string{ipKey, usernameKey, pairKey}, time.Now()); blocked {
-		log.Printf("admin login rate limited: ip=%s remote=%s retry_after=%s", clientIP, r.RemoteAddr, retryAfter.Round(time.Second))
+		logEvent("admin.login_rate_limited", map[string]any{
+			"client_ip":   clientIP,
+			"remote":      r.RemoteAddr,
+			"retry_after": retryAfter.Round(time.Second),
+		})
 		w.Header().Set("Retry-After", strconv.Itoa(int(retryAfter.Seconds())+1))
 		http.Error(w, "too many failed attempts. try again later", http.StatusTooManyRequests)
 		return
@@ -364,7 +356,10 @@ func (a *app) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	if !ok {
 		a.authLimiter.recordFailureMany([]string{ipKey, usernameKey, pairKey}, time.Now())
-		log.Printf("admin login failed: username=%s remote=%s", username, r.RemoteAddr)
+		logEvent("admin.login_failed", map[string]any{
+			"remote":   r.RemoteAddr,
+			"username": username,
+		})
 		a.renderAdminForm(w, a.i18n.T("admin_login_title"), "/admin/login", a.i18n.T("admin_error_invalid_credentials"), a.i18n.T("admin_login_button"))
 		return
 	}
@@ -376,7 +371,10 @@ func (a *app) adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("admin login: username=%s remote=%s", username, r.RemoteAddr)
+	logEvent("admin.login_succeeded", map[string]any{
+		"remote":   r.RemoteAddr,
+		"username": username,
+	})
 
 	setAdminCookie(w, token)
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
@@ -426,7 +424,10 @@ func (a *app) adminResetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !verifyAdminCSRFToken(w, r) {
-		log.Printf("csrf validation failed: path=%s remote=%s", r.URL.Path, r.RemoteAddr)
+		logEvent("admin.csrf_validation_failed", map[string]any{
+			"path":   r.URL.Path,
+			"remote": r.RemoteAddr,
+		})
 		a.renderAdminResetForm(w, a.i18n.T("admin_error_invalid_form"))
 		return
 	}
@@ -468,7 +469,9 @@ func (a *app) adminResetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	a.authLimiter.clear(limitKey)
 
-	log.Printf("admin password reset: remote=%s", r.RemoteAddr)
+	logEvent("admin.password_reset", map[string]any{
+		"remote": r.RemoteAddr,
+	})
 	http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
 }
 

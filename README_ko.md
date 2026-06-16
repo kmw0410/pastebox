@@ -204,8 +204,8 @@ pastebox/
 14. **생성/삭제 로그**: 파일 생성 및 삭제 시 컨테이너 로그에 기록됩니다.
 
    ```
-   created: id=AbC12 remote=127.0.0.1:51234 size=123 content_type="text/plain; charset=utf-8" policy=temporary expires=2026-06-24T05:10:26Z protected=false
-   deleted: id=AbC12 remote=127.0.0.1:51234
+   event=paste.created content_type="text/plain; charset=utf-8" expires="2026-06-24T05:10:26Z" id="AbC12" policy="temporary" protected="false" remote="127.0.0.1:51234" size="123"
+   event=paste.deleted id="AbC12" remote="127.0.0.1:51234"
    ```
 
 15. **세분화된 락 매니저**: 업로드 ID별로 락을 적용하여 같은 파일에 대한 조회, 삭제, 만료 정리 작업이 동시에 발생해도 충돌을 줄입니다. 서로 다른 파일은 병렬로 처리됩니다.
@@ -214,9 +214,11 @@ pastebox/
 
 17. **관리자 비밀번호 초기화**: 관리자 비밀번호를 분실한 경우 `docker-compose-build.yml`(또는 `docker-compose.yml`)에 `ADMIN_RESET_TOKEN`을 설정한 뒤 컨테이너를 재시작하고 `/admin/reset`에 접속하세요. 초기화 토큰과 새 비밀번호를 입력하면 비밀번호가 재설정되며, 기존 관리자 세션은 모두 만료되어 새 비밀번호로 다시 로그인해야 합니다.
 
-18. **문법 강조 지원**: 확장자가 `.txt`, `.md`, `.log`, `.csv`, `.conf`, `.yaml`, `.go`, `.rs`, `.js`, `.py`, `.ts`, `.php`, `.html`, `.css`인 경우 문법 강조(Syntax Highlighting)을 지원합니다.
+18. **문법 강조 지원**: `.txt`, `.md`, `.log`, `.csv`, `.conf`, `.yaml`, `.toml`, `.go`, `.rs`, `.js`, `.py`, `.ts`, `.php`, `.html`, `.css`, `.sql`, `.lua`, `.sh` 같은 자주 쓰는 텍스트 형식에 문법 강조를 지원합니다. `Dockerfile`, `*.Dockerfile`, `nginx.conf`, `*.nginx.conf`도 파일명 기준으로 감지합니다.
 
-19. **Paste 복제 지원**: 보기 페이지에서 `Clone` 버튼을 눌러 현재 Paste 내용을 새로운 링크로 복제할 수 있습니다.
+19. **긴 한 줄 Wrap 모드**: Paste에 매우 긴 한 줄이 포함되어 있으면 보기 페이지에 `Long line detected` 힌트와 `Wrap` 버튼이 표시되어, 가로 스크롤 대신 줄바꿈된 읽기 모드로 전환할 수 있습니다.
+
+20. **Paste 복제 지원**: 보기 페이지에서 `Clone` 버튼을 눌러 현재 Paste 내용을 새로운 링크로 복제할 수 있습니다.
 
 ### 데이터 정책
 데이터 정책 헤더에 대한 설명은 [DATA_POLICY_ko.md](./DATA_POLICY_ko.md)를 참고하세요.

@@ -202,8 +202,8 @@ pastebox/
 14. **Creation and Deletion Logs**: File creation and deletion events are recorded in the container logs.
 
    ```
-   created: id=AbC12 remote=127.0.0.1:51234 size=123 content_type="text/plain; charset=utf-8" policy=temporary expires=2026-06-24T05:10:26Z protected=false
-   deleted: id=AbC12 remote=127.0.0.1:51234
+   event=paste.created content_type="text/plain; charset=utf-8" expires="2026-06-24T05:10:26Z" id="AbC12" policy="temporary" protected="false" remote="127.0.0.1:51234" size="123"
+   event=paste.deleted id="AbC12" remote="127.0.0.1:51234"
    ```
 
 15. **Fine-Grained Lock Manager**: Pastebox applies locks per upload ID to reduce conflicts when viewing, deleting, or cleaning up the same file concurrently. Different files can still be processed in parallel.
@@ -212,9 +212,11 @@ pastebox/
 
 17. **Admin Password Reset**: If you lose the admin password, set `ADMIN_RESET_TOKEN` in `docker-compose-build.yml` (or `docker-compose.yml`), restart the container, and open `/admin/reset`. Enter the reset token and a new password. After reset, existing admin sessions are invalidated and you must log in again with the new password.
 
-18. **Syntax Highlighting Support**: Syntax highlighting is supported for files with the extensions `.txt`, `.md`, `.log`, `.csv`, `.conf`, `.yaml`, `.go`, `.rs`, `.js`, `.py`, `.ts`, `.php`, `.html`, and `.css`.
+18. **Syntax Highlighting Support**: Syntax highlighting is supported for common text formats including `.txt`, `.md`, `.log`, `.csv`, `.conf`, `.yaml`, `.toml`, `.go`, `.rs`, `.js`, `.py`, `.ts`, `.php`, `.html`, `.css`, `.sql`, `.lua`, and shell scripts such as `.sh`. `Dockerfile`, `*.Dockerfile`, `nginx.conf`, and `*.nginx.conf` are also detected by filename.
 
-19. **Paste Clone**: You can clone the current paste into a new link by clicking the `Clone` button on the view page.
+19. **Long-line Wrap Mode**: When a paste contains a very long single line, the view page shows a `Long line detected` hint and provides a `Wrap` button so you can switch from horizontal scrolling to wrapped reading mode in the browser.
+
+20. **Paste Clone**: You can clone the current paste into a new link by clicking the `Clone` button on the view page.
 
 ### Data Policy
 For details about the data policy header, see [DATA_POLICY.md](./DATA_POLICY.md)

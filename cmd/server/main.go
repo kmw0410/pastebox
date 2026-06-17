@@ -63,6 +63,10 @@ func main() {
 		"listen_addr":     listenAddr,
 		"storage_backend": store.StorageBackend,
 	})
+	logEvent("server.storage_backend", map[string]any{
+		"storage_backend": store.StorageBackend,
+		"zstd_level":      zstdLevel,
+	})
 	logEvent("admin.setup_token_generated", map[string]any{
 		"token": a.adminSetupToken,
 	})

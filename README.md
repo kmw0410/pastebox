@@ -39,26 +39,64 @@ English | [Korean](./README_ko.md)
 ### Directory structure
 ```text
 pastebox/
+├── .github/
+│   └── workflows/
+│       ├── docker-publish.yml
+│       └── release.yml
+├── AGENTS.md
+├── DATA_POLICY.md
+├── DATA_POLICY_ko.md
 ├── Dockerfile
+├── LICENSE
+├── README.md
+├── README_ko.md
+├── 404.png
+├── admin.png
 ├── docker-compose-build.yml
 ├── docker-compose.yml
 ├── docker-entrypoint.sh
 ├── go.mod
 ├── go.sum
-├── README.md
-├── README_ko.md
+├── main.png
+├── paste.png
+├── password-protected.png
 ├── cmd/
 │   └── server/
-│       └── main.go
+│       ├── admin.go
+│       ├── app.go
+│       ├── auth.go
+│       ├── handler_clone.go
+│       ├── handler_index.go
+│       ├── handler_manage.go
+│       ├── handler_paste.go
+│       ├── handler_upload.go
+│       ├── i18n.go
+│       ├── logging.go
+│       ├── main.go
+│       ├── main_test.go
+│       ├── routes.go
+│       ├── upload_validation.go
+│       └── util.go
 ├── internal/
+│   ├── admin_store.go
+│   ├── locks.go
 │   ├── metadata.go
-│   └── store.go
+│   ├── mysql_store.go
+│   ├── secrets.go
+│   ├── store.go
+│   ├── store_local.go
+│   └── store_test.go
+├── locales/
+│   ├── en.json
+│   └── ko.json
 └── templates/
     ├── 404.html
     ├── admin_form.html
     ├── admin_list.html
+    ├── admin_reset.html
     ├── clone.html
     ├── index.html
+    ├── manage.html
     ├── password.html
     └── paste.html
 ```

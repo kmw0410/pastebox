@@ -62,29 +62,43 @@
         </div>
       </div>
 
-      <div class="mb-8 rounded-2xl border border-white/10 bg-[#111111] p-5">
-        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p class="text-xs uppercase tracking-[0.18em] text-[#E4E4E4]/55">{{ t "admin_upload_control" }}</p>
-            {{ if .UploadsDisabled }}
-            <p class="mt-2 text-lg font-semibold text-[#FFC1CC]">{{ t "admin_uploads_disabled_title" }}</p>
-            <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_uploads_disabled_desc" }}</p>
-            {{ else }}
-            <p class="mt-2 text-lg font-semibold text-[#E4E4E4]">{{ t "admin_uploads_enabled_title" }}</p>
-            <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_uploads_enabled_desc" }}</p>
-            {{ end }}
-          </div>
+      <div class="mb-8 grid gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+        <div class="rounded-2xl border border-white/10 bg-[#111111] p-5">
+          <p class="text-xs uppercase tracking-[0.18em] text-[#A8DADC]/80">{{ t "admin_storage_backend" }}</p>
+          <p class="mt-3 font-mono text-2xl font-bold text-[#A8DADC]">{{ .StorageBackend }}</p>
+          {{ if eq .StorageBackend "mysql" }}
+          <p class="mt-2 text-sm font-semibold text-[#E4E4E4]">{{ t "admin_storage_backend_mysql_title" }}</p>
+          <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_storage_backend_mysql_desc" }}</p>
+          {{ else }}
+          <p class="mt-2 text-sm font-semibold text-[#E4E4E4]">{{ t "admin_storage_backend_local_title" }}</p>
+          <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_storage_backend_local_desc" }}</p>
+          {{ end }}
+        </div>
 
-          <form method="post" action="/admin/uploads">
-            <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-            {{ if .UploadsDisabled }}
-            <input type="hidden" name="disabled" value="false">
-            <button class="rounded-xl border border-[#A8DADC]/40 px-4 py-2 text-[#A8DADC] transition hover:bg-[#A8DADC]/10" type="submit">{{ t "admin_enable_uploads" }}</button>
-            {{ else }}
-            <input type="hidden" name="disabled" value="true">
-            <button class="rounded-xl border border-[#FFC1CC]/40 px-4 py-2 text-[#FFC1CC] transition hover:bg-[#FFC1CC]/10" type="submit">{{ t "admin_disable_uploads" }}</button>
-            {{ end }}
-          </form>
+        <div class="rounded-2xl border border-white/10 bg-[#111111] p-5">
+          <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p class="text-xs uppercase tracking-[0.18em] text-[#E4E4E4]/55">{{ t "admin_upload_control" }}</p>
+              {{ if .UploadsDisabled }}
+              <p class="mt-2 text-lg font-semibold text-[#FFC1CC]">{{ t "admin_uploads_disabled_title" }}</p>
+              <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_uploads_disabled_desc" }}</p>
+              {{ else }}
+              <p class="mt-2 text-lg font-semibold text-[#E4E4E4]">{{ t "admin_uploads_enabled_title" }}</p>
+              <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_uploads_enabled_desc" }}</p>
+              {{ end }}
+            </div>
+
+            <form method="post" action="/admin/uploads">
+              <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+              {{ if .UploadsDisabled }}
+              <input type="hidden" name="disabled" value="false">
+              <button class="rounded-xl border border-[#A8DADC]/40 px-4 py-2 text-[#A8DADC] transition hover:bg-[#A8DADC]/10" type="submit">{{ t "admin_enable_uploads" }}</button>
+              {{ else }}
+              <input type="hidden" name="disabled" value="true">
+              <button class="rounded-xl border border-[#FFC1CC]/40 px-4 py-2 text-[#FFC1CC] transition hover:bg-[#FFC1CC]/10" type="submit">{{ t "admin_disable_uploads" }}</button>
+              {{ end }}
+            </form>
+          </div>
         </div>
       </div>
 

@@ -68,6 +68,7 @@ func (a *app) adminIndexHandler(w http.ResponseWriter, r *http.Request) {
 		"Items":           items,
 		"Stats":           buildAdminStats(items),
 		"BaseURL":         requestBaseURL(r),
+		"StorageBackend":  a.store.StorageBackend,
 		"UploadsDisabled": uploadsDisabled,
 		"Notice":          popAdminFlash(w, r),
 		"CSRFToken":       issueAdminCSRFToken(w, r),

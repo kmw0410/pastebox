@@ -32,7 +32,7 @@ curl 기반 파일 공유 서비스
 | 언어 | Go |
 | 프론트엔드 | Go HTML 템플릿 |
 | 백엔드 | Go 표준 라이브러리 기반 HTTP 서버 |
-| 저장소 | 로컬 파일 또는 외부 MySQL/MariaDB |
+| 저장소 | 로컬 / MySQL & MariaDB |
 | 컨테이너 | Docker + Docker Compose |
 
 *사용하고 싶은 Alpine 미러가 따로 있다면 Dockerfile에서 수정할 수 있습니다.*
@@ -73,15 +73,15 @@ pastebox/
 3. `http://localhost:3000`를 브라우저에서 접속하거나 NGINX, Caddy, Traefik을 통해 리버스 프록시를 구축하여 도메인으로 접속하세요. 정상적으로 구동이 되었다면 `curl`을 사용하여 이용할 수 있습니다.
 
 ### 스토리지 백엔드
-Pastebox는 기본적으로 로컬 파일 저장소를 사용합니다. 외부 MySQL/MariaDB 데이터베이스에 Paste 본문과 Paste 메타데이터를 저장할 수도 있습니다.
+Pastebox는 `local`과 `mysql` 스토리지 백엔드를 지원합니다. `local`은 로컬 파일 저장소에 사용하고, `mysql`은 외부 MySQL & MariaDB 데이터베이스에 사용합니다.
 
 | 변수 | 기본값 | 설명 |
 |------|--------|------|
-| `STORAGE_BACKEND` | `local` | Paste 저장 백엔드입니다. `/paste-data` 파일 저장은 `local`, 외부 MySQL/MariaDB 저장은 `mysql`을 사용합니다. |
+| `STORAGE_BACKEND` | `local` | Paste 저장 백엔드입니다. `/paste-data` 파일 저장은 `local`, 외부 MySQL & MariaDB 저장은 `mysql`을 사용합니다. |
 | `MYSQL_DSN` | 비어 있음 | `STORAGE_BACKEND=mysql`일 때 필요합니다. 호환성을 위해 `parseTime=true`와 `utf8mb4` 옵션을 유지하세요. |
 | `DB_ZSTD_LEVEL` | `3` | DB 모드 Paste 본문에 적용되는 선택적 zstd 압축 레벨입니다. |
 
-외부 DB 설정 예시:
+MySQL & MariaDB 설정 예시:
 
 ```yaml
 environment:
@@ -90,7 +90,7 @@ environment:
   DB_ZSTD_LEVEL: "3"
 ```
 
-`local` 모드에서는 Paste 본문이 `DATA_DIR` 아래 파일로 저장되고 메타데이터는 JSON sidecar 파일로 저장됩니다. `mysql` 모드에서는 Paste 본문이 설정된 데이터베이스에 zstd 압축 chunk로 저장됩니다. 관리자 계정, 관리자 세션, 서비스 설정, 업로드 비활성화 상태는 계속 SQLite(`/paste-data/pastebox.db`)를 사용합니다. 기존 로컬 Paste 파일은 MySQL/MariaDB로 자동 마이그레이션되지 않습니다.
+`local` 모드에서는 Paste 본문이 `DATA_DIR` 아래 파일로 저장되고 메타데이터는 JSON sidecar 파일로 저장됩니다. `mysql` 모드에서는 Paste 본문이 설정된 MySQL 또는 MariaDB 데이터베이스에 zstd 압축 chunk로 저장됩니다. 관리자 계정, 관리자 세션, 서비스 설정, 업로드 비활성화 상태는 계속 SQLite(`/paste-data/pastebox.db`)를 사용합니다. 기존 로컬 Paste 파일은 MySQL/MariaDB로 자동 마이그레이션되지 않습니다.
 
 ### 기능
 
@@ -116,7 +116,7 @@ environment:
    ```bash
    curl -H "data-policy: permanent" -F "file=@test.txt" http://localhost:8080/
    ```
-   
+    
    ```json
    // 저장 경로: ./data/코드.json
 
@@ -135,7 +135,7 @@ environment:
    ```bash
    curl -H "data-policy: once" -F "file=@test.txt" http://localhost:8080/
    ```
-   
+    
    ```json
    {
     "id": "code",
@@ -196,7 +196,7 @@ environment:
    ```bash
    curl -H "code: custom123" -F "file=@secret.txt" http://localhost:8080/
    ```
-  
+   
 10. **업로드 응답 형식**: 업로드가 성공하면 URL, 만료 시간, 삭제 링크가 반환됩니다. 비밀번호 링크인 경우 `password` 항목도 함께 반환됩니다.
 
    ```

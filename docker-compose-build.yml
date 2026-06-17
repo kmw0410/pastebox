@@ -13,6 +13,12 @@ services:
       # The default time zone is Asia/Seoul (GMT +9). Change it as needed.
       # TZ: "Asia/Seoul"
       LANGUAGE: "en" # value: ko/en
+      # Paste content storage backend. Use "local" for /paste-data files or "mysql" for an external MySQL/MariaDB database.
+      STORAGE_BACKEND: "local" # value: local/mysql
+      # Required only when STORAGE_BACKEND=mysql. Keep parseTime=true and utf8mb4 options for compatibility.
+      # MYSQL_DSN: "pastebox:pastebox@tcp(mysql.example.com:3306)/pastebox?parseTime=true&charset=utf8mb4&collation=utf8mb4_unicode_ci"
+      # Optional zstd compression level for DB-mode paste content. Default is 3.
+      # DB_ZSTD_LEVEL: "3"
       # Default admin reset token. Change this value before production use.
       ADMIN_RESET_TOKEN: "41345bfc5d9ab9e6e4c8d2e1b90e129af9cc472286954beeddb51c9b2beaf1d5b4eb3f10ae872ba1db4ef7e3f6fe1b474cdbe3aeeee9323a5b9ca99edf224883"
     volumes:

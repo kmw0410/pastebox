@@ -31,10 +31,21 @@ var (
 )
 
 type Store struct {
-	DataDir string
-	TTL     time.Duration
-	locks   *lockManager
-	adminDB *sql.DB
+	DataDir        string
+	TTL            time.Duration
+	StorageBackend string
+	locks          *lockManager
+	adminDB        *sql.DB
+	mysqlDB        *sql.DB
+	zstdLevel      int
+}
+
+type StoreOptions struct {
+	DataDir        string
+	TTL            time.Duration
+	StorageBackend string
+	MySQLDSN       string
+	ZstdLevel      int
 }
 
 type Metadata struct {
@@ -52,7 +63,7 @@ type Metadata struct {
 
 type Entry struct {
 	Meta Metadata
-	File *os.File
+	File io.ReadCloser
 }
 
 type AdminPasteItem struct {
@@ -67,6 +78,32 @@ type AdminPasteItem struct {
 }
 
 func NewStore(dataDir string, ttl time.Duration) (*Store, error) {
+	return NewStoreWithOptions(StoreOptions{
+		DataDir:        dataDir,
+		TTL:            ttl,
+		StorageBackend: "local",
+	})
+}
+
+func NewStoreWithOptions(opts StoreOptions) (*Store, error) {
+	dataDir := strings.TrimSpace(opts.DataDir)
+	if dataDir == "" {
+		dataDir = "/paste-data"
+	}
+
+	backend := strings.ToLower(strings.TrimSpace(opts.StorageBackend))
+	if backend == "" {
+		backend = "local"
+	}
+	if backend != "local" && backend != "mysql" {
+		return nil, errors.New("invalid storage backend")
+	}
+
+	zstdLevel := opts.ZstdLevel
+	if zstdLevel == 0 {
+		zstdLevel = 3
+	}
+
 	if err := os.MkdirAll(dataDir, 0o755); err != nil {
 		return nil, err
 	}
@@ -76,12 +113,25 @@ func NewStore(dataDir string, ttl time.Duration) (*Store, error) {
 		return nil, err
 	}
 
-	return &Store{
-		DataDir: dataDir,
-		TTL:     ttl,
-		locks:   newLockManager(),
-		adminDB: adminDB,
-	}, nil
+	store := &Store{
+		DataDir:        dataDir,
+		TTL:            opts.TTL,
+		StorageBackend: backend,
+		locks:          newLockManager(),
+		adminDB:        adminDB,
+		zstdLevel:      zstdLevel,
+	}
+
+	if backend == "mysql" {
+		mysqlDB, err := openMySQLPasteDB(opts.MySQLDSN)
+		if err != nil {
+			_ = adminDB.Close()
+			return nil, err
+		}
+		store.mysqlDB = mysqlDB
+	}
+
+	return store, nil
 }
 
 func (s *Store) Create(r io.Reader, filename string, contentType string, usePassword bool, permanent bool, once bool, customCode string) (Metadata, string, string, string, error) {
@@ -99,7 +149,15 @@ func (s *Store) Clone(id string, password string, usePassword bool, permanent bo
 }
 
 func (s *Store) createFromReader(r io.Reader, filename string, contentType string, usePassword bool, permanent bool, once bool, customCode string) (Metadata, string, string, string, error) {
-	id, path, err := s.reservePath(customCode)
+	if s.StorageBackend == "mysql" {
+		return s.createMySQLFromReader(r, filename, contentType, usePassword, permanent, once, customCode)
+	}
+
+	return s.createLocalFromReader(r, filename, contentType, usePassword, permanent, once, customCode)
+}
+
+func (s *Store) createLocalFromReader(r io.Reader, filename string, contentType string, usePassword bool, permanent bool, once bool, customCode string) (Metadata, string, string, string, error) {
+	id, path, err := s.reserveLocalPath(customCode)
 	if err != nil {
 		return Metadata{}, "", "", "", err
 	}
@@ -181,6 +239,14 @@ func (s *Store) createFromReader(r io.Reader, filename string, contentType strin
 }
 
 func (s *Store) Open(id string, password string) (*Entry, error) {
+	if s.StorageBackend == "mysql" {
+		return s.openMySQL(id, password)
+	}
+
+	return s.openLocal(id, password)
+}
+
+func (s *Store) openLocal(id string, password string) (*Entry, error) {
 	if !validID(id) {
 		return nil, ErrNotFound
 	}
@@ -217,6 +283,14 @@ func (s *Store) Open(id string, password string) (*Entry, error) {
 }
 
 func (s *Store) View(id string, password string, fn func(*Entry) error) error {
+	if s.StorageBackend == "mysql" {
+		return s.viewMySQL(id, password, fn)
+	}
+
+	return s.viewLocal(id, password, fn)
+}
+
+func (s *Store) viewLocal(id string, password string, fn func(*Entry) error) error {
 	if !validID(id) {
 		return ErrNotFound
 	}
@@ -279,6 +353,14 @@ func (s *Store) View(id string, password string, fn func(*Entry) error) error {
 }
 
 func (s *Store) Delete(id string, token string) error {
+	if s.StorageBackend == "mysql" {
+		return s.deleteMySQL(id, token)
+	}
+
+	return s.deleteLocal(id, token)
+}
+
+func (s *Store) deleteLocal(id string, token string) error {
 	if !validID(id) {
 		return ErrNotFound
 	}
@@ -317,6 +399,14 @@ func (s *Store) Delete(id string, token string) error {
 }
 
 func (s *Store) DeleteManaged(id string, token string) error {
+	if s.StorageBackend == "mysql" {
+		return s.deleteManagedMySQL(id, token)
+	}
+
+	return s.deleteManagedLocal(id, token)
+}
+
+func (s *Store) deleteManagedLocal(id string, token string) error {
 	if !validID(id) {
 		return ErrNotFound
 	}
@@ -361,6 +451,14 @@ func (s *Store) DeleteManaged(id string, token string) error {
 }
 
 func (s *Store) AdminDelete(id string) error {
+	if s.StorageBackend == "mysql" {
+		return s.adminDeleteMySQL(id)
+	}
+
+	return s.adminDeleteLocal(id)
+}
+
+func (s *Store) adminDeleteLocal(id string) error {
 	if !validID(id) {
 		return ErrNotFound
 	}
@@ -385,6 +483,14 @@ func (s *Store) AdminDelete(id string) error {
 }
 
 func (s *Store) AdminDeleteAll() (int, error) {
+	if s.StorageBackend == "mysql" {
+		return s.adminDeleteAllMySQL()
+	}
+
+	return s.adminDeleteAllLocal()
+}
+
+func (s *Store) adminDeleteAllLocal() (int, error) {
 	entries, err := os.ReadDir(s.DataDir)
 	if err != nil {
 		return 0, err
@@ -429,6 +535,14 @@ func (s *Store) AdminDeleteAll() (int, error) {
 }
 
 func (s *Store) CleanupExpired() error {
+	if s.StorageBackend == "mysql" {
+		return s.cleanupExpiredMySQL()
+	}
+
+	return s.cleanupExpiredLocal()
+}
+
+func (s *Store) cleanupExpiredLocal() error {
 	entries, err := os.ReadDir(s.DataDir)
 	if err != nil {
 		return err
@@ -467,6 +581,14 @@ func (s *Store) CleanupExpired() error {
 }
 
 func (s *Store) ListPastes() ([]AdminPasteItem, error) {
+	if s.StorageBackend == "mysql" {
+		return s.listPastesMySQL()
+	}
+
+	return s.listPastesLocal()
+}
+
+func (s *Store) listPastesLocal() ([]AdminPasteItem, error) {
 	entries, err := os.ReadDir(s.DataDir)
 	if err != nil {
 		return nil, err
@@ -513,6 +635,14 @@ func (s *Store) ListPastes() ([]AdminPasteItem, error) {
 }
 
 func (s *Store) ManageMetadata(id string, token string) (Metadata, error) {
+	if s.StorageBackend == "mysql" {
+		return s.manageMetadataMySQL(id, token)
+	}
+
+	return s.manageMetadataLocal(id, token)
+}
+
+func (s *Store) manageMetadataLocal(id string, token string) (Metadata, error) {
 	if !validID(id) {
 		return Metadata{}, ErrNotFound
 	}
@@ -545,6 +675,14 @@ func (s *Store) ManageMetadata(id string, token string) (Metadata, error) {
 }
 
 func (s *Store) SetPasswordProtection(id string, token string) (Metadata, string, error) {
+	if s.StorageBackend == "mysql" {
+		return s.setPasswordProtectionMySQL(id, token)
+	}
+
+	return s.setPasswordProtectionLocal(id, token)
+}
+
+func (s *Store) setPasswordProtectionLocal(id string, token string) (Metadata, string, error) {
 	if !validID(id) {
 		return Metadata{}, "", ErrNotFound
 	}
@@ -593,6 +731,14 @@ func (s *Store) SetPasswordProtection(id string, token string) (Metadata, string
 }
 
 func (s *Store) ClearPasswordProtection(id string, token string, password string) (Metadata, error) {
+	if s.StorageBackend == "mysql" {
+		return s.clearPasswordProtectionMySQL(id, token, password)
+	}
+
+	return s.clearPasswordProtectionLocal(id, token, password)
+}
+
+func (s *Store) clearPasswordProtectionLocal(id string, token string, password string) (Metadata, error) {
 	if !validID(id) {
 		return Metadata{}, ErrNotFound
 	}
@@ -636,6 +782,14 @@ func (s *Store) ClearPasswordProtection(id string, token string, password string
 }
 
 func (s *Store) SetDataPolicy(id string, token string, policy string) (Metadata, error) {
+	if s.StorageBackend == "mysql" {
+		return s.setDataPolicyMySQL(id, token, policy)
+	}
+
+	return s.setDataPolicyLocal(id, token, policy)
+}
+
+func (s *Store) setDataPolicyLocal(id string, token string, policy string) (Metadata, error) {
 	if !validID(id) {
 		return Metadata{}, ErrNotFound
 	}
@@ -686,7 +840,7 @@ func (s *Store) SetDataPolicy(id string, token string, policy string) (Metadata,
 	return meta, nil
 }
 
-func (s *Store) reservePath(customCode string) (string, string, error) {
+func (s *Store) reserveLocalPath(customCode string) (string, string, error) {
 	customCode = strings.TrimSpace(customCode)
 
 	if customCode != "" {

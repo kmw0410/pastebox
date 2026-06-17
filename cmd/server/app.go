@@ -90,11 +90,16 @@ func isTextEntry(entry *pastebox.Entry) bool {
 		return true
 	}
 
-	pos, _ := entry.File.Seek(0, io.SeekCurrent)
+	seeker, ok := entry.File.(io.Seeker)
+	if !ok {
+		return true
+	}
+
+	pos, _ := seeker.Seek(0, io.SeekCurrent)
 
 	buf := make([]byte, 4096)
 	n, _ := entry.File.Read(buf)
-	_, _ = entry.File.Seek(pos, io.SeekStart)
+	_, _ = seeker.Seek(pos, io.SeekStart)
 
 	return looksLikeText(buf[:n])
 }

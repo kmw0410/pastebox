@@ -13,14 +13,24 @@ func main() {
 	listenAddr := getenv("LISTEN_ADDR", ":8080")
 	dataDir := getenv("DATA_DIR", "/paste-data")
 	expireDays := getenvInt("EXPIRE_DAYS", 30)
+	storageBackend := getenv("STORAGE_BACKEND", "local")
+	mysqlDSN := strings.TrimSpace(os.Getenv("MYSQL_DSN"))
+	zstdLevel := getenvInt("DB_ZSTD_LEVEL", 3)
 	i18n := loadLocalizer(getenv("LANGUAGE", "en"))
 	adminResetToken := strings.TrimSpace(os.Getenv("ADMIN_RESET_TOKEN"))
 
-	store, err := pastebox.NewStore(dataDir, time.Duration(expireDays)*24*time.Hour)
+	store, err := pastebox.NewStoreWithOptions(pastebox.StoreOptions{
+		DataDir:        dataDir,
+		TTL:            time.Duration(expireDays) * 24 * time.Hour,
+		StorageBackend: storageBackend,
+		MySQLDSN:       mysqlDSN,
+		ZstdLevel:      zstdLevel,
+	})
 	if err != nil {
 		logFatalEvent("server.init_store_failed", map[string]any{
-			"data_dir": dataDir,
-			"error":    err,
+			"data_dir":        dataDir,
+			"error":           err,
+			"storage_backend": storageBackend,
 		})
 	}
 
@@ -49,8 +59,9 @@ func main() {
 	mux.HandleFunc("/", a.handle)
 
 	logEvent("server.started", map[string]any{
-		"data_dir":    dataDir,
-		"listen_addr": listenAddr,
+		"data_dir":        dataDir,
+		"listen_addr":     listenAddr,
+		"storage_backend": store.StorageBackend,
 	})
 	logEvent("admin.setup_token_generated", map[string]any{
 		"token": a.adminSetupToken,

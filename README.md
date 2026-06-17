@@ -32,7 +32,7 @@ English | [Korean](./README_ko.md)
 | Language | Go |
 | Frontend | Go HTML Template |
 | Backend | Go Standard Library HTTP Server |
-| Storage | Local files or external MySQL/MariaDB |
+| Storage | Local / MySQL & MariaDB |
 
 *If there is a specific mirror you want to use, you can modify it in the Dockerfile.*
 
@@ -72,15 +72,15 @@ pastebox/
 3. Open `http://localhost:3000` in your browser, or access the service through a reverse proxy configured with Nginx, Traefik, or Caddy. Once the service is running properly, you can use it with `curl`.
 
 ### Storage backend
-Pastebox uses local file storage by default. You can also store paste content and paste metadata in an external MySQL/MariaDB database.
+Pastebox supports `local` and `mysql` storage backends. Use `local` for local file storage, or use `mysql` for an external MySQL & MariaDB database.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `STORAGE_BACKEND` | `local` | Paste storage backend. Use `local` for `/paste-data` files or `mysql` for an external MySQL/MariaDB database. |
+| `STORAGE_BACKEND` | `local` | Paste storage backend. Use `local` for `/paste-data` files or `mysql` for an external MySQL & MariaDB database. |
 | `MYSQL_DSN` | empty | Required when `STORAGE_BACKEND=mysql`. Keep `parseTime=true` and `utf8mb4` options for compatibility. |
 | `DB_ZSTD_LEVEL` | `3` | Optional zstd compression level for DB-mode paste content. |
 
-Example external DB configuration:
+Example MySQL & MariaDB configuration:
 
 ```yaml
 environment:
@@ -89,7 +89,7 @@ environment:
   DB_ZSTD_LEVEL: "3"
 ```
 
-In `local` mode, paste content is stored under `DATA_DIR` with JSON sidecar metadata. In `mysql` mode, paste content is stored as zstd-compressed chunks in the configured database. Admin accounts, admin sessions, service settings, and upload-disable state still use SQLite at `/paste-data/pastebox.db`. Existing local paste files are not automatically migrated to MySQL/MariaDB.
+In `local` mode, paste content is stored under `DATA_DIR` with JSON sidecar metadata. In `mysql` mode, paste content is stored as zstd-compressed chunks in the configured MySQL or MariaDB database. Admin accounts, admin sessions, service settings, and upload-disable state still use SQLite at `/paste-data/pastebox.db`. Existing local paste files are not automatically migrated to MySQL/MariaDB.
 
 ### Features
 > [!NOTE]
@@ -114,7 +114,7 @@ In `local` mode, paste content is stored under `DATA_DIR` with JSON sidecar meta
    ```bash
    curl -H "data-policy: permanent" -F "file=@test.txt" http://localhost:8080/
    ```
-   
+    
    ```json
    // Storage path: ./data/code.json
 

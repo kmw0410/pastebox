@@ -68,7 +68,7 @@ Host mapping is typically `./data:/paste-data`.
 - When asked which files were modified, respond only with files changed in the most recent edit scope.
 - When committing, exclude `WORK.md` and `AGENTS.md` unless the user explicitly asks to include them.
 - Before starting work, always consult `WORK.md` alongside `AGENTS.md` so recent task history is part of the working context.
-- After any commit+push sequence, record in `WORK.md` what work was done and what mostly changed, using the existing date-based log format.
+- After any commit+push sequence, record in `WORK.md` what work was done and what mostly changed, using the existing date-based log format, and include the commit ID plus commit message when available.
 
 ## 5. Upload Behavior
 Supported upload methods:
@@ -337,6 +337,10 @@ docker exec pastebox cat /etc/apk/repositories
 - Switching upload validation back to full-file memory reads.
 
 ## 16. Detailed Work Log
+- Each dated `WORK.md` entry must use at least two lines.
+  - Line 1 should summarize what changed.
+  - Line 2 should spell out the concrete code/file or behavior changes.
+  - If a commit+push happened, add the commit ID and commit message on the same dated entry.
 - Main page design refresh:
   - Reworked index layout into expanded dark card system (`#111111`, `#E4E4E4`, accent palette), removed outer border/glow, increased width (`max-w-[98rem]`), tuned subtitle scale, and balanced top/bottom grid spacing.
 - Admin/password template alignment:

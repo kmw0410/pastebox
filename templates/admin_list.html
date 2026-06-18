@@ -21,7 +21,7 @@
       </div>
 
       {{ if .Notice }}
-      <div class="mb-8 rounded-2xl border border-white/10 bg-[#111111] p-4 text-sm text-[#A8DADC]">
+      <div id="admin-flash" class="mb-8 rounded-2xl border border-white/10 bg-[#111111] p-4 text-sm text-[#A8DADC] transition duration-500 ease-out motion-reduce:transition-none" role="status" aria-live="polite" data-auto-dismiss-ms="5000">
         {{ .Notice }}
       </div>
       {{ end }}
@@ -172,6 +172,18 @@
   </main>
   <script>
     (function () {
+      const adminFlash = document.getElementById("admin-flash");
+      if (adminFlash) {
+        const delay = Number(adminFlash.dataset.autoDismissMs || "5000");
+        window.setTimeout(function () {
+          adminFlash.classList.add("opacity-0", "-translate-y-1");
+          adminFlash.setAttribute("aria-hidden", "true");
+          window.setTimeout(function () {
+            adminFlash.remove();
+          }, 500);
+        }, delay);
+      }
+
       const checkboxes = Array.from(document.querySelectorAll(".bulk-delete-checkbox"));
       const bulkDeleteBtn = document.getElementById("bulk-delete-btn");
       if (!bulkDeleteBtn || checkboxes.length === 0) return;

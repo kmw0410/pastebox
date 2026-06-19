@@ -28,8 +28,8 @@ English | [Korean](./README_ko.md)
 ### Tech stack
 | Layer | Stack |
 |--------|------|
-| OS | Alpine Linux 3.23.4 (mirror: https://mirror5.krfoss.org/alpine) |
-| Language | Go |
+| OS | Alpine Linux 3.24.1 (mirror: https://mirror5.krfoss.org/alpine) |
+| Language | Go 1.26.4 |
 | Frontend | Go HTML Template |
 | Backend | Go Standard Library HTTP Server |
 | Storage | Local / MySQL & MariaDB |

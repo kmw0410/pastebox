@@ -28,8 +28,8 @@ curl 기반 파일 공유 서비스
 ### 기술 스택
 | 레이어 | 스택 |
 |--------|------|
-| OS | Alpine Linux 3.23.4 (미러: https://mirror5.krfoss.org/alpine) |
-| 언어 | Go |
+| OS | Alpine Linux 3.24.1 (미러: https://mirror5.krfoss.org/alpine) |
+| 언어 | Go 1.26.4 |
 | 프론트엔드 | Go HTML 템플릿 |
 | 백엔드 | Go 표준 라이브러리 기반 HTTP 서버 |
 | 저장소 | 로컬 / MySQL & MariaDB |

@@ -1,14 +1,14 @@
 # syntax=docker/dockerfile:1
 
-FROM alpine:3.23.4 AS builder
+FROM golang:1.26.4-alpine3.24 AS builder
 
 RUN printf '%s\n' \
-  'https://mirror5.krfoss.org/alpine/v3.23/main' \
-  'https://mirror5.krfoss.org/alpine/v3.23/community' \
+  'https://mirror5.krfoss.org/alpine/v3.24/main' \
+  'https://mirror5.krfoss.org/alpine/v3.24/community' \
   > /etc/apk/repositories \
   && apk update \
   && apk upgrade --no-cache \
-  && apk add --no-cache go ca-certificates tzdata
+  && apk add --no-cache ca-certificates tzdata
 
 WORKDIR /src
 
@@ -22,11 +22,11 @@ RUN go mod tidy
 
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags='-s -w' -o /out/pastebox ./cmd/server
 
-FROM alpine:3.23.4
+FROM alpine:3.24.1
 
 RUN printf '%s\n' \
-  'https://mirror5.krfoss.org/alpine/v3.23/main' \
-  'https://mirror5.krfoss.org/alpine/v3.23/community' \
+  'https://mirror5.krfoss.org/alpine/v3.24/main' \
+  'https://mirror5.krfoss.org/alpine/v3.24/community' \
   > /etc/apk/repositories \
   && apk update \
   && apk upgrade --no-cache \

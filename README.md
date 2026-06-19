@@ -117,8 +117,8 @@ Pastebox supports `local` and `mysql` storage backends. Use `local` for local fi
 | `STORAGE_BACKEND` | `local` | Paste storage backend. Use `local` for `/paste-data` files or `mysql` for an external MySQL & MariaDB database. |
 | `MYSQL_DSN` | empty | Required when `STORAGE_BACKEND=mysql`. Keep `parseTime=true` and `utf8mb4` options for compatibility. |
 | `DB_ZSTD_LEVEL` | `3` | Optional zstd compression level for DB-mode paste content. |
-| `MIGRATE_LOCAL_PASTES` | `false` | When `STORAGE_BACKEND=mysql`, migrate existing local paste files into MySQL on startup. |
-| `MIGRATE_SQLITE_ADMIN_ACCOUNTS` | `false` | When `STORAGE_BACKEND=mysql`, migrate the existing SQLite admin account into MySQL on startup. |
+| `MIGRATE_LOCAL_PASTES` | `false` | When `STORAGE_BACKEND=mysql`, migrate existing local paste files into MySQL during startup. This is a one-time migration: once it succeeds, Pastebox records completion in SQLite and skips it on later restarts. |
+| `MIGRATE_SQLITE_ADMIN_ACCOUNTS` | `false` | When `STORAGE_BACKEND=mysql`, migrate the existing SQLite admin account into MySQL during startup. This is a one-time migration: once it succeeds, Pastebox records completion in SQLite and skips it on later restarts. |
 
 Example MySQL & MariaDB configuration:
 
@@ -131,7 +131,14 @@ environment:
   MIGRATE_SQLITE_ADMIN_ACCOUNTS: "true"
 ```
 
-In `local` mode, paste content is stored under `DATA_DIR` with JSON sidecar metadata. In `mysql` mode, paste content is stored as zstd-compressed chunks in the configured MySQL or MariaDB database. Admin sessions, service settings, and upload-disable state still use SQLite at `/paste-data/pastebox.db`. When `MIGRATE_LOCAL_PASTES=true`, existing local paste files are copied into MySQL on startup and removed locally after a successful migration. When `MIGRATE_SQLITE_ADMIN_ACCOUNTS=true`, the existing SQLite admin account is copied into MySQL on startup and then removed from SQLite after success.
+In `local` mode, paste content is stored under `DATA_DIR` with JSON sidecar metadata. In `mysql` mode, paste content is stored as zstd-compressed chunks in the configured MySQL or MariaDB database. Admin sessions, service settings, and upload-disable state still use SQLite at `/paste-data/pastebox.db`.
+
+The two migration flags are startup-only helpers for moving an existing local installation into MySQL:
+
+- `MIGRATE_LOCAL_PASTES=true` scans `DATA_DIR` for local paste files and their JSON sidecars, copies each paste into MySQL, then removes the local file pair after each successful copy.
+- `MIGRATE_SQLITE_ADMIN_ACCOUNTS=true` copies the existing SQLite admin account into MySQL, then removes the SQLite row after success.
+
+Both migrations are protected by a completion marker stored in SQLite under `pastebox_settings`. After a migration finishes successfully, later restarts skip it. If a migration fails before the marker is written, Pastebox will try again on the next startup.
 
 ### Features
 > [!NOTE]

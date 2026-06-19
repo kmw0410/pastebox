@@ -273,21 +273,23 @@ environment:
 14. **생성/삭제 로그**: 파일 생성 및 삭제 시 컨테이너 로그에 기록됩니다.
 
    ```
-   event=paste.created content_type="text/plain; charset=utf-8" expires="2026-06-24T05:10:26Z" id="AbC12" policy="temporary" protected="false" remote="127.0.0.1:51234" size="123"
-   event=paste.deleted id="AbC12" remote="127.0.0.1:51234"
+   created: id=AbC12 remote=127.0.0.1:51234 size=123 content_type="text/plain; charset=utf-8" policy=temporary expires=2026-06-24T05:10:26Z protected=false
+   deleted: id=AbC12 remote=127.0.0.1:51234
    ```
 
 15. **세분화된 락 매니저**: 업로드 ID별로 락을 적용하여 같은 파일에 대한 조회, 삭제, 만료 정리 작업이 동시에 발생해도 충돌을 줄입니다. 서로 다른 파일은 병렬로 처리됩니다.
 
-16. **관리 페이지 제공**: IP, 도메인 뒤에 `/admin`을 추가하여 관리페이지 접근이 가능합니다. 계정이 없는 경우 첫 생성된 계정이 관리자로 들어가며 이후 신규생성이 중단됩니다. DB의 경우 `/paste-data/pastebox.db (호스트의 경우 ./data/pastebox.db)`에 기록되며 비밀번호의 경우 암호화되어 저장됩니다. 또한 업로드 비활성화 기능을 제공하여 신규 업로드를 중단할 수 있습니다.
+16. **관리 페이지 제공**: IP, 도메인 뒤에 `/admin`을 추가하여 관리페이지 접근이 가능합니다. 계정이 없는 경우 첫 생성된 계정이 관리자로 들어가며 이후 신규생성이 중단됩니다. DB의 경우 `/paste-data/pastebox.db (호스트의 경우 ./data/pastebox.db)`에 기록되며 비밀번호는 해시되어 저장됩니다. 관리 대시보드에서는 Paste 개수, 저장 용량, 정책별 분포, 24시간 이내 만료 항목, 만료된 항목, 현재 저장 백엔드를 보여줍니다. 또한 업로드 비활성화 기능과 개별 Paste 삭제, 선택된 Paste 일괄 삭제를 지원합니다.
 
 17. **관리자 비밀번호 초기화**: 관리자 비밀번호를 분실한 경우 `docker-compose-build.yml`(또는 `docker-compose.yml`)에 `ADMIN_RESET_TOKEN`을 설정한 뒤 컨테이너를 재시작하고 `/admin/reset`에 접속하세요. 초기화 토큰과 새 비밀번호를 입력하면 비밀번호가 재설정되며, 기존 관리자 세션은 모두 만료되어 새 비밀번호로 다시 로그인해야 합니다.
 
-18. **문법 강조 지원**: `.txt`, `.md`, `.log`, `.csv`, `.conf`, `.yaml`, `.toml`, `.go`, `.rs`, `.js`, `.py`, `.ts`, `.php`, `.html`, `.css`, `.sql`, `.lua`, `.sh` 같은 자주 쓰는 텍스트 형식에 문법 강조를 지원합니다. `Dockerfile`, `*.Dockerfile`, `Makefile`, `.env.example`, `.gitignore`, `compose.yaml`, `compose.yml`, `docker-compose.yaml`, `docker-compose.yml`, `nginx.conf`, `*.nginx.conf`도 파일명 기준으로 감지합니다.
+18. **Paste 관리 링크**: 모든 성공한 업로드는 `?manage=...` 형식의 비공개 관리 URL도 함께 생성합니다. 이 링크로 관리 페이지에 바로 들어갈 수 있으며, 공개 / 비밀번호 보호 전환, 보관 정책 변경, Paste 삭제를 할 수 있습니다. 비밀번호 보호 Paste를 다시 공개로 바꿀 때는 먼저 현재 생성된 비밀번호를 확인합니다.
 
-19. **긴 한 줄 Wrap 모드**: Paste에 매우 긴 한 줄이 포함되어 있으면 보기 페이지에 `Long line detected` 힌트와 `Wrap` 버튼이 표시되어, 가로 스크롤 대신 줄바꿈된 읽기 모드로 전환할 수 있습니다.
+19. **문법 강조 지원**: `.txt`, `.md`, `.log`, `.csv`, `.conf`, `.yaml`, `.toml`, `.go`, `.rs`, `.js`, `.py`, `.ts`, `.php`, `.html`, `.css`, `.sql`, `.lua`, `.sh` 같은 자주 쓰는 텍스트 형식에 문법 강조를 지원합니다. `Dockerfile`, `*.Dockerfile`, `Makefile`, `.env.example`, `.gitignore`, `compose.yaml`, `compose.yml`, `docker-compose.yaml`, `docker-compose.yml`, `nginx.conf`, `*.nginx.conf`도 파일명 기준으로 감지합니다.
 
-20. **Paste 복제 지원**: 보기 페이지에서 `Clone` 버튼을 눌러 현재 Paste 내용을 새로운 링크로 복제할 수 있습니다.
+20. **긴 한 줄 Wrap 모드**: Paste에 매우 긴 한 줄이 포함되어 있으면 보기 페이지에 `Long line detected` 힌트와 `Wrap` 버튼이 표시되어, 가로 스크롤 대신 줄바꿈된 읽기 모드로 전환할 수 있습니다.
+
+21. **Paste 복제 지원**: 보기 페이지에서 `Clone` 버튼을 눌러 현재 Paste 내용을 새로운 링크로 복제할 수 있습니다.
 
 ### 데이터 정책
 데이터 정책 헤더에 대한 설명은 [DATA_POLICY_ko.md](./DATA_POLICY_ko.md)를 참고하세요.

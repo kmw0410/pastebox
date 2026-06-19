@@ -46,6 +46,28 @@ func openMySQLPasteDB(dsn string) (*sql.DB, error) {
 	}
 
 	if _, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS admin_sessions (
+			token_hash VARCHAR(128) PRIMARY KEY,
+			created_at_unix BIGINT NOT NULL,
+			expires_at_unix BIGINT NOT NULL
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	`); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+
+	if _, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS pastebox_settings (
+			` + "`key`" + ` VARCHAR(255) PRIMARY KEY,
+			value TEXT NOT NULL,
+			updated_at_unix BIGINT NOT NULL
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+	`); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+
+	if _, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS paste_metadata (
 			id VARCHAR(10) PRIMARY KEY,
 			filename TEXT NULL,

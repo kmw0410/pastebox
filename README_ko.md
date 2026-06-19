@@ -119,7 +119,7 @@ Pastebox는 `local`과 `mysql` 스토리지 백엔드를 지원합니다. `local
 | `MYSQL_DSN` | 비어 있음 | `STORAGE_BACKEND=mysql`일 때 필요합니다. 호환성을 위해 `parseTime=true`와 `utf8mb4` 옵션을 유지하세요. |
 | `DB_ZSTD_LEVEL` | `3` | DB 모드 Paste 본문에 적용되는 선택적 zstd 압축 레벨입니다. |
 | `MIGRATE_LOCAL_PASTES` | `false` | `STORAGE_BACKEND=mysql`일 때 기존 로컬 Paste 파일을 시작 중 MySQL로 이관합니다. 이 작업은 1회성 마이그레이션이며, 성공하면 완료 표시가 SQLite에 저장되어 이후 재시작에서는 건너뜁니다. |
-| `MIGRATE_SQLITE_ADMIN_ACCOUNTS` | `false` | `STORAGE_BACKEND=mysql`일 때 기존 SQLite 관리자 계정을 시작 중 MySQL로 이관합니다. 이 작업은 1회성 마이그레이션이며, 성공하면 완료 표시가 SQLite에 저장되어 이후 재시작에서는 건너뜁니다. |
+| `MIGRATE_SQLITE_ADMIN_ACCOUNTS` | `false` | `STORAGE_BACKEND=mysql`일 때 기존 SQLite 관리자 계정, 관리자 세션, 관리자 설정을 시작 중 MySQL로 이관합니다. 이 작업은 1회성 마이그레이션이며, 성공하면 완료 표시가 SQLite에 저장되어 이후 재시작에서는 건너뜁니다. |
 
 MySQL & MariaDB 설정 예시:
 
@@ -132,12 +132,12 @@ environment:
   MIGRATE_SQLITE_ADMIN_ACCOUNTS: "true"
 ```
 
-`local` 모드에서는 Paste 본문이 `DATA_DIR` 아래 파일로 저장되고 메타데이터는 JSON sidecar 파일로 저장됩니다. `mysql` 모드에서는 Paste 본문이 설정된 MySQL 또는 MariaDB 데이터베이스에 zstd 압축 chunk로 저장됩니다. 관리자 세션, 서비스 설정, 업로드 비활성화 상태는 계속 SQLite(`/paste-data/pastebox.db`)를 사용합니다.
+`local` 모드에서는 Paste 본문이 `DATA_DIR` 아래 파일로 저장되고 메타데이터는 JSON sidecar 파일로 저장됩니다. `mysql` 모드에서는 Paste 본문과 관리자 계정, 관리자 세션, 관리자 설정이 설정된 MySQL 또는 MariaDB 데이터베이스에 저장됩니다. SQLite(`/paste-data/pastebox.db`)는 마이그레이션 완료 표시만 보관합니다.
 
 두 마이그레이션 플래그는 기존 로컬 설치를 MySQL로 옮길 때만 쓰는 시작 시점 전용 도구입니다.
 
 - `MIGRATE_LOCAL_PASTES=true`는 `DATA_DIR` 안의 로컬 Paste 파일과 JSON sidecar를 찾아 각 Paste를 MySQL로 복사한 뒤, 복사가 끝난 개별 항목부터 로컬 파일과 메타데이터를 삭제합니다.
-- `MIGRATE_SQLITE_ADMIN_ACCOUNTS=true`는 기존 SQLite 관리자 계정을 MySQL로 복사한 뒤, 성공하면 SQLite 쪽 계정을 삭제합니다.
+- `MIGRATE_SQLITE_ADMIN_ACCOUNTS=true`는 기존 SQLite 관리자 계정, 관리자 세션, 관리자 설정을 MySQL로 복사한 뒤, 성공하면 이관된 SQLite 행을 삭제합니다. 마이그레이션 완료 표시는 계속 SQLite에 남습니다.
 
 두 마이그레이션 모두 `pastebox_settings`의 완료 표시로 보호됩니다. 한 번 성공해서 완료 표시가 저장되면 이후 재시작에서는 다시 실행되지 않습니다. 마이그레이션이 완료 표시를 남기기 전에 실패하면 다음 시작 때 다시 시도합니다.
 
@@ -279,7 +279,7 @@ environment:
 
 15. **세분화된 락 매니저**: 업로드 ID별로 락을 적용하여 같은 파일에 대한 조회, 삭제, 만료 정리 작업이 동시에 발생해도 충돌을 줄입니다. 서로 다른 파일은 병렬로 처리됩니다.
 
-16. **관리 페이지 제공**: IP, 도메인 뒤에 `/admin`을 추가하여 관리페이지 접근이 가능합니다. 계정이 없는 경우 첫 생성된 계정이 관리자로 들어가며 이후 신규생성이 중단됩니다. `STORAGE_BACKEND=mysql`일 때는 관리자 계정이 MySQL에 저장되고, 관리자 세션과 서비스 설정, 업로드 비활성화 상태는 계속 SQLite(`/paste-data/pastebox.db`, 호스트의 경우 `./data/pastebox.db`)를 사용합니다. 비밀번호는 해시되어 저장됩니다. 관리 대시보드에서는 Paste 개수, 저장 용량, 정책별 분포, 24시간 이내 만료 항목, 만료된 항목, 현재 Paste 저장 백엔드를 보여줍니다. 또한 업로드 비활성화 기능과 개별 Paste 삭제, 선택된 Paste 일괄 삭제를 지원합니다.
+16. **관리 페이지 제공**: IP, 도메인 뒤에 `/admin`을 추가하여 관리페이지 접근이 가능합니다. 계정이 없는 경우 첫 생성된 계정이 관리자로 들어가며 이후 신규생성이 중단됩니다. `STORAGE_BACKEND=mysql`일 때는 관리자 계정과 관리자 세션, 관리자 설정이 MySQL에 저장됩니다. 이 경우 SQLite(`/paste-data/pastebox.db`, 호스트의 경우 `./data/pastebox.db`)는 마이그레이션 완료 표시만 보관합니다. 비밀번호는 해시되어 저장됩니다. 관리 대시보드에서는 Paste 개수, 저장 용량, 정책별 분포, 24시간 이내 만료 항목, 만료된 항목, 현재 Paste 저장 백엔드를 보여줍니다. 또한 업로드 비활성화 기능과 개별 Paste 삭제, 선택된 Paste 일괄 삭제를 지원합니다.
 
 17. **관리자 비밀번호 초기화**: 관리자 비밀번호를 분실한 경우 `docker-compose-build.yml`(또는 `docker-compose.yml`)에 `ADMIN_RESET_TOKEN`을 설정한 뒤 컨테이너를 재시작하고 `/admin/reset`에 접속하세요. 초기화 토큰과 새 비밀번호를 입력하면 비밀번호가 재설정되며, 기존 관리자 세션은 모두 만료되어 새 비밀번호로 다시 로그인해야 합니다.
 

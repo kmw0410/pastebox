@@ -283,7 +283,7 @@ func (s *Store) CreateAdminSession() (string, error) {
 	now := time.Now().UTC()
 	expires := now.Add(24 * time.Hour)
 
-	_, err = s.adminDB.Exec(`
+	_, err = s.adminSessionDB().Exec(`
 		INSERT INTO admin_sessions (
 			token_hash,
 			created_at_unix,
@@ -307,7 +307,7 @@ func (s *Store) ValidAdminSession(token string) (bool, error) {
 	now := time.Now().UTC().Unix()
 
 	var count int
-	err := s.adminDB.QueryRow(`
+	err := s.adminSessionDB().QueryRow(`
 		SELECT COUNT(*)
 		FROM admin_sessions
 		WHERE token_hash = ?
@@ -327,7 +327,7 @@ func (s *Store) DeleteAdminSession(token string) error {
 		return nil
 	}
 
-	_, err := s.adminDB.Exec(`
+	_, err := s.adminSessionDB().Exec(`
 		DELETE FROM admin_sessions
 		WHERE token_hash = ?
 	`, hashSecret(token))
@@ -357,12 +357,19 @@ func (s *Store) SetUploadsDisabled(disabled bool) error {
 }
 
 func (s *Store) getAdminSetting(key string) (string, bool, error) {
+	if s.StorageBackend == "mysql" && s.mysqlDB != nil {
+		return s.getMySQLAdminSetting(key)
+	}
+	return s.getSQLiteAdminSetting(key)
+}
+
+func (s *Store) getSQLiteAdminSetting(key string) (string, bool, error) {
 	var value string
 
 	err := s.adminDB.QueryRow(`
 		SELECT value
 		FROM pastebox_settings
-		WHERE key = ?
+		WHERE `+"`key`"+` = ?
 	`, key).Scan(&value)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", false, nil
@@ -375,13 +382,20 @@ func (s *Store) getAdminSetting(key string) (string, bool, error) {
 }
 
 func (s *Store) setAdminSetting(key string, value string) error {
+	if s.StorageBackend == "mysql" && s.mysqlDB != nil {
+		return s.setMySQLAdminSetting(key, value)
+	}
+	return s.setSQLiteAdminSetting(key, value)
+}
+
+func (s *Store) setSQLiteAdminSetting(key string, value string) error {
 	_, err := s.adminDB.Exec(`
 		INSERT INTO pastebox_settings (
-			key,
+			`+"`key`"+`,
 			value,
 			updated_at_unix
 		) VALUES (?, ?, ?)
-		ON CONFLICT(key) DO UPDATE SET
+		ON CONFLICT(`+"`key`"+`) DO UPDATE SET
 			value = excluded.value,
 			updated_at_unix = excluded.updated_at_unix
 	`, key, value, time.Now().UTC().Unix())
@@ -390,7 +404,7 @@ func (s *Store) setAdminSetting(key string, value string) error {
 }
 
 func (s *Store) migrationDone(key string) (bool, error) {
-	value, ok, err := s.getAdminSetting("migration." + key)
+	value, ok, err := s.getSQLiteAdminSetting("migration." + key)
 	if err != nil {
 		return false, err
 	}
@@ -402,5 +416,12 @@ func (s *Store) migrationDone(key string) (bool, error) {
 }
 
 func (s *Store) markMigrationDone(key string) error {
-	return s.setAdminSetting("migration."+key, "true")
+	return s.setSQLiteAdminSetting("migration."+key, "true")
+}
+
+func (s *Store) adminSessionDB() *sql.DB {
+	if s.StorageBackend == "mysql" && s.mysqlDB != nil {
+		return s.mysqlDB
+	}
+	return s.adminDB
 }

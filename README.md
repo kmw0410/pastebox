@@ -117,6 +117,8 @@ Pastebox supports `local` and `mysql` storage backends. Use `local` for local fi
 | `STORAGE_BACKEND` | `local` | Paste storage backend. Use `local` for `/paste-data` files or `mysql` for an external MySQL & MariaDB database. |
 | `MYSQL_DSN` | empty | Required when `STORAGE_BACKEND=mysql`. Keep `parseTime=true` and `utf8mb4` options for compatibility. |
 | `DB_ZSTD_LEVEL` | `3` | Optional zstd compression level for DB-mode paste content. |
+| `MIGRATE_LOCAL_PASTES` | `false` | When `STORAGE_BACKEND=mysql`, migrate existing local paste files into MySQL on startup. |
+| `MIGRATE_SQLITE_ADMIN_ACCOUNTS` | `false` | When `STORAGE_BACKEND=mysql`, migrate the existing SQLite admin account into MySQL on startup. |
 
 Example MySQL & MariaDB configuration:
 
@@ -125,9 +127,11 @@ environment:
   STORAGE_BACKEND: "mysql"
   MYSQL_DSN: "pastebox:pastebox@tcp(mysql.example.com:3306)/pastebox?parseTime=true&charset=utf8mb4&collation=utf8mb4_unicode_ci"
   DB_ZSTD_LEVEL: "3"
+  MIGRATE_LOCAL_PASTES: "true"
+  MIGRATE_SQLITE_ADMIN_ACCOUNTS: "true"
 ```
 
-In `local` mode, paste content is stored under `DATA_DIR` with JSON sidecar metadata. In `mysql` mode, paste content is stored as zstd-compressed chunks in the configured MySQL or MariaDB database. Admin accounts, admin sessions, service settings, and upload-disable state still use SQLite at `/paste-data/pastebox.db`. Existing local paste files are not automatically migrated to MySQL/MariaDB.
+In `local` mode, paste content is stored under `DATA_DIR` with JSON sidecar metadata. In `mysql` mode, paste content is stored as zstd-compressed chunks in the configured MySQL or MariaDB database. Admin sessions, service settings, and upload-disable state still use SQLite at `/paste-data/pastebox.db`. When `MIGRATE_LOCAL_PASTES=true`, existing local paste files are copied into MySQL on startup and removed locally after a successful migration. When `MIGRATE_SQLITE_ADMIN_ACCOUNTS=true`, the existing SQLite admin account is copied into MySQL on startup and then removed from SQLite after success.
 
 ### Features
 > [!NOTE]

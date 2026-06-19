@@ -33,6 +33,14 @@ func openMySQLPasteDB(dsn string) (*sql.DB, error) {
 	}
 
 	if _, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS pastebox_admin (
+			id TINYINT NOT NULL PRIMARY KEY,
+			username VARCHAR(255) NOT NULL UNIQUE,
+			password_hash VARCHAR(255) NOT NULL,
+			salt VARCHAR(255) NOT NULL,
+			created_at_unix BIGINT NOT NULL
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 		CREATE TABLE IF NOT EXISTS paste_metadata (
 			id VARCHAR(10) PRIMARY KEY,
 			filename TEXT NULL,

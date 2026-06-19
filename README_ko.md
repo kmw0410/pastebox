@@ -118,6 +118,8 @@ Pastebox는 `local`과 `mysql` 스토리지 백엔드를 지원합니다. `local
 | `STORAGE_BACKEND` | `local` | Paste 저장 백엔드입니다. `/paste-data` 파일 저장은 `local`, 외부 MySQL & MariaDB 저장은 `mysql`을 사용합니다. |
 | `MYSQL_DSN` | 비어 있음 | `STORAGE_BACKEND=mysql`일 때 필요합니다. 호환성을 위해 `parseTime=true`와 `utf8mb4` 옵션을 유지하세요. |
 | `DB_ZSTD_LEVEL` | `3` | DB 모드 Paste 본문에 적용되는 선택적 zstd 압축 레벨입니다. |
+| `MIGRATE_LOCAL_PASTES` | `false` | `STORAGE_BACKEND=mysql`일 때 기존 로컬 Paste 파일을 시작 시 MySQL로 이관합니다. |
+| `MIGRATE_SQLITE_ADMIN_ACCOUNTS` | `false` | `STORAGE_BACKEND=mysql`일 때 기존 SQLite 관리자 계정을 시작 시 MySQL로 이관합니다. |
 
 MySQL & MariaDB 설정 예시:
 
@@ -126,9 +128,11 @@ environment:
   STORAGE_BACKEND: "mysql"
   MYSQL_DSN: "pastebox:pastebox@tcp(mysql.example.com:3306)/pastebox?parseTime=true&charset=utf8mb4&collation=utf8mb4_unicode_ci"
   DB_ZSTD_LEVEL: "3"
+  MIGRATE_LOCAL_PASTES: "true"
+  MIGRATE_SQLITE_ADMIN_ACCOUNTS: "true"
 ```
 
-`local` 모드에서는 Paste 본문이 `DATA_DIR` 아래 파일로 저장되고 메타데이터는 JSON sidecar 파일로 저장됩니다. `mysql` 모드에서는 Paste 본문이 설정된 MySQL 또는 MariaDB 데이터베이스에 zstd 압축 chunk로 저장됩니다. 관리자 계정, 관리자 세션, 서비스 설정, 업로드 비활성화 상태는 계속 SQLite(`/paste-data/pastebox.db`)를 사용합니다. 기존 로컬 Paste 파일은 MySQL/MariaDB로 자동 마이그레이션되지 않습니다.
+`local` 모드에서는 Paste 본문이 `DATA_DIR` 아래 파일로 저장되고 메타데이터는 JSON sidecar 파일로 저장됩니다. `mysql` 모드에서는 Paste 본문이 설정된 MySQL 또는 MariaDB 데이터베이스에 zstd 압축 chunk로 저장됩니다. 관리자 세션, 서비스 설정, 업로드 비활성화 상태는 계속 SQLite(`/paste-data/pastebox.db`)를 사용합니다. `MIGRATE_LOCAL_PASTES=true`이면 기존 로컬 Paste 파일을 시작 시 MySQL로 복사한 뒤 성공 후 로컬 파일을 삭제합니다. `MIGRATE_SQLITE_ADMIN_ACCOUNTS=true`이면 기존 SQLite 관리자 계정을 시작 시 MySQL로 복사한 뒤 성공 후 SQLite 계정을 삭제합니다.
 
 ### 기능
 

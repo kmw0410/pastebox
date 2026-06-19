@@ -114,3 +114,27 @@ func TestStoreAdminUsername(t *testing.T) {
 		t.Fatalf("AdminUsername = %q, want %q", username, "admin")
 	}
 }
+
+func TestStoreMigrationMarkers(t *testing.T) {
+	store := newTestStore(t)
+
+	done, err := store.migrationDone("local_pastes_to_mysql")
+	if err != nil {
+		t.Fatalf("migrationDone before mark failed: %v", err)
+	}
+	if done {
+		t.Fatalf("migrationDone before mark = %v, want false", done)
+	}
+
+	if err := store.markMigrationDone("local_pastes_to_mysql"); err != nil {
+		t.Fatalf("markMigrationDone failed: %v", err)
+	}
+
+	done, err = store.migrationDone("local_pastes_to_mysql")
+	if err != nil {
+		t.Fatalf("migrationDone after mark failed: %v", err)
+	}
+	if !done {
+		t.Fatalf("migrationDone after mark = %v, want true", done)
+	}
+}

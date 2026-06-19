@@ -32,11 +32,13 @@ type Store struct {
 }
 
 type StoreOptions struct {
-	DataDir        string
-	TTL            time.Duration
-	StorageBackend string
-	MySQLDSN       string
-	ZstdLevel      int
+	DataDir                    string
+	TTL                        time.Duration
+	StorageBackend             string
+	MySQLDSN                   string
+	ZstdLevel                  int
+	MigrateLocalPastes         bool
+	MigrateSQLiteAdminAccounts bool
 }
 
 type Metadata struct {
@@ -120,6 +122,22 @@ func NewStoreWithOptions(opts StoreOptions) (*Store, error) {
 			return nil, err
 		}
 		store.mysqlDB = mysqlDB
+
+		if opts.MigrateSQLiteAdminAccounts {
+			if err := store.migrateSQLiteAdminAccountsToMySQL(); err != nil {
+				_ = mysqlDB.Close()
+				_ = adminDB.Close()
+				return nil, err
+			}
+		}
+
+		if opts.MigrateLocalPastes {
+			if err := store.migrateLocalPastesToMySQL(); err != nil {
+				_ = mysqlDB.Close()
+				_ = adminDB.Close()
+				return nil, err
+			}
+		}
 	}
 
 	return store, nil

@@ -57,6 +57,20 @@ func openAdminDB(path string) (*sql.DB, error) {
 }
 
 func (s *Store) AdminExists() (bool, error) {
+	if s.StorageBackend == "mysql" {
+		exists, err := s.adminExistsMySQL()
+		if err != nil {
+			return false, err
+		}
+		if exists {
+			return true, nil
+		}
+	}
+
+	return s.adminExistsSQLite()
+}
+
+func (s *Store) adminExistsSQLite() (bool, error) {
 	var count int
 
 	err := s.adminDB.QueryRow(`SELECT COUNT(*) FROM pastebox_admin`).Scan(&count)
@@ -68,6 +82,20 @@ func (s *Store) AdminExists() (bool, error) {
 }
 
 func (s *Store) AdminUsername() (string, error) {
+	if s.StorageBackend == "mysql" {
+		username, err := s.adminUsernameMySQL()
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return "", err
+		}
+		if username != "" {
+			return username, nil
+		}
+	}
+
+	return s.adminUsernameSQLite()
+}
+
+func (s *Store) adminUsernameSQLite() (string, error) {
 	var username string
 
 	err := s.adminDB.QueryRow(`
@@ -102,6 +130,14 @@ func (s *Store) CreateAdmin(username string, password string) error {
 		return errors.New("admin account already exists")
 	}
 
+	if s.StorageBackend == "mysql" {
+		return s.createAdminMySQL(username, password)
+	}
+
+	return s.createAdminSQLite(username, password)
+}
+
+func (s *Store) createAdminSQLite(username string, password string) error {
 	salt, err := randomString(tokenAlphabet, 32)
 	if err != nil {
 		return err
@@ -136,6 +172,18 @@ func (s *Store) ForceResetAdminPassword(password string) error {
 		return errors.New("admin account not found")
 	}
 
+	if s.StorageBackend == "mysql" {
+		if err := s.forceResetAdminPasswordMySQL(password); err == nil {
+			return nil
+		} else if !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+	}
+
+	return s.forceResetAdminPasswordSQLite(password)
+}
+
+func (s *Store) forceResetAdminPasswordSQLite(password string) error {
 	salt, err := randomString(tokenAlphabet, 32)
 	if err != nil {
 		return err
@@ -186,6 +234,20 @@ func (s *Store) AuthenticateAdmin(username string, password string) (bool, error
 	username = strings.TrimSpace(username)
 	password = strings.TrimSpace(password)
 
+	if s.StorageBackend == "mysql" {
+		ok, err := s.authenticateAdminMySQL(username, password)
+		if err != nil {
+			return false, err
+		}
+		if ok {
+			return true, nil
+		}
+	}
+
+	return s.authenticateAdminSQLite(username, password)
+}
+
+func (s *Store) authenticateAdminSQLite(username string, password string) (bool, error) {
 	var storedHash string
 	var salt string
 
@@ -274,20 +336,12 @@ func (s *Store) DeleteAdminSession(token string) error {
 }
 
 func (s *Store) UploadsDisabled() (bool, error) {
-	var value string
-
-	err := s.adminDB.QueryRow(`
-		SELECT value
-		FROM pastebox_settings
-		WHERE key = 'uploads_disabled'
-	`).Scan(&value)
-
-	if errors.Is(err, sql.ErrNoRows) {
-		return false, nil
-	}
-
+	value, ok, err := s.getAdminSetting("uploads_disabled")
 	if err != nil {
 		return false, err
+	}
+	if !ok {
+		return false, nil
 	}
 
 	return value == "true", nil
@@ -299,16 +353,54 @@ func (s *Store) SetUploadsDisabled(disabled bool) error {
 		value = "true"
 	}
 
+	return s.setAdminSetting("uploads_disabled", value)
+}
+
+func (s *Store) getAdminSetting(key string) (string, bool, error) {
+	var value string
+
+	err := s.adminDB.QueryRow(`
+		SELECT value
+		FROM pastebox_settings
+		WHERE key = ?
+	`, key).Scan(&value)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", false, nil
+	}
+	if err != nil {
+		return "", false, err
+	}
+
+	return value, true, nil
+}
+
+func (s *Store) setAdminSetting(key string, value string) error {
 	_, err := s.adminDB.Exec(`
 		INSERT INTO pastebox_settings (
 			key,
 			value,
 			updated_at_unix
-		) VALUES ('uploads_disabled', ?, ?)
+		) VALUES (?, ?, ?)
 		ON CONFLICT(key) DO UPDATE SET
 			value = excluded.value,
 			updated_at_unix = excluded.updated_at_unix
-	`, value, time.Now().UTC().Unix())
+	`, key, value, time.Now().UTC().Unix())
 
 	return err
+}
+
+func (s *Store) migrationDone(key string) (bool, error) {
+	value, ok, err := s.getAdminSetting("migration." + key)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, nil
+	}
+
+	return value == "true", nil
+}
+
+func (s *Store) markMigrationDone(key string) error {
+	return s.setAdminSetting("migration."+key, "true")
 }

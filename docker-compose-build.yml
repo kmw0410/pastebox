@@ -19,6 +19,10 @@ services:
       # MYSQL_DSN: "pastebox:pastebox@tcp(mysql.example.com:3306)/pastebox?parseTime=true&charset=utf8mb4&collation=utf8mb4_unicode_ci"
       # Optional zstd compression level for DB-mode paste content. Default is 3.
       # DB_ZSTD_LEVEL: "3"
+      # When STORAGE_BACKEND=mysql, migrate existing local paste files into MySQL on startup.
+      # MIGRATE_LOCAL_PASTES: "true"
+      # When STORAGE_BACKEND=mysql, migrate the existing SQLite admin account into MySQL on startup.
+      # MIGRATE_SQLITE_ADMIN_ACCOUNTS: "true"
       # Default admin reset token. Change this value before production use.
       ADMIN_RESET_TOKEN: "41345bfc5d9ab9e6e4c8d2e1b90e129af9cc472286954beeddb51c9b2beaf1d5b4eb3f10ae872ba1db4ef7e3f6fe1b474cdbe3aeeee9323a5b9ca99edf224883"
     volumes:

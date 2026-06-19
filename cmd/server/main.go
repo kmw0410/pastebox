@@ -16,15 +16,19 @@ func main() {
 	storageBackend := getenv("STORAGE_BACKEND", "local")
 	mysqlDSN := strings.TrimSpace(os.Getenv("MYSQL_DSN"))
 	zstdLevel := getenvInt("DB_ZSTD_LEVEL", 3)
+	migrateLocalPastes := getenvBool("MIGRATE_LOCAL_PASTES", false)
+	migrateSQLiteAdminAccounts := getenvBool("MIGRATE_SQLITE_ADMIN_ACCOUNTS", false)
 	i18n := loadLocalizer(getenv("LANGUAGE", "en"))
 	adminResetToken := strings.TrimSpace(os.Getenv("ADMIN_RESET_TOKEN"))
 
 	store, err := pastebox.NewStoreWithOptions(pastebox.StoreOptions{
-		DataDir:        dataDir,
-		TTL:            time.Duration(expireDays) * 24 * time.Hour,
-		StorageBackend: storageBackend,
-		MySQLDSN:       mysqlDSN,
-		ZstdLevel:      zstdLevel,
+		DataDir:                    dataDir,
+		TTL:                        time.Duration(expireDays) * 24 * time.Hour,
+		StorageBackend:             storageBackend,
+		MySQLDSN:                   mysqlDSN,
+		ZstdLevel:                  zstdLevel,
+		MigrateLocalPastes:         migrateLocalPastes,
+		MigrateSQLiteAdminAccounts: migrateSQLiteAdminAccounts,
 	})
 	if err != nil {
 		logFatalEvent("server.init_store_failed", map[string]any{

@@ -69,6 +69,8 @@ Host mapping is typically `./data:/paste-data`.
 - When committing, exclude `WORK.md` and `AGENTS.md` unless the user explicitly asks to include them.
 - Before starting work, always consult `WORK.md` alongside `AGENTS.md` so recent task history is part of the working context.
 - After any commit+push sequence, record in `WORK.md` what work was done and what mostly changed, using the existing date-based log format, and include the commit ID plus commit message when available.
+- When fixing code after an error occurs, record the problematic code area, the root cause, and the fix in `AGENTS.md`, including a small relevant code snippet when useful.
+- Before making a similar future change, review those recorded error-fix notes to avoid repeating the same mistake.
 
 ## 5. Upload Behavior
 Supported upload methods:
@@ -337,10 +339,11 @@ docker exec pastebox cat /etc/apk/repositories
 - Switching upload validation back to full-file memory reads.
 
 ## 16. Detailed Work Log
-- Each dated `WORK.md` entry must use at least two lines.
+- Each dated `WORK.md` block must use at least two lines.
   - Line 1 should summarize what changed.
   - Line 2 should spell out the concrete code/file or behavior changes.
-  - If a commit+push happened, add the commit ID and commit message on the same dated entry.
+  - If a commit+push happened, add the commit ID and commit message on the same dated block.
+  - If the same calendar date already exists, append the new notes under that date instead of creating a duplicate date heading.
 - Main page design refresh:
   - Reworked index layout into expanded dark card system (`#111111`, `#E4E4E4`, accent palette), removed outer border/glow, increased width (`max-w-[98rem]`), tuned subtitle scale, and balanced top/bottom grid spacing.
 - Admin/password template alignment:
@@ -365,7 +368,14 @@ docker exec pastebox cat /etc/apk/repositories
 - Docker Hub runtime mirror override:
   - Kept runtime-only `MIRROR_URL` repository rewrite behavior in entrypoint.
 
-## 17. Commit Message Examples
+## 17. Error Fix Notes
+Use this section to record recurring lessons from error-driven code fixes. Each note should include:
+- Problematic code area: file/function or behavior that failed.
+- Cause: why the error happened.
+- Fix: how it was corrected, with a small code snippet when helpful.
+- Prevention: what to check before making similar changes again.
+
+## 18. Commit Message Examples
 Use short, conventional commit messages:
 ```text
 feat: add language support
@@ -376,7 +386,7 @@ fix: restore localized index page
 perf: stream uploads after text sample validation
 ```
 
-## 18. Final Guidance
+## 19. Final Guidance
 Keep Pastebox:
 - simple
 - file-based

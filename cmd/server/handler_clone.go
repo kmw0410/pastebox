@@ -32,12 +32,14 @@ func (a *app) cloneHandler(w http.ResponseWriter, r *http.Request, id string) {
 	}
 
 	usePassword := strings.EqualFold(strings.TrimSpace(r.Header.Get("usepassword")), "true")
-	policy := strings.ToLower(strings.TrimSpace(r.Header.Get("data-policy")))
-	permanent := policy == "permanent"
-	once := policy == "once"
+	policy, err := pastebox.ParseDataPolicy(r.Header.Get("data-policy"))
+	if err != nil {
+		a.respondRequestError(w, r, http.StatusBadRequest, "invalid data-policy. use temporary, permanent, once, or a duration up to 30d like 30m, 12h, 7d")
+		return
+	}
 	customCode := strings.TrimSpace(r.Header.Get("code"))
 
-	meta, newPassword, deleteToken, manageToken, err := a.store.Clone(id, password, usePassword, permanent, once, customCode)
+	meta, newPassword, deleteToken, manageToken, err := a.store.Clone(id, password, usePassword, policy, customCode)
 	if err != nil {
 		if errors.Is(err, pastebox.ErrInvalidPassword) {
 			a.respondRequestError(w, r, http.StatusUnauthorized, "password required or invalid. use ?password=... or paste-password header")

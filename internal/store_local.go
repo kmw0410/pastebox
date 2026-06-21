@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func (s *Store) createLocalFromReader(r io.Reader, filename string, contentType string, usePassword bool, permanent bool, once bool, customCode string) (Metadata, string, string, string, error) {
+func (s *Store) createLocalFromReader(r io.Reader, filename string, contentType string, usePassword bool, policy DataPolicy, customCode string) (Metadata, string, string, string, error) {
 	id, path, err := s.reserveLocalPath(customCode)
 	if err != nil {
 		return Metadata{}, "", "", "", err
@@ -61,15 +61,8 @@ func (s *Store) createLocalFromReader(r io.Reader, filename string, contentType 
 
 	now := time.Now().UTC()
 
-	dataPolicy := "temporary"
-	expiresAt := now.Add(s.TTL)
-
-	if permanent {
-		dataPolicy = "permanent"
-		expiresAt = time.Time{}
-	} else if once {
-		dataPolicy = "once"
-	}
+	policy = policy.normalized()
+	expiresAt := policy.ExpiresAt(now, s.TTL)
 
 	meta := Metadata{
 		ID:              id,
@@ -79,7 +72,7 @@ func (s *Store) createLocalFromReader(r io.Reader, filename string, contentType 
 		DeleteTokenHash: hashSecret(deleteToken),
 		CreatedAt:       now,
 		ExpiresAt:       expiresAt,
-		DataPolicy:      dataPolicy,
+		DataPolicy:      policy.Name,
 		Size:            size,
 		ContentType:     contentType,
 	}
@@ -557,8 +550,8 @@ func (s *Store) setDataPolicyLocal(id string, token string, policy string) (Meta
 		return Metadata{}, ErrInvalidManageToken
 	}
 
-	policy = strings.ToLower(strings.TrimSpace(policy))
-	if policy != "temporary" && policy != "permanent" && policy != "once" {
+	parsedPolicy, err := ParseDataPolicy(policy)
+	if err != nil {
 		return Metadata{}, ErrInvalidPolicy
 	}
 
@@ -583,13 +576,8 @@ func (s *Store) setDataPolicyLocal(id string, token string, policy string) (Meta
 		return Metadata{}, err
 	}
 
-	meta.DataPolicy = policy
-	switch policy {
-	case "permanent":
-		meta.ExpiresAt = time.Time{}
-	case "temporary", "once":
-		meta.ExpiresAt = now.Add(s.TTL)
-	}
+	meta.DataPolicy = parsedPolicy.Name
+	meta.ExpiresAt = parsedPolicy.ExpiresAt(now, s.TTL)
 
 	if err := s.writeMetadata(meta); err != nil {
 		return Metadata{}, err

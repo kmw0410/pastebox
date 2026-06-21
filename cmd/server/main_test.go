@@ -22,10 +22,20 @@ func newTestApp(t *testing.T) *app {
 	return &app{store: store}
 }
 
+func mustParsePolicy(t *testing.T, value string) pastebox.DataPolicy {
+	t.Helper()
+
+	policy, err := pastebox.ParseDataPolicy(value)
+	if err != nil {
+		t.Fatalf("ParseDataPolicy(%q) failed: %v", value, err)
+	}
+	return policy
+}
+
 func TestViewHandlerHeadDoesNotConsumeOncePaste(t *testing.T) {
 	app := newTestApp(t)
 
-	meta, _, _, _, err := app.store.Create(strings.NewReader("head request"), "head.txt", "text/plain; charset=utf-8", false, false, true, "head1")
+	meta, _, _, _, err := app.store.Create(strings.NewReader("head request"), "head.txt", "text/plain; charset=utf-8", false, mustParsePolicy(t, "once"), "head1")
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
@@ -50,7 +60,7 @@ func TestViewHandlerHeadDoesNotConsumeOncePaste(t *testing.T) {
 func TestViewHandlerGetConsumesOncePaste(t *testing.T) {
 	app := newTestApp(t)
 
-	meta, _, _, _, err := app.store.Create(strings.NewReader("get request"), "get.txt", "text/plain; charset=utf-8", false, false, true, "get1")
+	meta, _, _, _, err := app.store.Create(strings.NewReader("get request"), "get.txt", "text/plain; charset=utf-8", false, mustParsePolicy(t, "once"), "get1")
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}

@@ -106,7 +106,7 @@ func openMySQLPasteDB(dsn string) (*sql.DB, error) {
 	return db, nil
 }
 
-func (s *Store) createMySQLFromReader(r io.Reader, filename string, contentType string, usePassword bool, permanent bool, once bool, customCode string) (Metadata, string, string, string, error) {
+func (s *Store) createMySQLFromReader(r io.Reader, filename string, contentType string, usePassword bool, policy DataPolicy, customCode string) (Metadata, string, string, string, error) {
 	customCode = strings.TrimSpace(customCode)
 	if customCode != "" && !validID(customCode) {
 		return Metadata{}, "", "", "", ErrInvalidCode
@@ -128,14 +128,8 @@ func (s *Store) createMySQLFromReader(r io.Reader, filename string, contentType 
 	}
 
 	now := time.Now().UTC()
-	dataPolicy := "temporary"
-	expiresAt := now.Add(s.TTL)
-	if permanent {
-		dataPolicy = "permanent"
-		expiresAt = time.Time{}
-	} else if once {
-		dataPolicy = "once"
-	}
+	policy = policy.normalized()
+	expiresAt := policy.ExpiresAt(now, s.TTL)
 
 	baseMeta := Metadata{
 		Filename:        strings.TrimSpace(filename),
@@ -144,7 +138,7 @@ func (s *Store) createMySQLFromReader(r io.Reader, filename string, contentType 
 		DeleteTokenHash: hashSecret(deleteToken),
 		CreatedAt:       now,
 		ExpiresAt:       expiresAt,
-		DataPolicy:      dataPolicy,
+		DataPolicy:      policy.Name,
 		ContentType:     contentType,
 	}
 
@@ -591,8 +585,8 @@ func (s *Store) setDataPolicyMySQL(id string, token string, policy string) (Meta
 		return Metadata{}, ErrInvalidManageToken
 	}
 
-	policy = strings.ToLower(strings.TrimSpace(policy))
-	if policy != "temporary" && policy != "permanent" && policy != "once" {
+	parsedPolicy, err := ParseDataPolicy(policy)
+	if err != nil {
 		return Metadata{}, ErrInvalidPolicy
 	}
 
@@ -614,13 +608,8 @@ func (s *Store) setDataPolicyMySQL(id string, token string, policy string) (Meta
 		return Metadata{}, err
 	}
 
-	meta.DataPolicy = policy
-	switch policy {
-	case "permanent":
-		meta.ExpiresAt = time.Time{}
-	case "temporary", "once":
-		meta.ExpiresAt = now.Add(s.TTL)
-	}
+	meta.DataPolicy = parsedPolicy.Name
+	meta.ExpiresAt = parsedPolicy.ExpiresAt(now, s.TTL)
 
 	_, err = s.mysqlDB.Exec(`
 		UPDATE paste_metadata

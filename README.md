@@ -195,7 +195,13 @@ Both migrations are protected by a completion marker stored in SQLite under `pas
    }
    ```
 
-6. **Expiration Information**: Temporary uploads include an `expires` field in the response so you can check when the file will expire. If `data-policy: permanent` is used, the expiration date is not shown.
+6. **Custom Expiration**: Use `data-policy` values such as `30m`, `12h`, or `7d` to set a custom expiration up to 30 days. The suffix must be `m` for minutes, `h` for hours, or `d` for days. Invalid values such as `0m`, `31d`, `721h`, `1w`, or `1.5h` are rejected with `400 Bad Request`.
+
+   ```bash
+   curl -H "data-policy: 12h" -F "file=@test.txt" http://localhost:8080/
+   ```
+
+7. **Expiration Information**: Temporary and custom-duration uploads include an `expires` field in the response so you can check when the file will expire. If `data-policy: permanent` is used, the expiration date is not shown.
 
    ```
    url: http://localhost:8080/RANDOM_CODE
@@ -203,13 +209,13 @@ Both migrations are protected by a completion marker stored in SQLite under `pas
    delete: http://localhost:8080/RANDOM_CODE?delete=DELETE_TOKEN
    ```
 
-7. **Manual Deletion**: Each upload returns a delete URL. You can use this URL to manually delete the uploaded file. Deletion requests are also recorded in the container logs.
+8. **Manual Deletion**: Each upload returns a delete URL. You can use this URL to manually delete the uploaded file. Deletion requests are also recorded in the container logs.
 
    ```bash
    curl "http://localhost:8080/RANDOM_CODE?delete=DELETE_TOKEN"
    ```
 
-8. **Password-Protected Links**: Private upload link creation using the `usepassword: true` header is supported. When this header is used, an 8-character password is issued, generated from a combination of uppercase English letters, lowercase English letters, numbers, and special characters. Files can be viewed directly using the `?password=...` query parameter or the `paste-password: ...` header, or by entering the password manually when accessing the link in a browser.
+9. **Password-Protected Links**: Private upload link creation using the `usepassword: true` header is supported. When this header is used, an 8-character password is issued, generated from a combination of uppercase English letters, lowercase English letters, numbers, and special characters. Files can be viewed directly using the `?password=...` query parameter or the `paste-password: ...` header, or by entering the password manually when accessing the link in a browser.
 
    ```bash
    # Create password-protected link
@@ -222,13 +228,13 @@ Both migrations are protected by a completion marker stored in SQLite under `pas
    curl "http://localhost:8080/RANDOM_CODE?password=RANDOM_PASSWORD"
    ```
 
-9. **Custom Code**: You can use the `code: ...` header to create a link with a code of your choice instead of a randomly generated code. **Uppercase and lowercase English letters, numbers, and the special characters `_` and `-` are supported.** Codes longer than 10 characters or duplicate codes cannot be created.
+10. **Custom Code**: You can use the `code: ...` header to create a link with a code of your choice instead of a randomly generated code. **Uppercase and lowercase English letters, numbers, and the special characters `_` and `-` are supported.** Codes longer than 10 characters or duplicate codes cannot be created.
 
    ```bash
    curl -H "code: custom123" -F "file=@secret.txt" http://localhost:8080/
    ```
 
-10. **Upload Response Format**: When an upload succeeds, Pastebox returns the URL, expiration time, and delete link. If the upload is password-protected, the `password` field is also included.
+11. **Upload Response Format**: When an upload succeeds, Pastebox returns the URL, expiration time, and delete link. If the upload is password-protected, the `password` field is also included.
 
    ```
    url: http://localhost:8080/RANDOM_CODE
@@ -254,7 +260,7 @@ Both migrations are protected by a completion marker stored in SQLite under `pas
    }
    ```
 
-11. **Paste Management Link**: Each successful upload now also generates a private management URL. The link is delivered as a query parameter in the upload response using `?manage=...`. Anyone with that token can access the management page directly without entering a password. Later requests must continue to include the same `manage` token in the URL.
+12. **Paste Management Link**: Each successful upload now also generates a private management URL. The link is delivered as a query parameter in the upload response using `?manage=...`. Anyone with that token can access the management page directly without entering a password. Later requests must continue to include the same `manage` token in the URL.
 
    The management link can be used to:
 
@@ -264,30 +270,30 @@ Both migrations are protected by a completion marker stored in SQLite under `pas
 
    When converting a password-protected paste back to public, Pastebox requires the current generated password for verification first.
 
-12. **Copy Content in Browser**: When opening a text-based upload link in the browser, you can copy the content to your clipboard using the `Copy` button next to the `Raw` button.
+13. **Copy Content in Browser**: When opening a text-based upload link in the browser, you can copy the content to your clipboard using the `Copy` button next to the `Raw` button.
 
-13. **Text File Rendering in Browser**: Text-based files such as `.txt` and `.log` are displayed directly in the browser instead of being downloaded. If you need the original raw response, use `?format=raw`.
+14. **Text File Rendering in Browser**: Text-based files such as `.txt` and `.log` are displayed directly in the browser instead of being downloaded. If you need the original raw response, use `?format=raw`.
 
-14. **Creation and Deletion Logs**: File creation and deletion events are recorded in the container logs.
+15. **Creation and Deletion Logs**: File creation and deletion events are recorded in the container logs.
 
    ```
    created: id=AbC12 remote=127.0.0.1:51234 size=123 content_type="text/plain; charset=utf-8" policy=temporary expires=2026-06-24T05:10:26Z protected=false
    deleted: id=AbC12 remote=127.0.0.1:51234
    ```
 
-15. **Fine-Grained Lock Manager**: Pastebox applies locks per upload ID to reduce conflicts when viewing, deleting, or cleaning up the same file concurrently. Different files can still be processed in parallel.
+16. **Fine-Grained Lock Manager**: Pastebox applies locks per upload ID to reduce conflicts when viewing, deleting, or cleaning up the same file concurrently. Different files can still be processed in parallel.
 
-16. **Admin Page**: You can access the admin page by adding `/admin` after the IP address or domain. If no account exists, the first created account becomes the administrator account, and additional account creation is disabled afterward. When `STORAGE_BACKEND=mysql`, the admin account, admin sessions, and admin settings are stored in MySQL. SQLite at `/paste-data/pastebox.db` inside the container, or `./data/pastebox.db` on the host, is then used only for migration completion markers. Passwords are stored in hashed form. The admin dashboard shows paste counts, storage usage, policy breakdown, expiring and expired items, and the current paste storage backend. It also lets administrators enable or disable uploads, delete a single paste, or bulk-delete selected pastes.
+17. **Admin Page**: You can access the admin page by adding `/admin` after the IP address or domain. If no account exists, the first created account becomes the administrator account, and additional account creation is disabled afterward. When `STORAGE_BACKEND=mysql`, the admin account, admin sessions, and admin settings are stored in MySQL. SQLite at `/paste-data/pastebox.db` inside the container, or `./data/pastebox.db` on the host, is then used only for migration completion markers. Passwords are stored in hashed form. The admin dashboard shows paste counts, storage usage, policy breakdown, expiring and expired items, and the current paste storage backend. It also lets administrators enable or disable uploads, delete a single paste, or bulk-delete selected pastes.
 
-17. **Admin Password Reset**: If you lose the admin password, set `ADMIN_RESET_TOKEN` in `docker-compose-build.yml` (or `docker-compose.yml`), restart the container, and open `/admin/reset`. Enter the reset token and a new password. After reset, existing admin sessions are invalidated and you must log in again with the new password.
+18. **Admin Password Reset**: If you lose the admin password, set `ADMIN_RESET_TOKEN` in `docker-compose-build.yml` (or `docker-compose.yml`), restart the container, and open `/admin/reset`. Enter the reset token and a new password. After reset, existing admin sessions are invalidated and you must log in again with the new password.
 
-18. **Admin Manage Page**: Every successful upload also gets a private manage URL using `?manage=...`. The manage page lets you copy the public URL and manage URL, switch between public and password-protected access, change the retention policy, and delete the paste. If a password-protected paste is converted back to public, Pastebox first asks for the current generated password.
+19. **Admin Manage Page**: Every successful upload also gets a private manage URL using `?manage=...`. The manage page lets you copy the public URL and manage URL, switch between public and password-protected access, change the retention policy, and delete the paste. If a password-protected paste is converted back to public, Pastebox first asks for the current generated password.
 
-19. **Syntax Highlighting Support**: Syntax highlighting is supported for common text formats including `.txt`, `.md`, `.log`, `.csv`, `.conf`, `.yaml`, `.toml`, `.go`, `.rs`, `.js`, `.py`, `.ts`, `.php`, `.html`, `.css`, `.sql`, `.lua`, and shell scripts such as `.sh`. `Dockerfile`, `*.Dockerfile`, `Makefile`, `.env.example`, `.gitignore`, `compose.yaml`, `compose.yml`, `docker-compose.yaml`, `docker-compose.yml`, `nginx.conf`, and `*.nginx.conf` are also detected by filename.
+20. **Syntax Highlighting Support**: Syntax highlighting is supported for common text formats including `.txt`, `.md`, `.log`, `.csv`, `.conf`, `.yaml`, `.toml`, `.go`, `.rs`, `.js`, `.py`, `.ts`, `.php`, `.html`, `.css`, `.sql`, `.lua`, and shell scripts such as `.sh`. `Dockerfile`, `*.Dockerfile`, `Makefile`, `.env.example`, `.gitignore`, `compose.yaml`, `compose.yml`, `docker-compose.yaml`, `docker-compose.yml`, `nginx.conf`, and `*.nginx.conf` are also detected by filename.
 
-20. **Long-line Wrap Mode**: When a paste contains a very long single line, the view page shows a `Long line detected` hint and provides a `Wrap` button so you can switch from horizontal scrolling to wrapped reading mode in the browser.
+21. **Long-line Wrap Mode**: When a paste contains a very long single line, the view page shows a `Long line detected` hint and provides a `Wrap` button so you can switch from horizontal scrolling to wrapped reading mode in the browser.
 
-21. **Paste Clone**: You can clone the current paste into a new link by clicking the `Clone` button on the view page.
+22. **Paste Clone**: You can clone the current paste into a new link by clicking the `Clone` button on the view page.
 
 ### Data Policy
 For details about the data policy header, see [DATA_POLICY.md](./DATA_POLICY.md)

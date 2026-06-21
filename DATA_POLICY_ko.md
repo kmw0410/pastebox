@@ -11,6 +11,7 @@ Pastebox는 업로드된 콘텐츠가 얼마나 오래 저장되고, 어떤 조�
 | 30일 저장 | 없음 |
 | 영구 저장 | data-policy: permanent |
 | 일회성 저장 | data-policy: once |
+| 사용자 지정 만료 | data-policy: 30m / 12h / 7d |
 
 ## 30일 저장
 헤더 없이 작동하는 기본 정책이며 30일간 파일을 보관 후 자동으로 삭제합니다.
@@ -32,3 +33,22 @@ curl -H "data-policy: permanent" -F "file=@test.txt" http://localhost:8080
 ```bash
 curl -H "data-policy: once" -F "file=@test.txt" http://localhost:8080
 ```
+
+## 사용자 지정 만료
+`data-policy` 헤더에 기간 값을 넣으면 최대 30일 이내로 사용자 지정 만료 시간을 설정할 수 있습니다.
+
+지원 단위:
+
+- `m`: 분
+- `h`: 시간
+- `d`: 일
+
+예시:
+
+```bash
+curl -H "data-policy: 30m" -F "file=@test.txt" http://localhost:8080
+curl -H "data-policy: 12h" -F "file=@test.txt" http://localhost:8080
+curl -H "data-policy: 7d" -F "file=@test.txt" http://localhost:8080
+```
+
+값은 양의 정수여야 하며 30일을 초과할 수 없습니다. `0m`, `31d`, `721h`, `1w`, `1.5h` 같은 값은 `400 Bad Request`로 거절됩니다.

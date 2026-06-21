@@ -143,26 +143,38 @@ func NewStoreWithOptions(opts StoreOptions) (*Store, error) {
 	return store, nil
 }
 
-func (s *Store) Create(r io.Reader, filename string, contentType string, usePassword bool, permanent bool, once bool, customCode string) (Metadata, string, string, string, error) {
-	return s.createFromReader(r, filename, contentType, usePassword, permanent, once, customCode)
+func (s *Store) Create(r io.Reader, filename string, contentType string, usePassword bool, policy DataPolicy, customCode string) (Metadata, string, string, string, error) {
+	var err error
+	policy, err = policy.validated()
+	if err != nil {
+		return Metadata{}, "", "", "", err
+	}
+
+	return s.createFromReader(r, filename, contentType, usePassword, policy, customCode)
 }
 
-func (s *Store) Clone(id string, password string, usePassword bool, permanent bool, once bool, customCode string) (Metadata, string, string, string, error) {
+func (s *Store) Clone(id string, password string, usePassword bool, policy DataPolicy, customCode string) (Metadata, string, string, string, error) {
+	var err error
+	policy, err = policy.validated()
+	if err != nil {
+		return Metadata{}, "", "", "", err
+	}
+
 	entry, err := s.Open(id, password)
 	if err != nil {
 		return Metadata{}, "", "", "", err
 	}
 	defer entry.File.Close()
 
-	return s.createFromReader(entry.File, entry.Meta.Filename, entry.Meta.ContentType, usePassword, permanent, once, customCode)
+	return s.createFromReader(entry.File, entry.Meta.Filename, entry.Meta.ContentType, usePassword, policy, customCode)
 }
 
-func (s *Store) createFromReader(r io.Reader, filename string, contentType string, usePassword bool, permanent bool, once bool, customCode string) (Metadata, string, string, string, error) {
+func (s *Store) createFromReader(r io.Reader, filename string, contentType string, usePassword bool, policy DataPolicy, customCode string) (Metadata, string, string, string, error) {
 	if s.StorageBackend == "mysql" {
-		return s.createMySQLFromReader(r, filename, contentType, usePassword, permanent, once, customCode)
+		return s.createMySQLFromReader(r, filename, contentType, usePassword, policy, customCode)
 	}
 
-	return s.createLocalFromReader(r, filename, contentType, usePassword, permanent, once, customCode)
+	return s.createLocalFromReader(r, filename, contentType, usePassword, policy, customCode)
 }
 
 func (s *Store) Open(id string, password string) (*Entry, error) {

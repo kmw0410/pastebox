@@ -48,7 +48,10 @@
 curl -H "data-policy: permanent" -F "file=@server-logs.log" {{ .BaseURL }}/
 
 # {{ t "index_one_time_paste" }}
-curl -H "data-policy: once" -F "file=@secret.txt" {{ .BaseURL }}/</code></pre>
+curl -H "data-policy: once" -F "file=@secret.txt" {{ .BaseURL }}/
+
+# 12-hour paste
+curl -H "data-policy: 12h" -F "file=@debug.log" {{ .BaseURL }}/</code></pre>
         </article>
         <article class="rounded-2xl border border-white/10 bg-[#111111] p-5">
           <p class="mb-2 text-sm font-medium text-[#FFC1CC]">{{ t "index_expiration_info" }}</p>

@@ -106,9 +106,11 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	contentType = normalizeTextContentType(filename, contentType)
 
 	usePassword := strings.EqualFold(strings.TrimSpace(r.Header.Get("usepassword")), "true")
-	policy := strings.ToLower(strings.TrimSpace(r.Header.Get("data-policy")))
-	permanent := policy == "permanent"
-	once := policy == "once"
+	policy, err := pastebox.ParseDataPolicy(r.Header.Get("data-policy"))
+	if err != nil {
+		a.respondRequestError(w, r, http.StatusBadRequest, "invalid data-policy. use temporary, permanent, once, or a duration up to 30d like 30m, 12h, 7d")
+		return
+	}
 	customCode := strings.TrimSpace(r.Header.Get("code"))
 
 	if _, err := tempFile.Seek(0, io.SeekStart); err != nil {
@@ -116,7 +118,7 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	meta, password, deleteToken, manageToken, err := a.store.Create(tempFile, filename, contentType, usePassword, permanent, once, customCode)
+	meta, password, deleteToken, manageToken, err := a.store.Create(tempFile, filename, contentType, usePassword, policy, customCode)
 	if err != nil {
 		logEvent("upload.create_failed", map[string]any{
 			"error": err,

@@ -68,6 +68,8 @@ Host mapping is typically `./data:/paste-data`.
 - When asked which files were modified, respond only with files changed in the most recent edit scope.
 - When committing, exclude `WORK.md` and `AGENTS.md` unless the user explicitly asks to include them.
 - If a change scope would be split into 2 or more commits, ask before pushing; otherwise commit only unless the user explicitly says to push.
+- When modifying markdown files, include the filename in the commit subject or body so the changed docs are obvious.
+- Keep commit messages themselves in English and follow the existing short conventional style.
 - Before starting work, always consult `WORK.md` alongside `AGENTS.md` so recent task history is part of the working context.
 - After any commit+push sequence, record in `WORK.md` what work was done and what mostly changed, using the existing date-based log format, and include the commit ID plus commit message when available.
 - When fixing code after an error occurs, record the problematic code area, the root cause, and the fix in `AGENTS.md`, including a small relevant code snippet when useful.
@@ -390,6 +392,7 @@ Use short, conventional commit messages:
 ```text
 feat: add language support
 feat: show original filenames
+docs: update AGENTS.md rules
 feat: add admin delete controls
 fix: keep line numbers on the left
 fix: restore localized index page

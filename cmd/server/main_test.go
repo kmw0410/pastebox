@@ -91,6 +91,12 @@ func TestViewHandlerGetConsumesOncePaste(t *testing.T) {
 
 func TestUploadHandlerCustomDataPolicyDuration(t *testing.T) {
 	app := newTestApp(t)
+	loc := time.FixedZone("Test/KST", 9*60*60)
+	originalLocal := time.Local
+	time.Local = loc
+	t.Cleanup(func() {
+		time.Local = originalLocal
+	})
 
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
@@ -124,6 +130,9 @@ func TestUploadHandlerCustomDataPolicyDuration(t *testing.T) {
 	expiresAt, err := time.Parse(time.RFC3339, expiresText)
 	if err != nil {
 		t.Fatalf("invalid expires value %q: %v", expiresText, err)
+	}
+	if !strings.HasSuffix(expiresText, "+09:00") {
+		t.Fatalf("expires = %q, want server local timezone offset +09:00", expiresText)
 	}
 
 	after := time.Now().UTC()

@@ -375,6 +375,15 @@ Use this section to record recurring lessons from error-driven code fixes. Each 
 - Fix: how it was corrected, with a small code snippet when helpful.
 - Prevention: what to check before making similar changes again.
 
+- Problematic code area: `cmd/server/main_test.go` / `TestUploadHandlerCustomDataPolicyDuration`.
+  Cause: The upload response formats `expires` with `time.RFC3339`, which has second precision, while the first test bounds compared against nanosecond-precision `time.Now()` values.
+  Fix: Compare against second-aligned bounds with a small upper allowance:
+  ```go
+  minExpires := before.Add(time.Hour).Truncate(time.Second)
+  maxExpires := after.Add(time.Hour).Truncate(time.Second).Add(time.Second)
+  ```
+  Prevention: When testing user-visible timestamps, align assertions to the timestamp format precision before comparing parsed values.
+
 ## 18. Commit Message Examples
 Use short, conventional commit messages:
 ```text

@@ -201,11 +201,11 @@ Both migrations are protected by a completion marker stored in SQLite under `pas
    curl -H "data-policy: 12h" -F "file=@test.txt" http://localhost:8080/
    ```
 
-7. **Expiration Information**: Temporary and custom-duration uploads include an `expires` field in the response so you can check when the file will expire. If `data-policy: permanent` is used, the expiration date is not shown.
+7. **Expiration Information**: Temporary and custom-duration uploads include an `expires` field in the response so you can check when the file will expire. The response timestamp is formatted in the server's local timezone. If `data-policy: permanent` is used, the expiration date is not shown.
 
    ```
    url: http://localhost:8080/RANDOM_CODE
-   expires: 2026-06-24T05:10:26Z
+   expires: 2026-06-24T14:10:26+09:00
    delete: http://localhost:8080/RANDOM_CODE?delete=DELETE_TOKEN
    ```
 
@@ -238,7 +238,7 @@ Both migrations are protected by a completion marker stored in SQLite under `pas
 
    ```
    url: http://localhost:8080/RANDOM_CODE
-   expires: 2026-06-24T05:10:26Z
+   expires: 2026-06-24T14:10:26+09:00
    password: RANDOM_PASSWORD
    manage: http://localhost:8080/RANDOM_CODE?manage=MANAGE_TOKEN
    delete: http://localhost:8080/RANDOM_CODE?delete=DELETE_TOKEN
@@ -253,7 +253,7 @@ Both migrations are protected by a completion marker stored in SQLite under `pas
    ```json
    {
      "url": "http://localhost:8080/RANDOM_CODE",
-     "expires": "2026-06-24T05:10:26Z",
+     "expires": "2026-06-24T14:10:26+09:00",
      "password": "RANDOM_PASSWORD",
      "manage": "http://localhost:8080/RANDOM_CODE?manage=MANAGE_TOKEN",
      "delete": "http://localhost:8080/RANDOM_CODE?delete=DELETE_TOKEN"

@@ -203,11 +203,11 @@ environment:
    curl -H "data-policy: 12h" -F "file=@test.txt" http://localhost:8080/
    ```
 
-7. **만료 시간 표시**: 일반 업로드와 사용자 지정 만료 업로드는 응답에 `expires` 항목이 포함되어 만료 시간을 확인할 수 있습니다. `data-policy: permanent`를 사용한 경우에는 만료 시간이 표시되지 않습니다.
+7. **만료 시간 표시**: 일반 업로드와 사용자 지정 만료 업로드는 응답에 `expires` 항목이 포함되어 만료 시간을 확인할 수 있습니다. 응답 시간은 서버 로컬 시간대로 표시됩니다. `data-policy: permanent`를 사용한 경우에는 만료 시간이 표시되지 않습니다.
 
    ```
    url: http://localhost:8080/RANDOM_CODE
-   expires: 2026-06-24T05:10:26Z
+   expires: 2026-06-24T14:10:26+09:00
    delete: http://localhost:8080/RANDOM_CODE?delete=DELETE_TOKEN
    ```
 
@@ -220,7 +220,7 @@ environment:
    ```json
    {
      "url": "http://localhost:8080/RANDOM_CODE",
-     "expires": "2026-06-24T05:10:26Z",
+     "expires": "2026-06-24T14:10:26+09:00",
      "password": "RANDOM_PASSWORD",
      "manage": "http://localhost:8080/RANDOM_CODE?manage=MANAGE_TOKEN",
      "delete": "http://localhost:8080/RANDOM_CODE?delete=DELETE_TOKEN"
@@ -256,7 +256,7 @@ environment:
 
    ```
    url: http://localhost:8080/RANDOM_CODE
-   expires: 2026-06-24T05:10:26Z
+   expires: 2026-06-24T14:10:26+09:00
    password: RANDOM_PASSWORD
    manage: http://localhost:8080/RANDOM_CODE?manage=MANAGE_TOKEN
    delete: http://localhost:8080/RANDOM_CODE?delete=DELETE_TOKEN

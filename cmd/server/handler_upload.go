@@ -167,7 +167,7 @@ func (a *app) writeUploadResponseWithMode(w http.ResponseWriter, r *http.Request
 
 	expires := ""
 	if !strings.EqualFold(meta.DataPolicy, "permanent") && !meta.ExpiresAt.IsZero() {
-		expires = meta.ExpiresAt.Format(time.RFC3339)
+		expires = formatExpiresForResponse(meta)
 	}
 
 	if format == "json" {
@@ -220,6 +220,13 @@ type uploadResponse struct {
 	Password string `json:"password,omitempty"`
 	Manage   string `json:"manage,omitempty"`
 	Delete   string `json:"delete,omitempty"`
+}
+
+func formatExpiresForResponse(meta pastebox.Metadata) string {
+	if strings.EqualFold(meta.DataPolicy, "permanent") || meta.ExpiresAt.IsZero() {
+		return ""
+	}
+	return meta.ExpiresAt.In(time.Local).Format(time.RFC3339)
 }
 
 func (a *app) respondRequestError(w http.ResponseWriter, r *http.Request, status int, message string) {

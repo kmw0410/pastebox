@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"errors"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -85,6 +87,61 @@ func TestViewHandlerGetConsumesOncePaste(t *testing.T) {
 		}
 		t.Fatalf("expected ErrNotFound after GET, got entry=%v err=%v", entry != nil, err)
 	}
+}
+
+func TestUploadHandlerCustomDataPolicyDuration(t *testing.T) {
+	app := newTestApp(t)
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	part, err := writer.CreateFormFile("file", "custom.log")
+	if err != nil {
+		t.Fatalf("CreateFormFile failed: %v", err)
+	}
+	if _, err := part.Write([]byte("custom ttl\n")); err != nil {
+		t.Fatalf("part.Write failed: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("writer.Close failed: %v", err)
+	}
+
+	before := time.Now().UTC()
+	req := httptest.NewRequest(http.MethodPost, "/", &body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("data-policy", "1h")
+	rr := httptest.NewRecorder()
+
+	app.uploadHandler(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d body=%q", rr.Code, rr.Body.String())
+	}
+
+	expiresText := responseLineValue(rr.Body.String(), "expires")
+	if expiresText == "" {
+		t.Fatalf("missing expires line in response %q", rr.Body.String())
+	}
+	expiresAt, err := time.Parse(time.RFC3339, expiresText)
+	if err != nil {
+		t.Fatalf("invalid expires value %q: %v", expiresText, err)
+	}
+
+	after := time.Now().UTC()
+	minExpires := before.Add(time.Hour).Truncate(time.Second)
+	maxExpires := after.Add(time.Hour).Truncate(time.Second).Add(time.Second)
+	if expiresAt.Before(minExpires) || expiresAt.After(maxExpires) {
+		t.Fatalf("expires = %v, want between %v and %v", expiresAt, minExpires, maxExpires)
+	}
+}
+
+func responseLineValue(body string, key string) string {
+	prefix := key + ": "
+	for _, line := range strings.Split(body, "\n") {
+		if strings.HasPrefix(line, prefix) {
+			return strings.TrimSpace(strings.TrimPrefix(line, prefix))
+		}
+	}
+	return ""
 }
 
 func TestSummarizeAdminIDs(t *testing.T) {

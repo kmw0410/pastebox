@@ -67,6 +67,7 @@ Host mapping is typically `./data:/paste-data`.
 - Preserve fine-grained per-paste locking in the store layer; do not replace with a single global lock.
 - When asked which files were modified, respond only with files changed in the most recent edit scope.
 - When committing, exclude `WORK.md` and `AGENTS.md` unless the user explicitly asks to include them.
+- If a change scope would be split into 2 or more commits, ask before pushing; otherwise commit only unless the user explicitly says to push.
 - Before starting work, always consult `WORK.md` alongside `AGENTS.md` so recent task history is part of the working context.
 - After any commit+push sequence, record in `WORK.md` what work was done and what mostly changed, using the existing date-based log format, and include the commit ID plus commit message when available.
 - When fixing code after an error occurs, record the problematic code area, the root cause, and the fix in `AGENTS.md`, including a small relevant code snippet when useful.

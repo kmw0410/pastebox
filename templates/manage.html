@@ -4,141 +4,132 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{{ t "manage_page_title" }} - Pastebox</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  <script>
-    tailwind.config = { darkMode: 'class' }
-  </script>
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/pages.css">
 </head>
-<body class="dark min-h-screen bg-[#111111] text-[#E4E4E4]" style="font-family: 'Space Grotesk', sans-serif;">
-  <main class="mx-auto flex min-h-screen w-full max-w-[98rem] items-center px-6 py-14 md:px-12 md:py-20">
-    <div class="w-full rounded-3xl bg-[#111111] p-8 shadow-[0_18px_60px_rgba(0,0,0,0.45)] md:p-12">
-      <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-        <div class="min-w-0">
-          <p class="text-sm uppercase tracking-[0.3em] text-[#A8DADC]">{{ t "manage_badge" }}</p>
-          <h1 class="mt-4 break-all text-4xl font-bold tracking-tight text-[#E4E4E4]">{{ .ID }}</h1>
-          <p class="mt-4 max-w-3xl text-sm leading-6 text-[#E4E4E4]/70">{{ t "manage_desc" }}</p>
+<body>
+  <main class="page-shell">
+    <div class="panel">
+      <div class="manage-header">
+        <div>
+          <p class="eyebrow cyan">{{ t "manage_badge" }}</p>
+          <h1 class="title mt-md break-anywhere">{{ .ID }}</h1>
+          <p class="description">{{ t "manage_desc" }}</p>
         </div>
 
         {{ if not .Deleted }}
-        <div class="flex flex-wrap gap-3">
-          <a class="rounded-xl border border-white/20 px-4 py-2 text-[#E4E4E4] transition hover:border-[#A8DADC] hover:text-[#A8DADC]" href="{{ .PublicURL }}" target="_blank" rel="noopener noreferrer">{{ t "manage_open_paste" }}</a>
-          <button class="rounded-xl border border-white/20 px-4 py-2 text-[#E4E4E4] transition hover:border-[#FFC1CC] hover:text-[#FFC1CC]" type="button" data-copy="{{ .PublicURL }}" onclick="copyButton(this)">{{ t "manage_copy_public_url" }}</button>
-          <button class="rounded-xl border border-white/20 px-4 py-2 text-[#E4E4E4] transition hover:border-[#B39CD0] hover:text-[#B39CD0]" type="button" data-copy="{{ .ManageURL }}" onclick="copyButton(this)">{{ t "manage_copy_manage_url" }}</button>
-          <a class="rounded-xl border border-white/20 px-4 py-2 text-[#E4E4E4] transition hover:border-[#E4E4E4] hover:text-white" href="/">{{ t "home" }}</a>
+        <div class="manage-actions">
+          <a class="button" href="{{ .PublicURL }}" target="_blank" rel="noopener noreferrer">{{ t "manage_open_paste" }}</a>
+          <button class="button" type="button" data-copy="{{ .PublicURL }}" onclick="copyButton(this)">{{ t "manage_copy_public_url" }}</button>
+          <button class="button violet" type="button" data-copy="{{ .ManageURL }}" onclick="copyButton(this)">{{ t "manage_copy_manage_url" }}</button>
+          <a class="button" href="/">{{ t "home" }}</a>
         </div>
         {{ else }}
-        <div class="flex flex-wrap gap-3">
-          <a class="rounded-xl border border-white/20 px-4 py-2 text-[#E4E4E4] transition hover:border-[#E4E4E4] hover:text-white" href="/">{{ t "home" }}</a>
+        <div class="manage-actions">
+          <a class="button" href="/">{{ t "home" }}</a>
         </div>
         {{ end }}
       </div>
 
       {{ if .Notice }}
-      <div class="mt-8 rounded-2xl border border-[#A8DADC]/20 bg-[#A8DADC]/10 p-4 text-sm text-[#A8DADC]">
-        {{ .Notice }}
-      </div>
+      <div class="alert info mt-lg">{{ .Notice }}</div>
       {{ end }}
 
       {{ if .Error }}
-      <div class="mt-8 rounded-2xl border border-[#FFC1CC]/30 bg-[#FFC1CC]/10 p-4 text-sm text-[#FFC1CC]">
-        {{ .Error }}
-      </div>
+      <div class="alert error mt-lg">{{ .Error }}</div>
       {{ end }}
 
       {{ if .GeneratedPassword }}
-      <div class="mt-8 rounded-2xl border border-[#B39CD0]/25 bg-[#B39CD0]/10 p-5">
-        <p class="text-xs uppercase tracking-[0.18em] text-[#B39CD0]/85">{{ t "manage_generated_password" }}</p>
-        <div class="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <p class="break-all font-mono text-lg text-[#E4E4E4]">{{ .GeneratedPassword }}</p>
-          <button class="rounded-xl border border-white/20 px-4 py-2 text-sm text-[#E4E4E4] transition hover:border-[#B39CD0] hover:text-[#B39CD0]" type="button" data-copy="{{ .GeneratedPassword }}" onclick="copyButton(this)">{{ t "paste_copy" }}</button>
+      <div class="alert violet-alert mt-lg">
+        <p class="eyebrow violet">{{ t "manage_generated_password" }}</p>
+        <div class="generated-password mt-sm">
+          <p class="result-value">{{ .GeneratedPassword }}</p>
+          <button class="button violet" type="button" data-copy="{{ .GeneratedPassword }}" onclick="copyButton(this)">{{ t "paste_copy" }}</button>
         </div>
-        <p class="mt-3 text-sm text-[#E4E4E4]/60">{{ t "manage_generated_password_desc" }}</p>
+        <p class="notice-text">{{ t "manage_generated_password_desc" }}</p>
       </div>
       {{ end }}
 
       {{ if not .Deleted }}
-      <div class="mt-8 grid gap-4 lg:grid-cols-2">
-        <article class="rounded-2xl border border-white/10 bg-[#111111] p-5">
-          <p class="text-xs uppercase tracking-[0.18em] text-[#E4E4E4]/55">{{ t "manage_info_title" }}</p>
-          <div class="mt-4 space-y-3 text-sm">
-            <div class="flex items-start justify-between gap-4 border-b border-white/10 pb-3">
-              <span class="text-[#E4E4E4]/55">{{ t "manage_info_filename" }}</span>
-              <span class="max-w-[70%] break-all text-right text-[#E4E4E4]">{{ if .Filename }}{{ .Filename }}{{ else }}-{{ end }}</span>
+      <div class="manage-grid mt-lg">
+        <article class="card">
+          <p class="eyebrow">{{ t "manage_info_title" }}</p>
+          <div class="manage-info">
+            <div class="info-row">
+              <span>{{ t "manage_info_filename" }}</span>
+              <span>{{ if .Filename }}{{ .Filename }}{{ else }}-{{ end }}</span>
             </div>
-            <div class="flex items-start justify-between gap-4 border-b border-white/10 pb-3">
-              <span class="text-[#E4E4E4]/55">{{ t "manage_info_visibility" }}</span>
-              <span class="text-right text-[#E4E4E4]">{{ if .PasswordProtected }}{{ t "manage_visibility_private" }}{{ else }}{{ t "manage_visibility_public" }}{{ end }}</span>
+            <div class="info-row">
+              <span>{{ t "manage_info_visibility" }}</span>
+              <span>{{ if .PasswordProtected }}{{ t "manage_visibility_private" }}{{ else }}{{ t "manage_visibility_public" }}{{ end }}</span>
             </div>
-            <div class="flex items-start justify-between gap-4 border-b border-white/10 pb-3">
-              <span class="text-[#E4E4E4]/55">{{ t "manage_info_policy" }}</span>
-              <span class="text-right text-[#E4E4E4]">{{ .DataPolicy }}</span>
+            <div class="info-row">
+              <span>{{ t "manage_info_policy" }}</span>
+              <span>{{ .DataPolicy }}</span>
             </div>
-            <div class="flex items-start justify-between gap-4 border-b border-white/10 pb-3">
-              <span class="text-[#E4E4E4]/55">{{ t "manage_info_created" }}</span>
-              <span class="text-right text-[#E4E4E4]">{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</span>
+            <div class="info-row">
+              <span>{{ t "manage_info_created" }}</span>
+              <span>{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</span>
             </div>
-            <div class="flex items-start justify-between gap-4">
-              <span class="text-[#E4E4E4]/55">{{ t "manage_info_expires" }}</span>
-              <span class="text-right text-[#E4E4E4]">{{ if .ExpiresAt.IsZero }}-{{ else }}{{ .ExpiresAt.Format "2006-01-02 15:04:05" }}{{ end }}</span>
+            <div class="info-row">
+              <span>{{ t "manage_info_expires" }}</span>
+              <span>{{ if .ExpiresAt.IsZero }}-{{ else }}{{ .ExpiresAt.Format "2006-01-02 15:04:05" }}{{ end }}</span>
             </div>
           </div>
         </article>
 
-        <article class="rounded-2xl border border-white/10 bg-[#111111] p-5">
-          <p class="text-xs uppercase tracking-[0.18em] text-[#A8DADC]/80">{{ t "manage_password_title" }}</p>
+        <article class="card">
+          <p class="eyebrow cyan">{{ t "manage_password_title" }}</p>
           {{ if .PasswordProtected }}
-          <p class="mt-3 text-sm text-[#E4E4E4]/70">{{ t "manage_password_private_desc" }}</p>
-          <form class="mt-4 space-y-3" method="post" action="{{ .ManageURL }}">
+          <p class="description">{{ t "manage_password_private_desc" }}</p>
+          <form class="form" method="post" action="{{ .ManageURL }}">
             <input type="hidden" name="manage_action" value="disable_password">
-            <div>
-              <label class="mb-2 block text-sm text-[#E4E4E4]/70" for="password">{{ t "manage_current_password" }}</label>
-              <input id="password" name="password" type="password" autocomplete="current-password" class="w-full rounded-xl border border-white/10 bg-[#1a1a1a] px-4 py-3 text-[#E4E4E4] outline-none transition placeholder:text-[#E4E4E4]/40 focus:border-[#A8DADC]/50" placeholder="{{ t "manage_current_password_placeholder" }}" required>
+            <div class="form-field">
+              <label for="password">{{ t "manage_current_password" }}</label>
+              <input id="password" name="password" type="password" autocomplete="current-password" class="input" placeholder="{{ t "manage_current_password_placeholder" }}" required>
             </div>
-            <button class="rounded-xl border border-[#A8DADC]/35 px-4 py-2 font-semibold text-[#A8DADC] transition hover:bg-[#A8DADC]/10" type="submit">{{ t "manage_disable_password" }}</button>
+            <button class="button" type="submit">{{ t "manage_disable_password" }}</button>
           </form>
           {{ else }}
-          <p class="mt-3 text-sm text-[#E4E4E4]/70">{{ t "manage_password_public_desc" }}</p>
-          <form class="mt-4" method="post" action="{{ .ManageURL }}">
+          <p class="description">{{ t "manage_password_public_desc" }}</p>
+          <form class="mt-md" method="post" action="{{ .ManageURL }}">
             <input type="hidden" name="manage_action" value="enable_password">
-            <button class="rounded-xl border border-[#B39CD0]/35 px-4 py-2 font-semibold text-[#B39CD0] transition hover:bg-[#B39CD0]/10" type="submit">{{ t "manage_enable_password" }}</button>
+            <button class="button violet" type="submit">{{ t "manage_enable_password" }}</button>
           </form>
           {{ end }}
         </article>
 
-        <article class="rounded-2xl border border-white/10 bg-[#111111] p-5">
-          <p class="text-xs uppercase tracking-[0.18em] text-[#FFC1CC]/80">{{ t "manage_policy_title" }}</p>
-          <p class="mt-3 text-sm text-[#E4E4E4]/70">{{ t "manage_policy_desc" }}</p>
-          <form class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end" method="post" action="{{ .ManageURL }}">
+        <article class="card">
+          <p class="eyebrow pink">{{ t "manage_policy_title" }}</p>
+          <p class="description">{{ t "manage_policy_desc" }}</p>
+          <form class="form policy-form" method="post" action="{{ .ManageURL }}">
             <input type="hidden" name="manage_action" value="set_policy">
-            <div class="flex-1">
-              <label class="mb-2 block text-sm text-[#E4E4E4]/70" for="data_policy">{{ t "manage_policy_label" }}</label>
-              <select id="data_policy" name="data_policy" class="w-full rounded-xl border border-white/10 bg-[#1a1a1a] px-4 py-3 text-[#E4E4E4] outline-none transition focus:border-[#FFC1CC]/50">
+            <div class="form-field">
+              <label for="data_policy">{{ t "manage_policy_label" }}</label>
+              <select id="data_policy" name="data_policy" class="input">
                 <option value="temporary" {{ if eq .DataPolicy "temporary" }}selected{{ end }}>{{ t "manage_policy_temporary" }}</option>
                 <option value="permanent" {{ if eq .DataPolicy "permanent" }}selected{{ end }}>{{ t "manage_policy_permanent" }}</option>
                 <option value="once" {{ if eq .DataPolicy "once" }}selected{{ end }}>{{ t "manage_policy_once" }}</option>
               </select>
             </div>
-            <button class="rounded-xl border border-[#FFC1CC]/35 px-4 py-3 font-semibold text-[#FFC1CC] transition hover:bg-[#FFC1CC]/10" type="submit">{{ t "manage_policy_save" }}</button>
+            <button class="button pink" type="submit">{{ t "manage_policy_save" }}</button>
           </form>
         </article>
 
-        <article class="rounded-2xl border border-[#FFC1CC]/20 bg-[#111111] p-5">
-          <p class="text-xs uppercase tracking-[0.18em] text-[#FFC1CC]/80">{{ t "manage_danger_title" }}</p>
-          <p class="mt-3 text-sm text-[#E4E4E4]/70">{{ t "manage_delete_desc" }}</p>
-          <form class="mt-4" method="post" action="{{ .ManageURL }}" onsubmit="return confirm('{{ t "manage_delete_confirm" }}')">
+        <article class="card danger-card">
+          <p class="eyebrow pink">{{ t "manage_danger_title" }}</p>
+          <p class="description">{{ t "manage_delete_desc" }}</p>
+          <form class="mt-md" method="post" action="{{ .ManageURL }}" onsubmit="return confirm('{{ t "manage_delete_confirm" }}')">
             <input type="hidden" name="manage_action" value="delete">
-            <button class="rounded-xl border border-[#FFC1CC]/40 px-4 py-3 font-semibold text-[#FFC1CC] transition hover:bg-[#FFC1CC]/10" type="submit">{{ t "manage_delete_button" }}</button>
+            <button class="button pink" type="submit">{{ t "manage_delete_button" }}</button>
           </form>
         </article>
       </div>
       {{ end }}
 
       {{ if .Deleted }}
-      <div class="mt-8 rounded-2xl border border-[#FFC1CC]/20 bg-[#FFC1CC]/10 p-5 text-[#FFC1CC]">
-        <p class="text-sm">{{ t "manage_deleted_desc" }}</p>
+      <div class="alert error mt-lg">
+        <p>{{ t "manage_deleted_desc" }}</p>
       </div>
       {{ end }}
     </div>

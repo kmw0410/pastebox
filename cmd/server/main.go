@@ -60,6 +60,7 @@ func main() {
 	}()
 
 	mux := http.NewServeMux()
+	mux.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("templates/css"))))
 	mux.HandleFunc("/", a.handle)
 
 	logEvent("server.started", map[string]any{

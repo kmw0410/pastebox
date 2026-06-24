@@ -4,47 +4,48 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pastebox</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  <script>
-    tailwind.config = { darkMode: 'class' }
-  </script>
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/pages.css">
 </head>
-<body class="dark min-h-screen bg-[#111111] text-[#E4E4E4]" style="font-family: 'Space Grotesk', sans-serif;">
-  <main class="mx-auto flex min-h-screen w-full max-w-[98rem] items-center px-6 py-14 md:px-12 md:py-20">
-    <div class="w-full rounded-3xl bg-[#111111] p-8 shadow-[0_18px_60px_rgba(0,0,0,0.45)] md:p-12">
-      <div class="grid gap-4 lg:grid-cols-2">
+<body>
+  <main class="page-shell">
+    <div class="panel">
+      <div class="home-grid">
         <div>
-          <h1 class="text-4xl font-bold leading-tight tracking-tight md:text-5xl">
+          <h1 class="title">
             Pastebox
-            <span class="block text-2xl md:text-3xl bg-gradient-to-r from-[#A8DADC] to-[#FFC1CC] bg-clip-text text-transparent">{{ t "index_subtitle" }}</span>
+            <span class="subtitle-gradient">{{ t "index_subtitle" }}</span>
           </h1>
-          <p class="mt-4 max-w-xl text-[#E4E4E4]/85">{{ t "index_description" }}</p>
-          <p class="mt-2 text-sm text-[#E4E4E4]/65">{{ t "index_text_only_notice" }}</p>
+          <p class="description">{{ t "index_description" }}</p>
+          <p class="notice-text">{{ t "index_text_only_notice" }}</p>
 
-          <div class="mt-8 flex flex-wrap gap-3">
-            <a class="rounded-xl border border-white/20 px-4 py-2 text-[#E4E4E4] transition hover:border-[#A8DADC] hover:text-[#A8DADC]" href="https://github.com/kmw0410/pastebox" target="_blank" rel="noopener noreferrer">GitHub</a>
-            <button class="rounded-xl border border-white/20 px-4 py-2 text-[#E4E4E4] transition hover:border-[#FFC1CC] hover:text-[#FFC1CC]" onclick="navigator.clipboard.writeText('curl -F &quot;file=@test.txt&quot; {{ .BaseURL }}/')">{{ t "index_copy_curl" }}</button>
+          <div class="button-row home-actions">
+            <a class="button" href="https://github.com/kmw0410/pastebox" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <button class="button" type="button" onclick="navigator.clipboard.writeText('curl -F &quot;file=@test.txt&quot; {{ .BaseURL }}/')">{{ t "index_copy_curl" }}</button>
           </div>
         </div>
 
-        <div class="rounded-2xl border border-white/10 bg-[#111111] p-5">
-          <p class="mb-3 text-sm font-medium text-[#A8DADC]">{{ t "index_text_upload" }}</p>
-          <pre class="overflow-x-auto rounded-xl bg-[#1a1a1a] p-4 text-sm ring-1 ring-white/10"><code>echo "hello" | curl -X POST --data-binary @- {{ .BaseURL }}/</code></pre>
-          <p class="mt-4 mb-3 text-sm font-medium text-[#A8DADC]">{{ t "index_file_upload" }}</p>
-          <pre class="overflow-x-auto rounded-xl bg-[#1a1a1a] p-4 text-sm ring-1 ring-white/10"><code>curl -F "file=@test.txt" {{ .BaseURL }}/</code></pre>
-          <p class="mt-4 mb-3 text-sm font-medium text-[#FFC1CC]">{{ t "index_password_links" }}</p>
-          <pre class="overflow-x-auto rounded-xl bg-[#1a1a1a] p-4 text-sm ring-1 ring-white/10"><code>curl -H "usepassword: true" -F "file=@secret.txt" {{ .BaseURL }}/</code></pre>
+        <div class="card stack">
+          <div>
+            <p class="example-label">{{ t "index_text_upload" }}</p>
+            <pre class="code-block"><code>echo "hello" | curl -X POST --data-binary @- {{ .BaseURL }}/</code></pre>
+          </div>
+          <div>
+            <p class="example-label">{{ t "index_file_upload" }}</p>
+            <pre class="code-block"><code>curl -F "file=@test.txt" {{ .BaseURL }}/</code></pre>
+          </div>
+          <div>
+            <p class="example-label pink">{{ t "index_password_links" }}</p>
+            <pre class="code-block"><code>curl -H "usepassword: true" -F "file=@secret.txt" {{ .BaseURL }}/</code></pre>
+          </div>
         </div>
       </div>
 
-      <div class="mt-8 grid gap-4 md:grid-cols-2">
-        <article class="rounded-2xl border border-white/10 bg-[#111111] p-5">
-          <p class="mb-2 text-sm font-medium text-[#A8DADC]">{{ t "index_data_policy" }}</p>
-          <p class="mb-3 text-sm text-[#E4E4E4]/70">{{ t "index_data_policy_desc" }}</p>
-          <pre class="overflow-x-auto text-sm"><code># {{ t "index_permanent_paste" }}
+      <div class="grid-two mt-lg">
+        <article class="card">
+          <p class="example-label">{{ t "index_data_policy" }}</p>
+          <p class="description">{{ t "index_data_policy_desc" }}</p>
+          <pre class="plain-code mt-sm"><code># {{ t "index_permanent_paste" }}
 curl -H "data-policy: permanent" -F "file=@server-logs.log" {{ .BaseURL }}/
 
 # {{ t "index_one_time_paste" }}
@@ -53,17 +54,17 @@ curl -H "data-policy: once" -F "file=@secret.txt" {{ .BaseURL }}/
 # 12-hour paste
 curl -H "data-policy: 12h" -F "file=@debug.log" {{ .BaseURL }}/</code></pre>
         </article>
-        <article class="rounded-2xl border border-white/10 bg-[#111111] p-5">
-          <p class="mb-2 text-sm font-medium text-[#FFC1CC]">{{ t "index_expiration_info" }}</p>
-          <p class="mb-3 text-sm text-[#E4E4E4]/70">{{ t "index_expiration_desc" }}</p>
-          <pre class="overflow-x-auto text-sm"><code>url: {{ .BaseURL }}/AbC12
+        <article class="card">
+          <p class="example-label pink">{{ t "index_expiration_info" }}</p>
+          <p class="description">{{ t "index_expiration_desc" }}</p>
+          <pre class="plain-code mt-sm"><code>url: {{ .BaseURL }}/AbC12
 expires: 2026-06-24T14:10:26+09:00
 delete: {{ .BaseURL }}/AbC12?delete=DELETE_TOKEN</code></pre>
         </article>
-        <article class="rounded-2xl border border-white/10 bg-[#111111] p-5 md:col-span-2">
-          <p class="mb-2 text-sm font-medium text-[#B39CD0]">{{ t "index_manual_deletion" }}</p>
-          <p class="mb-3 text-sm text-[#E4E4E4]/70">{{ t "index_manual_deletion_desc" }}</p>
-          <pre class="overflow-x-auto text-sm"><code>curl "{{ .BaseURL }}/AbC12?delete=DELETE_TOKEN"</code></pre>
+        <article class="card wide-card">
+          <p class="example-label">{{ t "index_manual_deletion" }}</p>
+          <p class="description">{{ t "index_manual_deletion_desc" }}</p>
+          <pre class="plain-code mt-sm"><code>curl "{{ .BaseURL }}/AbC12?delete=DELETE_TOKEN"</code></pre>
         </article>
       </div>
     </div>

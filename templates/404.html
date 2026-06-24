@@ -4,17 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>404 - Pastebox</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/pages.css">
 </head>
-<body class="min-h-screen bg-[#111111] text-zinc-100">
-  <main class="mx-auto flex min-h-screen max-w-md items-center justify-center px-6 py-12 text-center">
-    <section class="w-full">
-      <p class="text-sm uppercase tracking-[0.3em] text-zinc-600">404</p>
-      <h1 class="mt-4 text-4xl font-bold tracking-tight text-white">{{ t "not_found_title" }}</h1>
-      <p class="mt-4 text-sm leading-6 text-zinc-500">{{ t "not_found_desc" }}</p>
+<body>
+  <main class="page-shell centered">
+    <section class="simple-section narrow-panel">
+      <p class="eyebrow">404</p>
+      <h1 class="title mt-md">{{ t "not_found_title" }}</h1>
+      <p class="description">{{ t "not_found_desc" }}</p>
 
-      <div class="mt-8">
-        <a class="inline-flex rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-300 transition hover:border-white/20 hover:text-white" href="/">{{ t "back_to_home" }}</a>
+      <div class="button-row center mt-lg">
+        <a class="button" href="/">{{ t "back_to_home" }}</a>
       </div>
     </section>
   </main>

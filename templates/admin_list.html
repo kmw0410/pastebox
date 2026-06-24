@@ -4,87 +4,88 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ t "admin_login_title" }} - Pastebox</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/pages.css">
 </head>
-<body class="dark min-h-screen bg-[#111111] text-[#E4E4E4]">
-  <main class="mx-auto flex min-h-screen w-full max-w-[98rem] items-center px-6 py-14 md:px-12 md:py-20">
-    <div class="w-full rounded-3xl bg-[#111111] p-8 shadow-[0_18px_60px_rgba(0,0,0,0.45)] md:p-12">
-      <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+<body>
+  <main class="page-shell">
+    <div class="panel">
+      <div class="admin-header">
         <div>
-          <h1 class="text-4xl font-bold tracking-tight text-[#E4E4E4]">{{ t "admin_page_title" }}</h1>
-          <p class="mt-3 text-sm text-[#E4E4E4]/70">{{ t "admin_page_description" }}</p>
+          <h1 class="title">{{ t "admin_page_title" }}</h1>
+          <p class="description">{{ t "admin_page_description" }}</p>
         </div>
-        <div class="flex gap-3">
-          <a class="rounded-xl border border-white/20 px-4 py-2 text-[#E4E4E4] transition hover:border-[#A8DADC] hover:text-[#A8DADC]" href="/">{{ t "home" }}</a>
-          <a class="rounded-xl border border-white/20 px-4 py-2 text-[#E4E4E4] transition hover:border-[#FFC1CC] hover:text-[#FFC1CC]" href="/admin/logout">{{ t "logout" }}</a>
+        <div class="admin-actions">
+          <a class="button" href="/">{{ t "home" }}</a>
+          <a class="button" href="/admin/logout">{{ t "logout" }}</a>
         </div>
       </div>
 
       {{ if .Notice }}
-      <div id="admin-flash" class="mb-8 rounded-2xl border border-white/10 bg-[#111111] p-4 text-sm text-[#A8DADC] transition duration-500 ease-out motion-reduce:transition-none" role="status" aria-live="polite" data-auto-dismiss-ms="5000">
+      <div id="admin-flash" class="alert info mt-lg" role="status" aria-live="polite" data-auto-dismiss-ms="5000">
         {{ .Notice }}
       </div>
       {{ end }}
 
-      <div class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-2xl border border-white/10 bg-[#111111] p-5">
-          <p class="text-xs uppercase tracking-[0.18em] text-[#E4E4E4]/55">{{ t "admin_total_links" }}</p>
-          <p class="mt-3 text-3xl font-bold text-[#E4E4E4]">{{ .Stats.Total }}</p>
-          <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_stored_pastes" }}</p>
+      <div class="grid-four mt-lg">
+        <div class="card">
+          <p class="eyebrow">{{ t "admin_total_links" }}</p>
+          <p class="stat-value">{{ .Stats.Total }}</p>
+          <p class="stat-desc">{{ t "admin_stored_pastes" }}</p>
         </div>
-        <div class="rounded-2xl border border-white/10 bg-[#111111] p-5">
-          <p class="text-xs uppercase tracking-[0.18em] text-[#E4E4E4]/55">{{ t "admin_storage" }}</p>
-          <p class="mt-3 text-3xl font-bold text-[#E4E4E4]">{{ .Stats.TotalSize }}</p>
-          <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_total_size" }}</p>
+        <div class="card">
+          <p class="eyebrow">{{ t "admin_storage" }}</p>
+          <p class="stat-value">{{ .Stats.TotalSize }}</p>
+          <p class="stat-desc">{{ t "admin_total_size" }}</p>
         </div>
-        <div class="rounded-2xl border border-white/10 bg-[#111111] p-5">
-          <p class="text-xs uppercase tracking-[0.18em] text-[#E4E4E4]/55">{{ t "admin_policy" }}</p>
-          <p class="mt-3 text-3xl font-bold text-[#E4E4E4]">{{ .Stats.Temporary }} / {{ .Stats.Permanent }}</p>
-          <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_temp_permanent" }}</p>
+        <div class="card">
+          <p class="eyebrow">{{ t "admin_policy" }}</p>
+          <p class="stat-value">{{ .Stats.Temporary }} / {{ .Stats.Permanent }}</p>
+          <p class="stat-desc">{{ t "admin_temp_permanent" }}</p>
         </div>
-        <div class="rounded-2xl border border-white/10 bg-[#111111] p-5">
-          <p class="text-xs uppercase tracking-[0.18em] text-[#E4E4E4]/55">{{ t "admin_security" }}</p>
-          <p class="mt-3 text-3xl font-bold text-[#E4E4E4]">{{ .Stats.Protected }}</p>
-          <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_password_protected" }}</p>
-        </div>
-      </div>
-
-      <div class="mb-8 grid gap-4 sm:grid-cols-2">
-        <div class="rounded-2xl border border-white/10 bg-[#111111] p-5">
-          <p class="text-xs uppercase tracking-[0.18em] text-[#A8DADC]/80">{{ t "admin_expiring_soon" }}</p>
-          <p class="mt-3 text-2xl font-bold text-[#A8DADC]">{{ .Stats.Expiring24h }}</p>
-          <p class="mt-1 text-sm text-[#A8DADC]/70">{{ t "admin_expiring_soon_desc" }}</p>
-        </div>
-        <div class="rounded-2xl border border-white/10 bg-[#111111] p-5">
-          <p class="text-xs uppercase tracking-[0.18em] text-[#FFC1CC]/80">{{ t "admin_expired" }}</p>
-          <p class="mt-3 text-2xl font-bold text-[#FFC1CC]">{{ .Stats.Expired }}</p>
-          <p class="mt-1 text-sm text-[#FFC1CC]/70">{{ t "admin_expired_desc" }}</p>
+        <div class="card">
+          <p class="eyebrow">{{ t "admin_security" }}</p>
+          <p class="stat-value">{{ .Stats.Protected }}</p>
+          <p class="stat-desc">{{ t "admin_password_protected" }}</p>
         </div>
       </div>
 
-      <div class="mb-8 grid gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-        <div class="rounded-2xl border border-white/10 bg-[#111111] p-5">
-          <p class="text-xs uppercase tracking-[0.18em] text-[#A8DADC]/80">{{ t "admin_storage_backend" }}</p>
-          <p class="mt-3 font-mono text-2xl font-bold text-[#A8DADC]">{{ .StorageBackend }}</p>
+      <div class="grid-two mt-lg">
+        <div class="card">
+          <p class="eyebrow cyan">{{ t "admin_expiring_soon" }}</p>
+          <p class="stat-value medium cyan">{{ .Stats.Expiring24h }}</p>
+          <p class="stat-desc cyan">{{ t "admin_expiring_soon_desc" }}</p>
+        </div>
+        <div class="card">
+          <p class="eyebrow pink">{{ t "admin_expired" }}</p>
+          <p class="stat-value medium pink">{{ .Stats.Expired }}</p>
+          <p class="stat-desc pink">{{ t "admin_expired_desc" }}</p>
+        </div>
+      </div>
+
+      <div class="admin-split mt-lg">
+        <div class="card">
+          <p class="eyebrow cyan">{{ t "admin_storage_backend" }}</p>
+          <p class="stat-value medium cyan mono">{{ .StorageBackend }}</p>
           {{ if eq .StorageBackend "mysql" }}
-          <p class="mt-2 text-sm font-semibold text-[#E4E4E4]">{{ t "admin_storage_backend_mysql_title" }}</p>
-          <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_storage_backend_mysql_desc" }}</p>
+          <p class="description"><strong>{{ t "admin_storage_backend_mysql_title" }}</strong></p>
+          <p class="notice-text">{{ t "admin_storage_backend_mysql_desc" }}</p>
           {{ else }}
-          <p class="mt-2 text-sm font-semibold text-[#E4E4E4]">{{ t "admin_storage_backend_local_title" }}</p>
-          <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_storage_backend_local_desc" }}</p>
+          <p class="description"><strong>{{ t "admin_storage_backend_local_title" }}</strong></p>
+          <p class="notice-text">{{ t "admin_storage_backend_local_desc" }}</p>
           {{ end }}
         </div>
 
-        <div class="rounded-2xl border border-white/10 bg-[#111111] p-5">
-          <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div class="card">
+          <div class="admin-control">
             <div>
-              <p class="text-xs uppercase tracking-[0.18em] text-[#E4E4E4]/55">{{ t "admin_upload_control" }}</p>
+              <p class="eyebrow">{{ t "admin_upload_control" }}</p>
               {{ if .UploadsDisabled }}
-              <p class="mt-2 text-lg font-semibold text-[#FFC1CC]">{{ t "admin_uploads_disabled_title" }}</p>
-              <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_uploads_disabled_desc" }}</p>
+              <p class="description pink strong">{{ t "admin_uploads_disabled_title" }}</p>
+              <p class="notice-text">{{ t "admin_uploads_disabled_desc" }}</p>
               {{ else }}
-              <p class="mt-2 text-lg font-semibold text-[#E4E4E4]">{{ t "admin_uploads_enabled_title" }}</p>
-              <p class="mt-1 text-sm text-[#E4E4E4]/55">{{ t "admin_uploads_enabled_desc" }}</p>
+              <p class="description strong">{{ t "admin_uploads_enabled_title" }}</p>
+              <p class="notice-text">{{ t "admin_uploads_enabled_desc" }}</p>
               {{ end }}
             </div>
 
@@ -92,77 +93,77 @@
               <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
               {{ if .UploadsDisabled }}
               <input type="hidden" name="disabled" value="false">
-              <button class="rounded-xl border border-[#A8DADC]/40 px-4 py-2 text-[#A8DADC] transition hover:bg-[#A8DADC]/10" type="submit">{{ t "admin_enable_uploads" }}</button>
+              <button class="button" type="submit">{{ t "admin_enable_uploads" }}</button>
               {{ else }}
               <input type="hidden" name="disabled" value="true">
-              <button class="rounded-xl border border-[#FFC1CC]/40 px-4 py-2 text-[#FFC1CC] transition hover:bg-[#FFC1CC]/10" type="submit">{{ t "admin_disable_uploads" }}</button>
+              <button class="button pink" type="submit">{{ t "admin_disable_uploads" }}</button>
               {{ end }}
             </form>
           </div>
         </div>
       </div>
 
-      <div class="mb-8 rounded-2xl border border-white/10 bg-[#111111] p-5">
-        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div class="card mt-lg">
+        <div class="danger-row">
           <div>
-            <p class="text-xs uppercase tracking-[0.18em] text-[#FFC1CC]/80">{{ t "admin_danger_zone" }}</p>
-            <p class="mt-2 text-lg font-semibold text-[#FFC1CC]">{{ t "admin_delete_title" }}</p>
-            <p class="mt-1 text-sm text-[#FFC1CC]/75">{{ t "admin_delete_desc" }}</p>
+            <p class="eyebrow pink">{{ t "admin_danger_zone" }}</p>
+            <p class="description pink strong">{{ t "admin_delete_title" }}</p>
+            <p class="notice-text pink">{{ t "admin_delete_desc" }}</p>
           </div>
 
-          <div class="flex items-center justify-end gap-3">
+          <div class="button-row">
             <form id="bulk-delete-form" method="post" action="/admin/delete" onsubmit="return confirm('{{ t "admin_delete_selected_confirm" }}')">
               <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-              <button id="bulk-delete-btn" class="hidden rounded-xl border border-[#FFC1CC]/40 px-4 py-2 font-semibold text-[#FFC1CC] transition hover:bg-[#FFC1CC]/10" type="submit"></button>
+              <button id="bulk-delete-btn" class="button pink is-hidden" type="submit"></button>
             </form>
             <form method="post" action="/admin/delete-all" onsubmit="return confirm('{{ t "admin_delete_all_confirm" }}')">
               <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-              <button class="rounded-xl border border-[#FFC1CC]/40 px-4 py-2 font-semibold text-[#FFC1CC] transition hover:bg-[#FFC1CC]/10" type="submit">{{ t "admin_delete_all_button" }}</button>
+              <button class="button pink" type="submit">{{ t "admin_delete_all_button" }}</button>
             </form>
           </div>
         </div>
       </div>
 
-      <div class="overflow-x-auto rounded-2xl border border-white/10">
-        <table class="min-w-full divide-y divide-white/10 text-sm">
-          <thead class="bg-[#1a1a1a] text-left text-xs uppercase tracking-wider text-[#E4E4E4]/55">
+      <div class="table-wrap mt-lg">
+        <table class="admin-table">
+          <thead>
             <tr>
-              <th class="px-4 py-3">{{ t "admin_table_code" }}</th>
-              <th class="px-4 py-3">{{ t "admin_table_filename" }}</th>
-              <th class="px-4 py-3">{{ t "admin_table_policy" }}</th>
-              <th class="px-4 py-3">{{ t "admin_table_size" }}</th>
-              <th class="px-4 py-3">{{ t "admin_table_protected" }}</th>
-              <th class="px-4 py-3">{{ t "admin_table_created" }}</th>
-              <th class="px-4 py-3">{{ t "admin_table_expires" }}</th>
-              <th class="px-4 py-3">{{ t "admin_table_action" }}</th>
+              <th>{{ t "admin_table_code" }}</th>
+              <th>{{ t "admin_table_filename" }}</th>
+              <th>{{ t "admin_table_policy" }}</th>
+              <th>{{ t "admin_table_size" }}</th>
+              <th>{{ t "admin_table_protected" }}</th>
+              <th>{{ t "admin_table_created" }}</th>
+              <th>{{ t "admin_table_expires" }}</th>
+              <th>{{ t "admin_table_action" }}</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-white/10">
+          <tbody>
             {{ range .Items }}
-            <tr class="transition hover:bg-white/[0.03]">
-              <td class="whitespace-nowrap px-4 py-3">
-                <label class="mr-2 inline-flex cursor-pointer items-center align-middle">
-                  <input class="bulk-delete-checkbox h-4 w-4 accent-[#FFC1CC]" type="checkbox" name="ids" value="{{ .ID }}" form="bulk-delete-form">
+            <tr>
+              <td>
+                <label class="checkbox-label">
+                  <input class="bulk-delete-checkbox" type="checkbox" name="ids" value="{{ .ID }}" form="bulk-delete-form">
                 </label>
-                <a class="font-mono text-[#E4E4E4] underline decoration-[#A8DADC]/50 underline-offset-4 hover:decoration-[#A8DADC]" href="{{ $.BaseURL }}/{{ .ID }}" target="_blank">{{ .ID }}</a>
+                <a class="table-link" href="{{ $.BaseURL }}/{{ .ID }}" target="_blank">{{ .ID }}</a>
               </td>
-              <td class="max-w-xs truncate whitespace-nowrap px-4 py-3 text-[#E4E4E4]/85">{{ if .Filename }}{{ .Filename }}{{ else }}-{{ end }}</td>
-              <td class="whitespace-nowrap px-4 py-3 text-[#E4E4E4]/85">{{ .DataPolicy }}</td>
-              <td class="whitespace-nowrap px-4 py-3 text-[#E4E4E4]/85">{{ .Size }}</td>
-              <td class="whitespace-nowrap px-4 py-3 text-[#E4E4E4]/85">{{ .Protected }}</td>
-              <td class="whitespace-nowrap px-4 py-3 text-[#E4E4E4]/65">{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
-              <td class="whitespace-nowrap px-4 py-3 text-[#E4E4E4]/65">{{ if .ExpiresAt.IsZero }}-{{ else }}{{ .ExpiresAt.Format "2006-01-02 15:04:05" }}{{ end }}</td>
-              <td class="whitespace-nowrap px-4 py-3">
+              <td class="truncate-cell">{{ if .Filename }}{{ .Filename }}{{ else }}-{{ end }}</td>
+              <td>{{ .DataPolicy }}</td>
+              <td>{{ .Size }}</td>
+              <td>{{ .Protected }}</td>
+              <td class="muted-cell">{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
+              <td class="muted-cell">{{ if .ExpiresAt.IsZero }}-{{ else }}{{ .ExpiresAt.Format "2006-01-02 15:04:05" }}{{ end }}</td>
+              <td>
                 <form method="post" action="/admin/delete">
                   <input type="hidden" name="csrf_token" value="{{ $.CSRFToken }}">
                   <input type="hidden" name="id" value="{{ .ID }}">
-                  <button class="rounded-lg border border-[#FFC1CC]/35 px-3 py-1.5 text-[#FFC1CC] transition hover:bg-[#FFC1CC]/10" type="submit">{{ t "admin_delete_button" }}</button>
+                  <button class="button pink" type="submit">{{ t "admin_delete_button" }}</button>
                 </form>
               </td>
             </tr>
             {{ else }}
             <tr>
-              <td class="px-4 py-8 text-center text-[#E4E4E4]/55" colspan="8">{{ t "admin_no_pastes" }}</td>
+              <td class="muted-cell empty-cell" colspan="8">{{ t "admin_no_pastes" }}</td>
             </tr>
             {{ end }}
           </tbody>
@@ -176,7 +177,7 @@
       if (adminFlash) {
         const delay = Number(adminFlash.dataset.autoDismissMs || "5000");
         window.setTimeout(function () {
-          adminFlash.classList.add("opacity-0", "-translate-y-1");
+          adminFlash.classList.add("is-fading");
           adminFlash.setAttribute("aria-hidden", "true");
           window.setTimeout(function () {
             adminFlash.remove();
@@ -192,11 +193,11 @@
       const updateBulkButton = function () {
         const count = checkboxes.filter(function (el) { return el.checked; }).length;
         if (count > 0) {
-          bulkDeleteBtn.classList.remove("hidden");
+          bulkDeleteBtn.classList.remove("is-hidden");
           bulkDeleteBtn.textContent = isKo ? (count + "{{ t "admin_delete_selected_suffix" }}") : ("{{ t "admin_delete_selected_prefix" }} " + count);
           return;
         }
-        bulkDeleteBtn.classList.add("hidden");
+        bulkDeleteBtn.classList.add("is-hidden");
         bulkDeleteBtn.textContent = "";
       };
 

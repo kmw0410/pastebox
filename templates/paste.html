@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ .ID }} - Pastebox</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/paste.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/bash.min.js"></script>
@@ -16,99 +17,26 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/nginx.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/sql.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/toml.min.js"></script>
-  <style>
-    .paste-scrollbar {
-      scrollbar-width: auto;
-      scrollbar-color: rgba(161,161,170,0.95) rgba(255,255,255,0.08);
-    }
-    .paste-scrollbar::-webkit-scrollbar {
-      height: 14px;
-    }
-    .paste-scrollbar::-webkit-scrollbar-track {
-      background: rgba(255,255,255,0.08);
-      border-radius: 8px;
-    }
-    .paste-scrollbar::-webkit-scrollbar-thumb {
-      background: rgba(161,161,170,0.9);
-      border: 3px solid rgba(255,255,255,0.08);
-      border-radius: 8px;
-    }
-    .paste-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: rgba(212,212,216,0.95);
-    }
-    .paste-viewer {
-      grid-template-columns: minmax(0, max-content);
-    }
-    .paste-viewer > #lineNumbers {
-      grid-column: 1;
-      grid-row: 1;
-    }
-    .paste-viewer > .paste-code {
-      grid-column: 1;
-      grid-row: 1;
-      min-width: max-content;
-    }
-    .paste-viewer.show-lines {
-      grid-template-columns: 3.5rem minmax(0, max-content);
-      column-gap: 1rem;
-    }
-    .paste-viewer.show-lines > #lineNumbers {
-      grid-column: 1;
-    }
-    .paste-viewer.show-lines > .paste-code {
-      grid-column: 2;
-    }
-    .paste-viewer.wrapped {
-      grid-template-columns: minmax(0, 1fr);
-      width: 100%;
-    }
-    .paste-viewer.wrapped.show-lines {
-      grid-template-columns: 3.5rem minmax(0, 1fr);
-    }
-    #lineNumbers {
-      margin: 0;
-      line-height: inherit;
-    }
-    #lineNumbers.lines-disabled {
-      opacity: 0.45;
-    }
-    #pasteContent.hljs {
-      padding: 0;
-      background: transparent;
-      line-height: inherit;
-    }
-    .paste-code.wrap-long-lines {
-      min-width: 100%;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-      word-break: break-word;
-    }
-    .paste-code.wrap-long-lines #pasteContent.hljs {
-      white-space: inherit;
-    }
-  </style>
 </head>
-<body class="min-h-screen bg-[#111111] text-zinc-100">
-  <header class="sticky top-0 z-10 border-b border-white/10 bg-[#111111]/95 backdrop-blur">
-    <div class="flex w-full flex-col gap-2 px-4 py-2.5 lg:flex-row lg:items-center lg:justify-between lg:px-6">
-      <div class="min-w-0">
-        <div class="flex min-w-0 flex-wrap items-center gap-2">
-          <p class="text-[10px] uppercase tracking-[0.24em] text-zinc-500">Pastebox</p>
-          <span class="h-1 w-1 rounded-full bg-white/25"></span>
-          <h1 class="truncate font-mono text-sm font-semibold text-zinc-100">{{ .ID }}</h1>
-          {{ if .Filename }}
-          <span class="max-w-[13rem] truncate text-xs text-zinc-500">{{ .Filename }}</span>
-          {{ end }}
-          <span class="rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[11px] text-[#E4E4E4]/75">{{ .Language }}</span>
-          <span id="longLineHint" class="hidden rounded-full border border-[#F0C674]/30 bg-[#F0C674]/10 px-2 py-0.5 text-[11px] text-[#F0C674]">Long line detected</span>
-        </div>
+<body class="paste-page">
+  <header class="paste-header">
+    <div class="paste-header-inner">
+      <div class="paste-meta">
+        <p class="paste-brand">Pastebox</p>
+        <span class="paste-dot"></span>
+        <h1 class="paste-title">{{ .ID }}</h1>
+        {{ if .Filename }}
+        <span class="paste-filename">{{ .Filename }}</span>
+        {{ end }}
+        <span class="paste-badge">{{ .Language }}</span>
+        <span id="longLineHint" class="paste-badge warning is-hidden">Long line detected</span>
       </div>
 
-      <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+      <div class="paste-actions">
         <button
           id="copyButton"
           type="button"
-          class="rounded-lg border border-white/15 px-2.5 py-1.5 text-[11px] font-medium text-[#E4E4E4] transition hover:border-[#A8DADC] hover:text-[#A8DADC]"
+          class="paste-button"
           onclick="copyPasteContent()"
         >
           Copy
@@ -117,17 +45,12 @@
           {{ if .Password }}
           <input type="hidden" name="password" value="{{ .Password }}">
           {{ end }}
-          <button
-            type="submit"
-            class="rounded-lg border border-white/15 px-2.5 py-1.5 text-[11px] font-medium text-[#E4E4E4] transition hover:border-[#B8D8B3] hover:text-[#B8D8B3]"
-          >
-            Clone
-          </button>
+          <button type="submit" class="paste-button green">Clone</button>
         </form>
         <button
           id="lineToggle"
           type="button"
-          class="rounded-lg border border-white/15 px-2.5 py-1.5 text-[11px] font-medium text-[#E4E4E4] transition hover:border-[#D8B7BF] hover:text-[#D8B7BF]"
+          class="paste-button pinkish"
           onclick="toggleLineNumbers()"
           aria-pressed="false"
         >
@@ -136,31 +59,22 @@
         <button
           id="wrapToggle"
           type="button"
-          class="rounded-lg border border-white/15 px-2.5 py-1.5 text-[11px] font-medium text-[#E4E4E4] transition hover:border-[#F0C674] hover:text-[#F0C674]"
+          class="paste-button gold"
           onclick="toggleWrapMode()"
           aria-pressed="false"
         >
           Wrap
         </button>
-        <a
-          class="rounded-lg border border-white/15 px-2.5 py-1.5 text-[11px] font-medium text-[#E4E4E4] transition hover:border-[#B9AECB] hover:text-[#B9AECB]"
-          href="?format=raw"
-        >
-          Raw
-        </a>
+        <a class="paste-button violet" href="?format=raw">Raw</a>
       </div>
     </div>
   </header>
 
-  <main class="w-full px-4 py-6 lg:px-6">
-    <div class="paste-scrollbar w-full overflow-x-auto overflow-y-visible pb-5 [scrollbar-gutter:stable]">
-      <div id="viewer" class="paste-viewer grid w-max min-w-full gap-0 font-mono text-sm leading-6">
-        <pre
-          id="lineNumbers"
-          aria-hidden="true"
-          class="hidden m-0 w-12 select-none border-r border-white/10 pr-3 text-right text-zinc-600"
-        ></pre>
-        <pre class="paste-code m-0 min-w-max whitespace-pre text-zinc-200"><code id="pasteContent" class="language-{{ .Language }} bg-transparent p-0">{{ .Content }}</code></pre>
+  <main class="paste-main">
+    <div class="paste-scrollbar">
+      <div id="viewer" class="paste-viewer">
+        <pre id="lineNumbers" aria-hidden="true" class="is-hidden"></pre>
+        <pre class="paste-code"><code id="pasteContent" class="language-{{ .Language }}">{{ .Content }}</code></pre>
       </div>
     </div>
   </main>
@@ -185,11 +99,9 @@
     }
 
     function setLineNumbersEnabled(enabled) {
-      lineNumbers.classList.toggle("hidden", !enabled);
+      lineNumbers.classList.toggle("is-hidden", !enabled);
       viewer.classList.toggle("show-lines", enabled);
-      lineToggle.classList.toggle("border-white/25", enabled);
-      lineToggle.classList.toggle("bg-white/[0.07]", enabled);
-      lineToggle.classList.toggle("text-white", enabled);
+      lineToggle.classList.toggle("is-active", enabled);
       lineToggle.setAttribute("aria-pressed", enabled ? "true" : "false");
     }
 
@@ -198,7 +110,7 @@
         return;
       }
 
-      const enabled = lineNumbers.classList.contains("hidden");
+      const enabled = lineNumbers.classList.contains("is-hidden");
       setLineNumbersEnabled(enabled);
     }
 
@@ -207,18 +119,16 @@
 
       viewer.classList.toggle("wrapped", wrapEnabled);
       pasteCode.classList.toggle("wrap-long-lines", wrapEnabled);
-      wrapToggle.classList.toggle("border-white/25", wrapEnabled);
-      wrapToggle.classList.toggle("bg-white/[0.07]", wrapEnabled);
-      wrapToggle.classList.toggle("text-white", wrapEnabled);
+      wrapToggle.classList.toggle("is-active", wrapEnabled);
       wrapToggle.setAttribute("aria-pressed", wrapEnabled ? "true" : "false");
 
       if (wrapEnabled) {
         setLineNumbersEnabled(false);
-        lineToggle.classList.add("opacity-50", "cursor-not-allowed");
+        lineToggle.classList.add("is-disabled");
         lineNumbers.classList.add("lines-disabled");
         lineToggle.setAttribute("title", "Line numbers are disabled while wrap mode is on");
       } else {
-        lineToggle.classList.remove("opacity-50", "cursor-not-allowed");
+        lineToggle.classList.remove("is-disabled");
         lineNumbers.classList.remove("lines-disabled");
         lineToggle.removeAttribute("title");
       }
@@ -227,8 +137,8 @@
     renderLineNumbers();
 
     if (longestLineLength >= longLineThreshold) {
-      longLineHint.classList.remove("hidden");
-      wrapToggle.classList.add("border-[#F0C674]/40", "text-[#F0C674]");
+      longLineHint.classList.remove("is-hidden");
+      wrapToggle.classList.add("long-line");
       wrapToggle.setAttribute("title", "Wrap very long lines for easier reading");
     }
 

@@ -4,57 +4,51 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ t "clone_page_title" }} - Pastebox</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/pages.css">
 </head>
-<body class="min-h-screen bg-[#111111] text-zinc-100">
-  <main class="mx-auto flex min-h-screen max-w-xl items-center justify-center px-6 py-12 text-center">
-    <section class="w-full">
-      <p class="text-sm uppercase tracking-[0.3em] text-zinc-600">{{ t "clone_badge" }}</p>
-      <h1 class="mt-4 text-4xl font-bold tracking-tight text-white">{{ t "clone_title" }}</h1>
-      <p class="mt-4 text-sm leading-6 text-zinc-500">{{ t "clone_desc" }}</p>
+<body>
+  <main class="page-shell centered">
+    <section class="simple-section narrow-panel">
+      <p class="eyebrow">{{ t "clone_badge" }}</p>
+      <h1 class="title mt-md">{{ t "clone_title" }}</h1>
+      <p class="description">{{ t "clone_desc" }}</p>
 
-      <div class="mt-8 space-y-3 text-left">
-        <div class="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-          <p class="text-xs uppercase tracking-[0.18em] text-zinc-600">{{ t "clone_url" }}</p>
-          <a class="mt-2 block break-all font-mono text-sm text-zinc-200 underline decoration-zinc-700 underline-offset-4 hover:decoration-zinc-100" href="{{ .URL }}">{{ .URL }}</a>
+      <div class="result-list">
+        <div class="result-card">
+          <p class="eyebrow">{{ t "clone_url" }}</p>
+          <a class="result-value result-link" href="{{ .URL }}">{{ .URL }}</a>
         </div>
 
         {{ if .Expires }}
-        <div class="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-          <p class="text-xs uppercase tracking-[0.18em] text-zinc-600">{{ t "clone_expires" }}</p>
-          <p class="mt-2 break-all font-mono text-sm text-zinc-300">{{ .Expires }}</p>
+        <div class="result-card">
+          <p class="eyebrow">{{ t "clone_expires" }}</p>
+          <p class="result-value">{{ .Expires }}</p>
         </div>
         {{ end }}
 
         {{ if .Password }}
-        <div class="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-          <p class="text-xs uppercase tracking-[0.18em] text-zinc-600">{{ t "clone_password" }}</p>
-          <p class="mt-2 break-all font-mono text-sm text-zinc-300">{{ .Password }}</p>
+        <div class="result-card">
+          <p class="eyebrow">{{ t "clone_password" }}</p>
+          <p class="result-value">{{ .Password }}</p>
         </div>
         {{ end }}
 
-        <div class="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-          <p class="text-xs uppercase tracking-[0.18em] text-zinc-600">{{ t "clone_manage" }}</p>
-          <a class="mt-2 block break-all font-mono text-sm text-zinc-200 underline decoration-zinc-700 underline-offset-4 hover:decoration-zinc-100" href="{{ .ManageURL }}">{{ .ManageURL }}</a>
+        <div class="result-card">
+          <p class="eyebrow">{{ t "clone_manage" }}</p>
+          <a class="result-value result-link" href="{{ .ManageURL }}">{{ .ManageURL }}</a>
         </div>
 
-        <div class="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-          <p class="text-xs uppercase tracking-[0.18em] text-zinc-600">{{ t "clone_delete" }}</p>
-          <p class="mt-2 break-all font-mono text-sm text-zinc-300">{{ .DeleteURL }}</p>
+        <div class="result-card">
+          <p class="eyebrow">{{ t "clone_delete" }}</p>
+          <p class="result-value">{{ .DeleteURL }}</p>
         </div>
       </div>
 
-      <div class="mt-8 flex flex-wrap justify-center gap-3">
-        <a class="rounded-xl bg-zinc-100 px-4 py-2 font-semibold text-zinc-950 transition hover:bg-white" href="{{ .URL }}">{{ t "clone_open_paste" }}</a>
-        <button
-          class="rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-300 transition hover:border-white/20 hover:text-white"
-          type="button"
-          onclick="copyCloneInfo()"
-          id="copyCloneButton"
-        >
-          {{ t "clone_copy_info" }}
-        </button>
-        <a class="rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-300 transition hover:border-white/20 hover:text-white" href="/">{{ t "home" }}</a>
+      <div class="button-row center mt-lg">
+        <a class="button primary" href="{{ .URL }}">{{ t "clone_open_paste" }}</a>
+        <button class="button" type="button" onclick="copyCloneInfo()" id="copyCloneButton">{{ t "clone_copy_info" }}</button>
+        <a class="button" href="/">{{ t "home" }}</a>
       </div>
     </section>
   </main>

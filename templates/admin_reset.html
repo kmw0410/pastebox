@@ -4,33 +4,34 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ .Title }} - Pastebox</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/pages.css">
 </head>
-<body class="dark min-h-screen bg-[#111111] text-[#E4E4E4]">
-  <main class="mx-auto flex min-h-screen w-full max-w-[98rem] items-center px-6 py-14 md:px-12 md:py-20">
-    <div class="w-full max-w-md rounded-3xl bg-[#111111] p-8 shadow-[0_18px_60px_rgba(0,0,0,0.45)] md:p-12">
-      <h1 class="text-3xl font-bold tracking-tight text-[#E4E4E4]">{{ .Title }}</h1>
-      <p class="mt-3 text-sm text-[#E4E4E4]/70">{{ .Description }}</p>
+<body>
+  <main class="page-shell auth-shell">
+    <div class="panel narrow-panel auth-card">
+      <h1 class="title small">{{ .Title }}</h1>
+      <p class="description">{{ .Description }}</p>
 
       {{ if .Error }}
-      <div class="mt-5 rounded-xl border border-[#FFC1CC]/35 bg-[#FFC1CC]/10 p-3 text-sm text-[#FFC1CC]">{{ .Error }}</div>
+      <div class="alert error mt-md">{{ .Error }}</div>
       {{ end }}
 
-      <form class="mt-6 space-y-4" method="post" action="{{ .Action }}">
+      <form class="form" method="post" action="{{ .Action }}">
         <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-        <div>
-          <label class="mb-2 block text-sm text-[#E4E4E4]/70">{{ t "admin_reset_token" }}</label>
-          <input class="w-full rounded-xl border border-white/10 bg-[#1a1a1a] px-4 py-3 text-[#E4E4E4] outline-none transition placeholder:text-[#E4E4E4]/40 focus:border-[#A8DADC]/50" name="reset_token" type="password" autocomplete="off" placeholder="{{ t "admin_reset_token_placeholder" }}" required>
+        <div class="form-field">
+          <label>{{ t "admin_reset_token" }}</label>
+          <input class="input" name="reset_token" type="password" autocomplete="off" placeholder="{{ t "admin_reset_token_placeholder" }}" required>
         </div>
-        <div>
-          <label class="mb-2 block text-sm text-[#E4E4E4]/70">{{ t "admin_password" }}</label>
-          <input class="w-full rounded-xl border border-white/10 bg-[#1a1a1a] px-4 py-3 text-[#E4E4E4] outline-none transition focus:border-[#A8DADC]/50" name="password" type="password" autocomplete="new-password" required>
+        <div class="form-field">
+          <label>{{ t "admin_password" }}</label>
+          <input class="input" name="password" type="password" autocomplete="new-password" required>
         </div>
-        <div>
-          <label class="mb-2 block text-sm text-[#E4E4E4]/70">{{ t "admin_reset_password_confirm" }}</label>
-          <input class="w-full rounded-xl border border-white/10 bg-[#1a1a1a] px-4 py-3 text-[#E4E4E4] outline-none transition focus:border-[#A8DADC]/50" name="password_confirm" type="password" autocomplete="new-password" required>
+        <div class="form-field">
+          <label>{{ t "admin_reset_password_confirm" }}</label>
+          <input class="input" name="password_confirm" type="password" autocomplete="new-password" required>
         </div>
-        <button class="w-full rounded-xl bg-[#A8DADC] px-4 py-3 font-semibold text-[#111111] transition hover:brightness-105" type="submit">{{ .Button }}</button>
+        <button class="button primary full" type="submit">{{ .Button }}</button>
       </form>
     </div>
   </main>

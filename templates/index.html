@@ -41,8 +41,8 @@
         </div>
       </div>
 
-      <div class="grid-two mt-lg">
-        <article class="card">
+      <div class="grid-two home-detail-grid mt-lg">
+        <article class="card home-detail-card home-detail-card-wide">
           <p class="example-label">{{ t "index_data_policy" }}</p>
           <p class="description">{{ t "index_data_policy_desc" }}</p>
           <pre class="plain-code mt-sm"><code># {{ t "index_permanent_paste" }}
@@ -54,7 +54,7 @@ curl -H "data-policy: once" -F "file=@secret.txt" {{ .BaseURL }}/
 # 12-hour paste
 curl -H "data-policy: 12h" -F "file=@debug.log" {{ .BaseURL }}/</code></pre>
         </article>
-        <article class="card">
+        <article class="card home-detail-card">
           <p class="example-label pink">{{ t "index_expiration_info" }}</p>
           <p class="description">{{ t "index_expiration_desc" }}</p>
           <pre class="plain-code mt-sm"><code>url: {{ .BaseURL }}/AbC12

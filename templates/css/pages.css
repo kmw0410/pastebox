@@ -1,10 +1,19 @@
 .home-grid {
   display: grid;
   gap: 1rem;
+  align-items: start;
 }
 
 .home-actions {
   margin-top: 2rem;
+}
+
+.home-detail-grid {
+  align-items: start;
+}
+
+.home-detail-card {
+  align-self: start;
 }
 
 .example-label {
@@ -315,6 +324,14 @@
 @media (min-width: 1024px) {
   .home-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home-detail-grid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  }
+
+  .home-detail-card-wide {
+    min-width: 0;
   }
 
   .admin-split {

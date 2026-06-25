@@ -12,7 +12,7 @@
     <div class="panel">
       <div class="manage-header">
         <div>
-          <p class="eyebrow cyan">{{ t "manage_badge" }}</p>
+          <p class="eyebrow">{{ t "manage_badge" }}</p>
           <h1 class="title mt-md break-anywhere">{{ .ID }}</h1>
           <p class="description">{{ t "manage_desc" }}</p>
         </div>
@@ -21,7 +21,7 @@
         <div class="manage-actions">
           <a class="button" href="{{ .PublicURL }}" target="_blank" rel="noopener noreferrer">{{ t "manage_open_paste" }}</a>
           <button class="button" type="button" data-copy="{{ .PublicURL }}" onclick="copyButton(this)">{{ t "manage_copy_public_url" }}</button>
-          <button class="button violet" type="button" data-copy="{{ .ManageURL }}" onclick="copyButton(this)">{{ t "manage_copy_manage_url" }}</button>
+          <button class="button" type="button" data-copy="{{ .ManageURL }}" onclick="copyButton(this)">{{ t "manage_copy_manage_url" }}</button>
           <a class="button" href="/">{{ t "home" }}</a>
         </div>
         {{ else }}
@@ -40,11 +40,11 @@
       {{ end }}
 
       {{ if .GeneratedPassword }}
-      <div class="alert violet-alert mt-lg">
-        <p class="eyebrow violet">{{ t "manage_generated_password" }}</p>
+      <div class="alert info mt-lg">
+        <p class="eyebrow">{{ t "manage_generated_password" }}</p>
         <div class="generated-password mt-sm">
           <p class="result-value">{{ .GeneratedPassword }}</p>
-          <button class="button violet" type="button" data-copy="{{ .GeneratedPassword }}" onclick="copyButton(this)">{{ t "paste_copy" }}</button>
+          <button class="button" type="button" data-copy="{{ .GeneratedPassword }}" onclick="copyButton(this)">{{ t "paste_copy" }}</button>
         </div>
         <p class="notice-text">{{ t "manage_generated_password_desc" }}</p>
       </div>
@@ -79,7 +79,7 @@
         </article>
 
         <article class="card">
-          <p class="eyebrow cyan">{{ t "manage_password_title" }}</p>
+          <p class="eyebrow">{{ t "manage_password_title" }}</p>
           {{ if .PasswordProtected }}
           <p class="description">{{ t "manage_password_private_desc" }}</p>
           <form class="form" method="post" action="{{ .ManageURL }}">
@@ -94,13 +94,13 @@
           <p class="description">{{ t "manage_password_public_desc" }}</p>
           <form class="mt-md" method="post" action="{{ .ManageURL }}">
             <input type="hidden" name="manage_action" value="enable_password">
-            <button class="button violet" type="submit">{{ t "manage_enable_password" }}</button>
+            <button class="button" type="submit">{{ t "manage_enable_password" }}</button>
           </form>
           {{ end }}
         </article>
 
         <article class="card">
-          <p class="eyebrow pink">{{ t "manage_policy_title" }}</p>
+          <p class="eyebrow">{{ t "manage_policy_title" }}</p>
           <p class="description">{{ t "manage_policy_desc" }}</p>
           <form class="form policy-form" method="post" action="{{ .ManageURL }}">
             <input type="hidden" name="manage_action" value="set_policy">
@@ -112,16 +112,16 @@
                 <option value="once" {{ if eq .DataPolicy "once" }}selected{{ end }}>{{ t "manage_policy_once" }}</option>
               </select>
             </div>
-            <button class="button pink" type="submit">{{ t "manage_policy_save" }}</button>
+            <button class="button" type="submit">{{ t "manage_policy_save" }}</button>
           </form>
         </article>
 
-        <article class="card danger-card">
-          <p class="eyebrow pink">{{ t "manage_danger_title" }}</p>
+        <article class="card">
+          <p class="eyebrow">{{ t "manage_danger_title" }}</p>
           <p class="description">{{ t "manage_delete_desc" }}</p>
           <form class="mt-md" method="post" action="{{ .ManageURL }}" onsubmit="return confirm('{{ t "manage_delete_confirm" }}')">
             <input type="hidden" name="manage_action" value="delete">
-            <button class="button pink" type="submit">{{ t "manage_delete_button" }}</button>
+            <button class="button" type="submit">{{ t "manage_delete_button" }}</button>
           </form>
         </article>
       </div>

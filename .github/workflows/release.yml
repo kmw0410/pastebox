@@ -1,12 +1,18 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_run:
+    workflows:
+      - Docker Publish
+    types:
+      - completed
+  workflow_dispatch:
 
 jobs:
   release:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
 
     permissions:
@@ -17,12 +23,34 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || github.event.workflow_run.head_sha }}
+
+      - name: Resolve release tag
+        id: tag
+        shell: bash
+        run: |
+          git fetch --tags --force
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="$(git tag --sort=-v:refname | grep '^v' | head -n 1)"
+          else
+            SHA="${{ github.event.workflow_run.head_sha }}"
+            TAG="$(git tag --points-at "$SHA" | grep '^v' | sort -V | tail -n 1)"
+          fi
+
+          if [ -z "$TAG" ]; then
+            echo "No release tag found." >&2
+            exit 1
+          fi
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Using tag: $TAG"
 
       - name: Generate release notes
         id: notes
         shell: bash
         run: |
-          TAG="${GITHUB_REF_NAME}"
+          TAG="${{ steps.tag.outputs.tag }}"
           REPO="${GITHUB_REPOSITORY,,}"
           IMAGE="ghcr.io/${REPO}"
 
@@ -53,6 +81,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          gh release create "${GITHUB_REF_NAME}" \
-            --title "${GITHUB_REF_NAME}" \
-            --notes-file release-notes.md
+          TAG="${{ steps.tag.outputs.tag }}"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" \
+              --title "$TAG" \
+              --notes-file release-notes.md
+          else
+            gh release create "$TAG" \
+              --title "$TAG" \
+              --notes-file release-notes.md
+          fi

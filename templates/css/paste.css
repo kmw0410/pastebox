@@ -16,12 +16,10 @@ body.paste-page {
 
 .paste-header-inner {
   width: 100%;
-  max-width: 1920px;
-  margin: 0 auto;
-  padding: 1rem 1.5rem;
+  padding: 0.65rem 1rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 .paste-meta {
@@ -35,7 +33,7 @@ body.paste-page {
 .paste-brand {
   margin: 0;
   color: #71717a;
-  font-size: 0.75rem;
+  font-size: 0.625rem;
   letter-spacing: 0.24em;
   text-transform: uppercase;
 }
@@ -51,27 +49,28 @@ body.paste-page {
   overflow: hidden;
   margin: 0;
   color: #f4f4f5;
-  font-size: 1.125rem;
-  font-weight: 600;
+  font-size: 0.875rem;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .paste-filename {
-  max-width: 18rem;
+  max-width: 13rem;
   overflow: hidden;
   color: #71717a;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .paste-badge {
-  padding: 0.2rem 0.5rem;
+  padding: 0.15rem 0.5rem;
   border: 1px solid var(--line);
   border-radius: 999px;
-  color: #71717a;
-  font-size: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(228, 228, 228, 0.75);
+  font-size: 0.7rem;
 }
 
 .paste-badge.warning {
@@ -88,41 +87,41 @@ body.paste-page {
 }
 
 .paste-button {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--line);
+  padding: 0.4rem 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 0.5rem;
   background: transparent;
-  color: #d4d4d8;
-  font-size: 0.875rem;
+  color: var(--text);
+  font-size: 0.7rem;
+  font-weight: 700;
   text-decoration: none;
   transition: border-color 160ms ease, color 160ms ease, background 160ms ease, opacity 160ms ease;
 }
 
 .paste-button:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.04);
-  color: #ffffff;
+  border-color: var(--cyan);
+  color: var(--cyan);
 }
 
 .paste-button.green:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
+  border-color: var(--green);
+  color: var(--green);
 }
 
 .paste-button.pinkish:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
+  border-color: #d8b7bf;
+  color: #d8b7bf;
 }
 
 .paste-button.gold:hover,
 .paste-button.long-line {
-  border-color: rgba(255, 255, 255, 0.25);
-  color: #ffffff;
+  border-color: rgba(240, 198, 116, 0.4);
+  color: var(--gold);
 }
 
 .paste-button.violet:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
+  border-color: #b9aecb;
+  color: #b9aecb;
 }
 
 .paste-button.is-active {
@@ -138,8 +137,6 @@ body.paste-page {
 
 .paste-main {
   width: 100%;
-  max-width: 1920px;
-  margin: 0 auto;
   padding: 1.5rem 1rem;
 }
 
@@ -261,8 +258,15 @@ body.paste-page {
 
 @media (min-width: 1024px) {
   .paste-header-inner {
+    padding-right: 1.5rem;
+    padding-left: 1.5rem;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
+  }
+
+  .paste-main {
+    padding-right: 1.5rem;
+    padding-left: 1.5rem;
   }
 }

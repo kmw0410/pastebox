@@ -10,9 +10,8 @@
 <body>
   <main class="page-shell auth-shell">
     <div class="panel narrow-panel auth-card">
-      <p class="badge-muted">{{ t "brand_admin" }}</p>
-      <h1 class="title small">{{ .Title }}</h1>
-      <p class="description">{{ .Description }}</p>
+      <h1 class="title small">{{ t "admin_page_title" }}</h1>
+      <p class="description">{{ t "admin_page_description" }}</p>
 
       {{ if .Error }}
       <div class="alert error mt-md">{{ .Error }}</div>

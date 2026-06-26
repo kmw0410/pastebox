@@ -18,13 +18,13 @@
 
 .example-label {
   margin: 0 0 0.75rem;
-  color: var(--cyan);
+  color: #d4d4d8;
   font-size: 0.875rem;
   font-weight: 700;
 }
 
 .example-label.pink {
-  color: var(--pink);
+  color: #d4d4d8;
 }
 
 .wide-card {
@@ -32,11 +32,11 @@
 }
 
 .auth-shell {
-  justify-content: center;
+  display: block;
 }
 
 .auth-card {
-  text-align: center;
+  text-align: left;
 }
 
 .badge {
@@ -44,8 +44,8 @@
   margin-bottom: 0.75rem;
   padding: 0.25rem 0.75rem;
   border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  color: var(--cyan);
+  border-radius: 0;
+  color: var(--text);
   font-size: 0.75rem;
 }
 
@@ -63,7 +63,7 @@
 .result-card {
   padding: 1rem;
   border: 1px solid var(--line);
-  border-radius: 0.75rem;
+  border-radius: 0;
   background: rgba(255, 255, 255, 0.02);
 }
 
@@ -117,11 +117,11 @@
 }
 
 .stat-value.cyan {
-  color: var(--cyan);
+  color: var(--text);
 }
 
 .stat-value.pink {
-  color: var(--pink);
+  color: var(--text);
 }
 
 .stat-value.mono {
@@ -135,11 +135,11 @@
 }
 
 .stat-desc.cyan {
-  color: rgba(168, 218, 220, 0.72);
+  color: var(--dim);
 }
 
 .stat-desc.pink {
-  color: rgba(255, 193, 204, 0.72);
+  color: var(--dim);
 }
 
 .description.strong {
@@ -147,11 +147,11 @@
 }
 
 .description.pink {
-  color: var(--pink);
+  color: #f4b4b4;
 }
 
 .notice-text.pink {
-  color: rgba(255, 193, 204, 0.76);
+  color: rgba(244, 180, 180, 0.76);
 }
 
 .admin-split,
@@ -171,7 +171,7 @@
 .table-wrap {
   overflow-x: auto;
   border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
+  border-radius: 0;
 }
 
 .admin-table {
@@ -198,7 +198,7 @@
 }
 
 .admin-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .admin-table tbody tr:last-child td {
@@ -209,12 +209,12 @@
   color: var(--text);
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   text-decoration: underline;
-  text-decoration-color: rgba(168, 218, 220, 0.55);
+  text-decoration-color: rgba(255, 255, 255, 0.24);
   text-underline-offset: 0.25rem;
 }
 
 .table-link:hover {
-  text-decoration-color: var(--cyan);
+  text-decoration-color: rgba(255, 255, 255, 0.62);
 }
 
 .checkbox-label {
@@ -227,7 +227,7 @@
 .bulk-delete-checkbox {
   width: 1rem;
   height: 1rem;
-  accent-color: var(--pink);
+  accent-color: #d4d4d8;
 }
 
 .truncate-cell {
@@ -250,12 +250,12 @@
 }
 
 .violet-alert {
-  border: 1px solid rgba(179, 156, 208, 0.25);
-  background: rgba(179, 156, 208, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .danger-card {
-  border-color: rgba(255, 193, 204, 0.22);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .manage-info {
@@ -295,6 +295,33 @@
   gap: 0.75rem;
 }
 
+.panel > .home-grid:first-child,
+.panel > .manage-header:first-child,
+.panel > .admin-header:first-child,
+.panel > .simple-section:first-child,
+.panel > .auth-card:first-child {
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.simple-section,
+.auth-card {
+  width: 100%;
+}
+
+.simple-section .title,
+.auth-card .title {
+  margin-top: 0.75rem;
+}
+
+.manage-grid > .card,
+.admin-split > .card,
+.grid-two > .card,
+.grid-four > .card,
+.home-grid > .card {
+  min-width: 0;
+}
+
 @media (min-width: 768px) {
   .admin-header,
   .manage-header {
@@ -323,7 +350,7 @@
 
 @media (min-width: 1024px) {
   .home-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
   }
 
   .home-detail-grid {

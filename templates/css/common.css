@@ -12,9 +12,9 @@
   --green: #b8d8b3;
   --gold: #f0c674;
   --violet: #b39cd0;
-  --radius-xl: 1.5rem;
-  --radius-lg: 0.875rem;
-  --shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+  --radius-xl: 0;
+  --radius-lg: 0;
+  --shadow: none;
 }
 
 * {
@@ -30,7 +30,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
 button,
@@ -49,58 +49,54 @@ a {
 
 .page-shell {
   width: 100%;
-  max-width: 98rem;
   min-height: 100vh;
   margin: 0 auto;
-  padding: 3.5rem 1.5rem;
-  display: flex;
-  align-items: center;
+  padding: 0;
+  display: block;
 }
 
 .page-shell.centered {
-  justify-content: center;
-  text-align: center;
+  text-align: left;
 }
 
 .panel {
   width: 100%;
-  padding: 2rem;
-  border-radius: var(--radius-xl);
-  background: rgba(17, 17, 17, 0.92);
-  box-shadow: var(--shadow);
+  min-height: 100vh;
+  padding: 1.25rem 1rem 2rem;
+  background: var(--bg);
+  box-shadow: none;
 }
 
 .narrow-panel {
-  max-width: 28rem;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
 }
 
 .title {
   margin: 0;
   color: var(--text);
-  font-size: clamp(2rem, 5vw, 3rem);
-  line-height: 1.05;
-  letter-spacing: -0.04em;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
 .title.small {
-  font-size: clamp(1.85rem, 4vw, 2.25rem);
+  font-size: clamp(1.2rem, 2.5vw, 1.6rem);
 }
 
 .subtitle-gradient {
   display: block;
-  margin-top: 0.25rem;
-  font-size: clamp(1.5rem, 3vw, 1.9rem);
-  background: linear-gradient(90deg, var(--cyan), var(--pink));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  margin-top: 0.4rem;
+  color: #71717a;
+  font-size: clamp(0.95rem, 2vw, 1.1rem);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .description {
   margin: 1rem 0 0;
   color: var(--muted);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   line-height: 1.65;
 }
 
@@ -112,23 +108,23 @@ a {
 
 .eyebrow {
   margin: 0;
-  color: var(--dim);
-  font-size: 0.75rem;
+  color: #71717a;
+  font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
 }
 
 .eyebrow.cyan {
-  color: rgba(168, 218, 220, 0.84);
+  color: #9ca3af;
 }
 
 .eyebrow.pink {
-  color: rgba(255, 193, 204, 0.84);
+  color: #a1a1aa;
 }
 
 .eyebrow.violet {
-  color: rgba(179, 156, 208, 0.86);
+  color: #a1a1aa;
 }
 
 .button-row {
@@ -148,49 +144,50 @@ a {
   min-height: 2.5rem;
   padding: 0.55rem 1rem;
   border: 1px solid var(--line-strong);
-  border-radius: 0.75rem;
+  border-radius: 0;
   background: transparent;
   color: var(--text);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 600;
+  letter-spacing: 0.02em;
   text-decoration: none;
   transition: border-color 160ms ease, color 160ms ease, background 160ms ease, filter 160ms ease;
 }
 
 .button:hover {
-  border-color: var(--cyan);
-  color: var(--cyan);
+  border-color: rgba(255, 255, 255, 0.32);
+  color: #ffffff;
 }
 
 .button.primary {
-  border-color: transparent;
-  background: var(--cyan);
-  color: var(--bg);
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
 }
 
 .button.primary:hover {
-  color: var(--bg);
-  filter: brightness(1.06);
+  color: #ffffff;
+  filter: none;
 }
 
 .button.violet {
-  border-color: rgba(179, 156, 208, 0.38);
-  color: var(--violet);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #d4d4d8;
 }
 
 .button.violet:hover {
-  background: rgba(179, 156, 208, 0.1);
-  border-color: var(--violet);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.32);
 }
 
 .button.pink {
-  border-color: rgba(255, 193, 204, 0.4);
-  color: var(--pink);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #d4d4d8;
 }
 
 .button.pink:hover {
-  background: rgba(255, 193, 204, 0.1);
-  border-color: var(--pink);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.32);
 }
 
 .button.full {
@@ -200,8 +197,8 @@ a {
 .card {
   padding: 1.25rem;
   border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  background: rgba(17, 17, 17, 0.76);
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .grid-two {
@@ -218,7 +215,7 @@ a {
   overflow-x: auto;
   margin: 0;
   padding: 1rem;
-  border-radius: 0.75rem;
+  border-radius: 0;
   background: var(--panel-soft);
   box-shadow: inset 0 0 0 1px var(--line);
   color: var(--text);
@@ -255,21 +252,21 @@ a {
 
 .alert {
   padding: 1rem;
-  border-radius: var(--radius-lg);
+  border-radius: 0;
   font-size: 0.9rem;
   line-height: 1.5;
 }
 
 .alert.info {
-  border: 1px solid rgba(168, 218, 220, 0.22);
-  background: rgba(168, 218, 220, 0.1);
-  color: var(--cyan);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
 }
 
 .alert.error {
-  border: 1px solid rgba(255, 193, 204, 0.32);
-  background: rgba(255, 193, 204, 0.1);
-  color: var(--pink);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: #f4b4b4;
 }
 
 .form {
@@ -294,7 +291,7 @@ a {
   min-height: 3rem;
   padding: 0.75rem 1rem;
   border: 1px solid var(--line);
-  border-radius: 0.75rem;
+  border-radius: 0;
   outline: none;
   background: var(--panel-soft);
   color: var(--text);
@@ -302,7 +299,7 @@ a {
 }
 
 .input:focus {
-  border-color: rgba(168, 218, 220, 0.55);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .input::placeholder {
@@ -318,11 +315,13 @@ a {
   transform: translateY(-0.25rem);
 }
 
-@media (min-width: 768px) {
-  .page-shell {
-    padding: 5rem 3rem;
+@media (min-width: 1024px) {
+  .panel {
+    padding: 1.5rem;
   }
+}
 
+@media (min-width: 768px) {
   .panel {
     padding: 3rem;
   }

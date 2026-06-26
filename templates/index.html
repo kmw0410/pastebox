@@ -10,7 +10,7 @@
 <body>
   <main class="page-shell">
     <div class="panel">
-      <div class="home-grid">
+      <section class="home-grid">
         <div>
           <h1 class="title">
             Pastebox
@@ -39,9 +39,9 @@
             <pre class="code-block"><code>curl -H "usepassword: true" -F "file=@secret.txt" {{ .BaseURL }}/</code></pre>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div class="grid-two home-detail-grid mt-lg">
+      <section class="grid-two home-detail-grid mt-lg">
         <article class="card home-detail-card home-detail-card-wide">
           <p class="example-label">{{ t "index_data_policy" }}</p>
           <p class="description">{{ t "index_data_policy_desc" }}</p>
@@ -66,7 +66,7 @@ delete: {{ .BaseURL }}/AbC12?delete=DELETE_TOKEN</code></pre>
           <p class="description">{{ t "index_manual_deletion_desc" }}</p>
           <pre class="plain-code mt-sm"><code>curl "{{ .BaseURL }}/AbC12?delete=DELETE_TOKEN"</code></pre>
         </article>
-      </div>
+      </section>
     </div>
   </main>
 </body>

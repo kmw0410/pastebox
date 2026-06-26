@@ -56,7 +56,13 @@ a {
 }
 
 .page-shell.centered {
+  max-width: 98rem;
+  padding: 3.5rem 1.5rem;
   text-align: left;
+}
+
+.page-shell.centered > .panel {
+  min-height: auto;
 }
 
 .panel {
@@ -68,8 +74,8 @@ a {
 }
 
 .narrow-panel {
-  max-width: none;
-  margin: 0;
+  max-width: 28rem;
+  margin: 0 auto;
 }
 
 .title {
@@ -213,6 +219,7 @@ a {
 
 .code-block {
   overflow-x: auto;
+  max-width: 100%;
   margin: 0;
   padding: 1rem;
   border-radius: 0;
@@ -226,11 +233,19 @@ a {
 
 .plain-code {
   overflow-x: auto;
+  max-width: 100%;
   margin: 0;
   color: var(--text);
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.875rem;
   line-height: 1.6;
+}
+
+.code-block code,
+.plain-code code {
+  display: block;
+  width: max-content;
+  min-width: 100%;
 }
 
 .stack {
@@ -322,6 +337,10 @@ a {
 }
 
 @media (min-width: 768px) {
+  .page-shell.centered {
+    padding: 5rem 3rem;
+  }
+
   .panel {
     padding: 3rem;
   }

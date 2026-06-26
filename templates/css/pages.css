@@ -4,16 +4,23 @@
   align-items: start;
 }
 
+.home-grid > *,
+.home-detail-grid > *,
+.stack > * {
+  min-width: 0;
+}
+
 .home-actions {
   margin-top: 2rem;
 }
 
 .home-detail-grid {
-  align-items: start;
+  align-items: stretch;
 }
 
 .home-detail-card {
-  align-self: start;
+  align-self: stretch;
+  height: 100%;
 }
 
 .example-label {
@@ -32,11 +39,17 @@
 }
 
 .auth-shell {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .auth-card {
   text-align: left;
+}
+
+.auth-card.narrow-panel {
+  max-width: 32rem;
 }
 
 .badge {

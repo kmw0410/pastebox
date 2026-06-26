@@ -72,6 +72,7 @@ Host mapping is typically `./data:/paste-data`.
 - Keep commit messages themselves in English and follow the existing short conventional style.
 - Before starting work, always consult `WORK.md` alongside `AGENTS.md` so recent task history is part of the working context.
 - After any commit+push sequence, record in `WORK.md` what work was done and what mostly changed, using the existing date-based log format, and include the commit ID plus commit message when available.
+- If a follow-up fix is needed because of the agent's own mistake, record that in `WORK.md` as well, including what was wrong and how it was corrected.
 - When fixing code after an error occurs, record the problematic code area, the root cause, and the fix in `AGENTS.md`, including a small relevant code snippet when useful.
 - Before making a similar future change, review those recorded error-fix notes to avoid repeating the same mistake.
 

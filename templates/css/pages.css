@@ -66,6 +66,14 @@
   width: 100%;
 }
 
+.not-found-card {
+  text-align: center;
+}
+
+.not-found-card .eyebrow {
+  justify-content: center;
+}
+
 .result-list {
   margin-top: 2rem;
   display: grid;

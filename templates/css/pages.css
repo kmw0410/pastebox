@@ -74,6 +74,18 @@
   justify-content: center;
 }
 
+.clone-card {
+  text-align: center;
+}
+
+.clone-card .eyebrow {
+  justify-content: center;
+}
+
+.clone-card .result-list {
+  text-align: center;
+}
+
 .result-list {
   margin-top: 2rem;
   display: grid;

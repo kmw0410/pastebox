@@ -6,6 +6,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -175,6 +176,46 @@ func TestHealthHandlerServiceUnavailableOnStoreFailure(t *testing.T) {
 	}
 	if !strings.Contains(rr.Body.String(), "unhealthy") {
 		t.Fatalf("unexpected body %q", rr.Body.String())
+	}
+}
+
+func TestNewAppGeneratesSetupTokenOnlyWithoutAdmin(t *testing.T) {
+	originalWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Getwd failed: %v", err)
+	}
+	if err := os.Chdir("../.."); err != nil {
+		t.Fatalf("Chdir failed: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chdir(originalWD)
+	})
+
+	store, err := pastebox.NewStore(t.TempDir(), 24*time.Hour)
+	if err != nil {
+		t.Fatalf("NewStore failed: %v", err)
+	}
+
+	i18n := loadLocalizer("en")
+
+	appWithoutAdmin, err := newApp(store, i18n, "")
+	if err != nil {
+		t.Fatalf("newApp without admin failed: %v", err)
+	}
+	if appWithoutAdmin.adminSetupToken == "" {
+		t.Fatalf("expected setup token when admin does not exist")
+	}
+
+	if err := store.CreateAdmin("admin", "password123"); err != nil {
+		t.Fatalf("CreateAdmin failed: %v", err)
+	}
+
+	appWithAdmin, err := newApp(store, i18n, "")
+	if err != nil {
+		t.Fatalf("newApp with admin failed: %v", err)
+	}
+	if appWithAdmin.adminSetupToken != "" {
+		t.Fatalf("expected empty setup token when admin exists, got %q", appWithAdmin.adminSetupToken)
 	}
 }
 

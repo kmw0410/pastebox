@@ -43,9 +43,17 @@ const authFailureLimit = 20
 const uploadSampleSize = 64 * 1024
 
 func newApp(store *pastebox.Store, i18n *localizer, adminResetToken string) (*app, error) {
-	adminSetupToken, err := randomBootstrapToken()
+	adminExists, err := store.AdminExists()
 	if err != nil {
 		return nil, err
+	}
+
+	adminSetupToken := ""
+	if !adminExists {
+		adminSetupToken, err = randomBootstrapToken()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &app{

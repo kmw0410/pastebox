@@ -75,9 +75,11 @@ func main() {
 		"storage_backend": store.StorageBackend,
 		"zstd_level":      zstdLevel,
 	})
-	logEvent("admin.setup_token_generated", map[string]any{
-		"token": a.adminSetupToken,
-	})
+	if a.adminSetupToken != "" {
+		logEvent("admin.setup_token_generated", map[string]any{
+			"token": a.adminSetupToken,
+		})
+	}
 
 	if err := http.ListenAndServe(listenAddr, mux); err != nil {
 		logFatalEvent("server.listen_failed", map[string]any{

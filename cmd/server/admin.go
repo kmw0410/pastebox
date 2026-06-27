@@ -285,6 +285,7 @@ func (a *app) adminSetupHandler(w http.ResponseWriter, r *http.Request) {
 		"remote":   r.RemoteAddr,
 		"username": username,
 	})
+	a.adminSetupToken = ""
 
 	token, err := a.store.CreateAdminSession()
 	if err != nil {

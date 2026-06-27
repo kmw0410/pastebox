@@ -107,10 +107,16 @@
             <div class="form-field">
               <label for="data_policy">{{ t "manage_policy_label" }}</label>
               <select id="data_policy" name="data_policy" class="input">
-                <option value="temporary" {{ if eq .DataPolicy "temporary" }}selected{{ end }}>{{ t "manage_policy_temporary" }}</option>
-                <option value="permanent" {{ if eq .DataPolicy "permanent" }}selected{{ end }}>{{ t "manage_policy_permanent" }}</option>
-                <option value="once" {{ if eq .DataPolicy "once" }}selected{{ end }}>{{ t "manage_policy_once" }}</option>
+                <option value="temporary" {{ if eq .PolicyKind "temporary" }}selected{{ end }}>{{ t "manage_policy_temporary" }}</option>
+                <option value="permanent" {{ if eq .PolicyKind "permanent" }}selected{{ end }}>{{ t "manage_policy_permanent" }}</option>
+                <option value="once" {{ if eq .PolicyKind "once" }}selected{{ end }}>{{ t "manage_policy_once" }}</option>
+                <option value="custom" {{ if eq .PolicyKind "custom" }}selected{{ end }}>{{ t "manage_policy_custom" }}</option>
               </select>
+            </div>
+            <div class="form-field">
+              <label for="custom_policy">{{ t "manage_policy_custom_label" }}</label>
+              <input id="custom_policy" name="custom_policy" type="text" class="input" value="{{ .CustomPolicyValue }}" placeholder="{{ t "manage_policy_custom_placeholder" }}" inputmode="text" spellcheck="false">
+              <p class="notice-text">{{ t "manage_policy_custom_desc" }}</p>
             </div>
             <button class="button" type="submit">{{ t "manage_policy_save" }}</button>
           </form>

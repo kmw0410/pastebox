@@ -219,6 +219,82 @@ func TestNewAppGeneratesSetupTokenOnlyWithoutAdmin(t *testing.T) {
 	}
 }
 
+func TestParseManagePolicyForm(t *testing.T) {
+	tests := []struct {
+		name         string
+		form         string
+		want         string
+		wantErr      error
+	}{
+		{
+			name: "temporary",
+			form: "data_policy=temporary",
+			want: "temporary",
+		},
+		{
+			name: "custom duration",
+			form: "data_policy=custom&custom_policy=12h",
+			want: "12h",
+		},
+		{
+			name: "custom duration trims and lowercases",
+			form: "data_policy=custom&custom_policy= 7D ",
+			want: "7d",
+		},
+		{
+			name:    "custom duration missing",
+			form:    "data_policy=custom",
+			wantErr: pastebox.ErrInvalidPolicy,
+		},
+		{
+			name:    "custom duration invalid",
+			form:    "data_policy=custom&custom_policy=31d",
+			wantErr: pastebox.ErrInvalidPolicy,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/paste?manage=token", strings.NewReader(tt.form))
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			if err := req.ParseForm(); err != nil {
+				t.Fatalf("ParseForm failed: %v", err)
+			}
+
+			got, err := parseManagePolicyForm(req)
+			if !errors.Is(err, tt.wantErr) {
+				t.Fatalf("parseManagePolicyForm() error = %v, want %v", err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Fatalf("parseManagePolicyForm() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSplitManagePolicy(t *testing.T) {
+	tests := []struct {
+		policy     string
+		wantKind   string
+		wantCustom string
+	}{
+		{policy: "", wantKind: "temporary", wantCustom: ""},
+		{policy: "temporary", wantKind: "temporary", wantCustom: ""},
+		{policy: "permanent", wantKind: "permanent", wantCustom: ""},
+		{policy: "once", wantKind: "once", wantCustom: ""},
+		{policy: "12h", wantKind: "custom", wantCustom: "12h"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.policy, func(t *testing.T) {
+			gotKind, gotCustom := splitManagePolicy(tt.policy)
+			if gotKind != tt.wantKind || gotCustom != tt.wantCustom {
+				t.Fatalf("splitManagePolicy(%q) = (%q, %q), want (%q, %q)", tt.policy, gotKind, gotCustom, tt.wantKind, tt.wantCustom)
+			}
+		})
+	}
+}
+
 func responseLineValue(body string, key string) string {
 	prefix := key + ": "
 	for _, line := range strings.Split(body, "\n") {

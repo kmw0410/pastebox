@@ -175,6 +175,32 @@ func TestStoreCreateCustomDataPolicy(t *testing.T) {
 	}
 }
 
+func TestStoreSetDataPolicyCustomDuration(t *testing.T) {
+	store := newTestStore(t)
+
+	meta, _, _, manageToken, err := store.Create(strings.NewReader("manage me"), "manage.txt", "text/plain; charset=utf-8", false, mustParsePolicy(t, "temporary"), "manage12h")
+	if err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	before := time.Now().UTC()
+	updated, err := store.SetDataPolicy(meta.ID, manageToken, "12h")
+	if err != nil {
+		t.Fatalf("SetDataPolicy failed: %v", err)
+	}
+	after := time.Now().UTC()
+
+	if updated.DataPolicy != "12h" {
+		t.Fatalf("DataPolicy = %q, want %q", updated.DataPolicy, "12h")
+	}
+
+	minExpires := before.Add(12 * time.Hour)
+	maxExpires := after.Add(12 * time.Hour)
+	if updated.ExpiresAt.Before(minExpires) || updated.ExpiresAt.After(maxExpires) {
+		t.Fatalf("ExpiresAt = %v, want between %v and %v", updated.ExpiresAt, minExpires, maxExpires)
+	}
+}
+
 func TestStoreAdminUsername(t *testing.T) {
 	store := newTestStore(t)
 

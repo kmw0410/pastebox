@@ -22,6 +22,8 @@ type managePageData struct {
 	Error             string
 	GeneratedPassword string
 	Deleted           bool
+	PolicyKind        string
+	CustomPolicyValue string
 }
 
 func (a *app) manageHandler(w http.ResponseWriter, r *http.Request, id string) {
@@ -70,7 +72,11 @@ func (a *app) manageHandler(w http.ResponseWriter, r *http.Request, id string) {
 			}
 			a.renderManagePage(w, r, meta, token, a.i18n.T("manage_password_disabled"), "", "", false)
 		case "set_policy":
-			policy := strings.ToLower(strings.TrimSpace(r.FormValue("data_policy")))
+			policy, err := parseManagePolicyForm(r)
+			if err != nil {
+				a.renderManageError(w, r, id, token, a.manageErrorMessage(err))
+				return
+			}
 			meta, err := a.store.SetDataPolicy(id, token, policy)
 			if err != nil {
 				a.renderManageError(w, r, id, token, a.manageErrorMessage(err))
@@ -122,6 +128,7 @@ func (a *app) renderManagePage(w http.ResponseWriter, r *http.Request, meta past
 	baseURL := requestBaseURL(r)
 	publicURL := strings.TrimRight(baseURL, "/") + "/" + meta.ID
 	manageURL := publicURL + "?manage=" + token
+	policyKind, customPolicyValue := splitManagePolicy(meta.DataPolicy)
 
 	_ = a.managePage.Execute(w, managePageData{
 		ID:                meta.ID,
@@ -136,7 +143,41 @@ func (a *app) renderManagePage(w http.ResponseWriter, r *http.Request, meta past
 		Error:             errMsg,
 		GeneratedPassword: generatedPassword,
 		Deleted:           deleted,
+		PolicyKind:        policyKind,
+		CustomPolicyValue: customPolicyValue,
 	})
+}
+
+func parseManagePolicyForm(r *http.Request) (string, error) {
+	policyKind := strings.ToLower(strings.TrimSpace(r.FormValue("data_policy")))
+	if policyKind == "custom" {
+		customValue := strings.ToLower(strings.TrimSpace(r.FormValue("custom_policy")))
+		if customValue == "" {
+			return "", pastebox.ErrInvalidPolicy
+		}
+		if _, err := pastebox.ParseDataPolicy(customValue); err != nil {
+			return "", pastebox.ErrInvalidPolicy
+		}
+		return customValue, nil
+	}
+
+	if _, err := pastebox.ParseDataPolicy(policyKind); err != nil {
+		return "", pastebox.ErrInvalidPolicy
+	}
+	return policyKind, nil
+}
+
+func splitManagePolicy(policy string) (string, string) {
+	switch strings.ToLower(strings.TrimSpace(policy)) {
+	case "", "temporary":
+		return "temporary", ""
+	case "permanent":
+		return "permanent", ""
+	case "once":
+		return "once", ""
+	default:
+		return "custom", strings.ToLower(strings.TrimSpace(policy))
+	}
 }
 
 func (a *app) manageErrorMessage(err error) string {

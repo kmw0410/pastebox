@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"io"
@@ -271,4 +272,25 @@ func (s *Store) SetDataPolicy(id string, token string, policy string) (Metadata,
 	}
 
 	return s.setDataPolicyLocal(id, token, policy)
+}
+
+func (s *Store) HealthCheck(ctx context.Context) error {
+	if s.adminDB == nil {
+		return errors.New("admin database is not initialized")
+	}
+
+	if err := s.adminDB.PingContext(ctx); err != nil {
+		return err
+	}
+
+	if s.StorageBackend == "mysql" {
+		if s.mysqlDB == nil {
+			return errors.New("mysql database is not initialized")
+		}
+		if err := s.mysqlDB.PingContext(ctx); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

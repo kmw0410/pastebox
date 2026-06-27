@@ -32,6 +32,10 @@ func formatLogEvent(event string, fields map[string]any) string {
 		return field(fields, "error")
 	case "store.cleanup_failed":
 		return fmt.Sprintf("cleanup failed: %s", field(fields, "error"))
+	case "store.health_unhealthy":
+		return fmt.Sprintf("store health check failed: backend=%s error=%s", field(fields, "storage_backend"), field(fields, "error"))
+	case "store.health_recovered":
+		return fmt.Sprintf("store health recovered: backend=%s", field(fields, "storage_backend"))
 	case "admin.setup_token_generated":
 		return fmt.Sprintf("admin setup token: %s", field(fields, "token"))
 	case "uploads.status_read_failed":

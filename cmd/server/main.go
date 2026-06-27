@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"strings"
@@ -59,6 +60,8 @@ func main() {
 		}
 	}()
 
+	go monitorStoreHealth(store, 30*time.Second)
+
 	mux := http.NewServeMux()
 	mux.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("templates/css"))))
 	mux.HandleFunc("/", a.handle)
@@ -81,5 +84,42 @@ func main() {
 			"error":       err,
 			"listen_addr": listenAddr,
 		})
+	}
+}
+
+func monitorStoreHealth(store *pastebox.Store, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	var unhealthy bool
+
+	check := func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		err := store.HealthCheck(ctx)
+		cancel()
+
+		if err != nil {
+			if !unhealthy {
+				logEvent("store.health_unhealthy", map[string]any{
+					"error":           err,
+					"storage_backend": store.StorageBackend,
+				})
+			}
+			unhealthy = true
+			return
+		}
+
+		if unhealthy {
+			logEvent("store.health_recovered", map[string]any{
+				"storage_backend": store.StorageBackend,
+			})
+		}
+		unhealthy = false
+	}
+
+	check()
+
+	for range ticker.C {
+		check()
 	}
 }

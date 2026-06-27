@@ -110,6 +110,32 @@ pastebox/
 2. Docker compose를 사용하여 서비스를 구동하세요. `docker compose up -d --build`로 로컬 빌드 후 실행할 수도 있으며, GHCR의 미리 빌드된 이미지를 사용할 수도 있습니다. 빌드된 이미지를 사용하려면 `docker-compose.yml`을 사용하세요.
 3. `http://localhost:3000`를 브라우저에서 접속하거나 NGINX, Caddy, Traefik을 통해 리버스 프록시를 구축하여 도메인으로 접속하세요. 정상적으로 구동이 되었다면 `curl`을 사용하여 이용할 수 있습니다.
 
+### Healthcheck
+Pastebox는 컨테이너와 로드밸런서 상태 확인용으로 `GET /healthz`와 `HEAD /healthz`를 제공합니다.
+
+- 정상 상태면 `200 OK`와 `ok`를 반환합니다.
+- 비정상 상태면 `503 Service Unavailable`를 반환합니다.
+- 이 체크는 항상 관리자용 SQLite 데이터베이스를 확인합니다.
+- `STORAGE_BACKEND=mysql`일 때는 설정된 MySQL 또는 MariaDB 연결도 함께 확인합니다.
+- 업로드 비활성화 상태는 비정상으로 간주하지 않습니다.
+
+제공된 Compose 파일에는 이미 `http://127.0.0.1:8080/healthz`를 조회하는 Docker healthcheck가 포함되어 있습니다.
+
+예시:
+
+```bash
+curl -i http://localhost:8080/healthz
+```
+
+서버가 시작된 뒤 DB 연결이 끊기면 Pastebox는 컨테이너 로그에 상태 전환 로그도 남깁니다. 같은 장애를 매번 반복 기록하지 않고, 최초 장애 시점과 복구 시점만 기록합니다.
+
+대표 로그 예시:
+
+```text
+store health check failed: backend=mysql error=dial tcp 10.0.0.10:3306: connect: connection refused
+store health recovered: backend=mysql
+```
+
 ### 스토리지 백엔드
 Pastebox는 `local`과 `mysql` 스토리지 백엔드를 지원합니다. `local`은 로컬 파일 저장소에 사용하고, `mysql`은 외부 MySQL & MariaDB 데이터베이스에 사용합니다.
 

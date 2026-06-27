@@ -109,6 +109,32 @@ pastebox/
 2. Run the service using Docker Compose. You can build and run it locally with `docker compose up -d --build`, or use the prebuilt image from GHCR. To use the prebuilt image, run it with `docker-compose.yml`.
 3. Open `http://localhost:3000` in your browser, or access the service through a reverse proxy configured with Nginx, Traefik, or Caddy. Once the service is running properly, you can use it with `curl`.
 
+### Healthcheck
+Pastebox exposes `GET /healthz` and `HEAD /healthz` for container and load balancer health checks.
+
+- A healthy response returns `200 OK` with `ok`.
+- An unhealthy response returns `503 Service Unavailable`.
+- The check always verifies the admin SQLite database.
+- When `STORAGE_BACKEND=mysql`, it also verifies the configured MySQL or MariaDB connection.
+- Uploads being disabled does not make the service unhealthy.
+
+The provided Compose files already include a Docker health check that probes `http://127.0.0.1:8080/healthz`.
+
+Example:
+
+```bash
+curl -i http://localhost:8080/healthz
+```
+
+When the database becomes unavailable after startup, Pastebox also writes state-transition logs to the container output. It records the first failure and the recovery event, rather than logging every probe failure repeatedly.
+
+Typical log messages:
+
+```text
+store health check failed: backend=mysql error=dial tcp 10.0.0.10:3306: connect: connection refused
+store health recovered: backend=mysql
+```
+
 ### Storage backend
 Pastebox supports `local` and `mysql` storage backends. Use `local` for local file storage, or use `mysql` for an external MySQL & MariaDB database.
 

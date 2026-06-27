@@ -27,3 +27,9 @@ services:
       ADMIN_RESET_TOKEN: "41345bfc5d9ab9e6e4c8d2e1b90e129af9cc472286954beeddb51c9b2beaf1d5b4eb3f10ae872ba1db4ef7e3f6fe1b474cdbe3aeeee9323a5b9ca99edf224883"
     volumes:
       - ./data:/paste-data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s

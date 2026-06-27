@@ -11,6 +11,11 @@ func (a *app) handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.URL.Path == "/healthz" {
+		a.healthHandler(w, r)
+		return
+	}
+
 	if r.URL.Path == "/" {
 		switch r.Method {
 		case http.MethodGet:

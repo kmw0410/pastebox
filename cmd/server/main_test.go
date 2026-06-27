@@ -143,6 +143,41 @@ func TestUploadHandlerCustomDataPolicyDuration(t *testing.T) {
 	}
 }
 
+func TestHealthHandlerOK(t *testing.T) {
+	app := newTestApp(t)
+
+	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	rr := httptest.NewRecorder()
+
+	app.healthHandler(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rr.Code)
+	}
+	if body := rr.Body.String(); body != "ok\n" {
+		t.Fatalf("unexpected body %q", body)
+	}
+	if got := rr.Header().Get("Cache-Control"); got != "no-store" {
+		t.Fatalf("Cache-Control = %q, want no-store", got)
+	}
+}
+
+func TestHealthHandlerServiceUnavailableOnStoreFailure(t *testing.T) {
+	app := &app{store: &pastebox.Store{}}
+
+	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	rr := httptest.NewRecorder()
+
+	app.healthHandler(rr, req)
+
+	if rr.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected status 503, got %d", rr.Code)
+	}
+	if !strings.Contains(rr.Body.String(), "unhealthy") {
+		t.Fatalf("unexpected body %q", rr.Body.String())
+	}
+}
+
 func responseLineValue(body string, key string) string {
 	prefix := key + ": "
 	for _, line := range strings.Split(body, "\n") {

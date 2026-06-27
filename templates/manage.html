@@ -52,7 +52,7 @@
 
       {{ if not .Deleted }}
       <div class="manage-grid mt-lg">
-        <article class="card">
+        <article class="card manage-details-card">
           <p class="eyebrow">{{ t "manage_info_title" }}</p>
           <div class="manage-info">
             <div class="info-row">
@@ -71,15 +71,11 @@
               <span>{{ t "manage_info_created" }}</span>
               <span>{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</span>
             </div>
-            <div class="info-row">
-              <span>{{ t "manage_info_expires" }}</span>
-              <span>{{ if .ExpiresAt.IsZero }}-{{ else }}{{ .ExpiresAt.Format "2006-01-02 15:04:05" }}{{ end }}</span>
-            </div>
           </div>
         </article>
 
-        <article class="card manage-stack-card">
-          <section class="manage-card-section">
+        <div class="manage-side-stack">
+          <article class="card">
             <p class="eyebrow">{{ t "manage_password_title" }}</p>
             {{ if .PasswordProtected }}
             <p class="description">{{ t "manage_password_private_desc" }}</p>
@@ -98,21 +94,27 @@
               <button class="button" type="submit">{{ t "manage_enable_password" }}</button>
             </form>
             {{ end }}
-          </section>
+          </article>
 
-          <section class="manage-card-section manage-danger-section">
+          <article class="card">
             <p class="eyebrow">{{ t "manage_danger_title" }}</p>
             <p class="description">{{ t "manage_delete_desc" }}</p>
             <form class="mt-md" method="post" action="{{ .ManageURL }}" onsubmit="return confirm('{{ t "manage_delete_confirm" }}')">
               <input type="hidden" name="manage_action" value="delete">
               <button class="button" type="submit">{{ t "manage_delete_button" }}</button>
             </form>
-          </section>
-        </article>
+          </article>
+        </div>
 
         <article class="card manage-policy-card">
           <p class="eyebrow">{{ t "manage_policy_title" }}</p>
           <p class="description">{{ t "manage_policy_desc" }}</p>
+          <div class="manage-policy-meta">
+            <div class="manage-policy-meta-row">
+              <span>{{ t "manage_info_expires" }}</span>
+              <strong>{{ if .ExpiresAt.IsZero }}-{{ else }}{{ .ExpiresAt.Format "2006-01-02 15:04:05" }}{{ end }}</strong>
+            </div>
+          </div>
           <form class="form policy-form mt-md" method="post" action="{{ .ManageURL }}">
             <input type="hidden" name="manage_action" value="set_policy">
             <div class="form-field">
@@ -127,9 +129,9 @@
             <div class="form-field">
               <label for="custom_policy">{{ t "manage_policy_custom_label" }}</label>
               <input id="custom_policy" name="custom_policy" type="text" class="input" value="{{ .CustomPolicyValue }}" placeholder="{{ t "manage_policy_custom_placeholder" }}" inputmode="text" spellcheck="false">
-              <p class="notice-text">{{ t "manage_policy_custom_desc" }}</p>
             </div>
-            <button class="button" type="submit">{{ t "manage_policy_save" }}</button>
+            <button class="button policy-submit" type="submit">{{ t "manage_policy_save" }}</button>
+            <p class="notice-text policy-form-help">{{ t "manage_policy_custom_desc" }}</p>
           </form>
         </article>
       </div>

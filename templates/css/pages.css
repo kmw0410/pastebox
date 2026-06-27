@@ -328,20 +328,47 @@
   gap: 0.75rem;
 }
 
-.manage-stack-card {
+.manage-side-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.manage-policy-meta {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.manage-policy-meta-row {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.manage-policy-meta-row span {
+  color: var(--dim);
+}
+
+.manage-policy-meta-row strong {
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.policy-form .form-field {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 0.5rem;
 }
 
-.manage-card-section + .manage-card-section {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--line);
+.policy-submit {
+  min-height: 3rem;
 }
 
-.manage-danger-section .description {
-  max-width: 36rem;
+.policy-form-help {
+  margin: 0;
 }
 
 .panel > .home-grid:first-child,
@@ -388,12 +415,23 @@
   }
 
   .policy-form {
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(12rem, 0.55fr);
     align-items: end;
+    column-gap: 0.75rem;
+    row-gap: 0.5rem;
   }
 
   .policy-form .form-field {
-    flex: 1;
+    min-width: 0;
+  }
+
+  .policy-form-help {
+    grid-column: 1 / 3;
+  }
+
+  .policy-submit {
+    width: 100%;
   }
 }
 
@@ -415,10 +453,23 @@
   }
 
   .manage-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .manage-details-card {
+    height: 100%;
+  }
+
+  .manage-side-stack {
+    grid-column: 2;
+    grid-row: 1;
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    height: 100%;
   }
 
   .manage-policy-card {
     grid-column: 1 / -1;
+    grid-row: 2;
   }
 }

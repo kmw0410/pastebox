@@ -78,31 +78,42 @@
           </div>
         </article>
 
-        <article class="card">
-          <p class="eyebrow">{{ t "manage_password_title" }}</p>
-          {{ if .PasswordProtected }}
-          <p class="description">{{ t "manage_password_private_desc" }}</p>
-          <form class="form" method="post" action="{{ .ManageURL }}">
-            <input type="hidden" name="manage_action" value="disable_password">
-            <div class="form-field">
-              <label for="password">{{ t "manage_current_password" }}</label>
-              <input id="password" name="password" type="password" autocomplete="current-password" class="input" placeholder="{{ t "manage_current_password_placeholder" }}" required>
-            </div>
-            <button class="button" type="submit">{{ t "manage_disable_password" }}</button>
-          </form>
-          {{ else }}
-          <p class="description">{{ t "manage_password_public_desc" }}</p>
-          <form class="mt-md" method="post" action="{{ .ManageURL }}">
-            <input type="hidden" name="manage_action" value="enable_password">
-            <button class="button" type="submit">{{ t "manage_enable_password" }}</button>
-          </form>
-          {{ end }}
+        <article class="card manage-stack-card">
+          <section class="manage-card-section">
+            <p class="eyebrow">{{ t "manage_password_title" }}</p>
+            {{ if .PasswordProtected }}
+            <p class="description">{{ t "manage_password_private_desc" }}</p>
+            <form class="form" method="post" action="{{ .ManageURL }}">
+              <input type="hidden" name="manage_action" value="disable_password">
+              <div class="form-field">
+                <label for="password">{{ t "manage_current_password" }}</label>
+                <input id="password" name="password" type="password" autocomplete="current-password" class="input" placeholder="{{ t "manage_current_password_placeholder" }}" required>
+              </div>
+              <button class="button" type="submit">{{ t "manage_disable_password" }}</button>
+            </form>
+            {{ else }}
+            <p class="description">{{ t "manage_password_public_desc" }}</p>
+            <form class="mt-md" method="post" action="{{ .ManageURL }}">
+              <input type="hidden" name="manage_action" value="enable_password">
+              <button class="button" type="submit">{{ t "manage_enable_password" }}</button>
+            </form>
+            {{ end }}
+          </section>
+
+          <section class="manage-card-section manage-danger-section">
+            <p class="eyebrow">{{ t "manage_danger_title" }}</p>
+            <p class="description">{{ t "manage_delete_desc" }}</p>
+            <form class="mt-md" method="post" action="{{ .ManageURL }}" onsubmit="return confirm('{{ t "manage_delete_confirm" }}')">
+              <input type="hidden" name="manage_action" value="delete">
+              <button class="button" type="submit">{{ t "manage_delete_button" }}</button>
+            </form>
+          </section>
         </article>
 
-        <article class="card">
+        <article class="card manage-policy-card">
           <p class="eyebrow">{{ t "manage_policy_title" }}</p>
           <p class="description">{{ t "manage_policy_desc" }}</p>
-          <form class="form policy-form" method="post" action="{{ .ManageURL }}">
+          <form class="form policy-form mt-md" method="post" action="{{ .ManageURL }}">
             <input type="hidden" name="manage_action" value="set_policy">
             <div class="form-field">
               <label for="data_policy">{{ t "manage_policy_label" }}</label>
@@ -119,15 +130,6 @@
               <p class="notice-text">{{ t "manage_policy_custom_desc" }}</p>
             </div>
             <button class="button" type="submit">{{ t "manage_policy_save" }}</button>
-          </form>
-        </article>
-
-        <article class="card">
-          <p class="eyebrow">{{ t "manage_danger_title" }}</p>
-          <p class="description">{{ t "manage_delete_desc" }}</p>
-          <form class="mt-md" method="post" action="{{ .ManageURL }}" onsubmit="return confirm('{{ t "manage_delete_confirm" }}')">
-            <input type="hidden" name="manage_action" value="delete">
-            <button class="button" type="submit">{{ t "manage_delete_button" }}</button>
           </form>
         </article>
       </div>

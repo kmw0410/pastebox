@@ -328,6 +328,22 @@
   gap: 0.75rem;
 }
 
+.manage-stack-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.manage-card-section + .manage-card-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.manage-danger-section .description {
+  max-width: 36rem;
+}
+
 .panel > .home-grid:first-child,
 .panel > .manage-header:first-child,
 .panel > .admin-header:first-child,
@@ -400,5 +416,9 @@
 
   .manage-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .manage-policy-card {
+    grid-column: 1 / -1;
   }
 }

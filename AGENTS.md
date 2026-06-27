@@ -67,6 +67,7 @@ Host mapping is typically `./data:/paste-data`.
 - Preserve fine-grained per-paste locking in the store layer; do not replace with a single global lock.
 - When asked which files were modified, respond only with files changed in the most recent edit scope.
 - When committing, exclude `WORK.md` and `AGENTS.md` unless the user explicitly asks to include them.
+- When committing, add a `Co-authored-by: Codex <codex@openai.com>` trailer unless the user explicitly asks not to.
 - If a change scope would be split into 2 or more commits, ask before pushing; otherwise commit only unless the user explicitly says to push.
 - When modifying markdown files, include the filename in the commit subject or body so the changed docs are obvious.
 - Keep commit messages themselves in English and follow the existing short conventional style.

@@ -159,6 +159,8 @@ environment:
 
 In `local` mode, paste content is stored under `DATA_DIR` with JSON sidecar metadata. In `mysql` mode, paste content, the admin account, admin sessions, and admin settings are stored in the configured MySQL or MariaDB database. SQLite at `/paste-data/pastebox.db` remains in use only for migration completion markers.
 
+When using a bind mount such as `./data:/paste-data`, set `UID` and `GID` to the host user's numeric IDs if you want the host account to keep direct access to the stored files. For example, `UID=1000` and `GID=1000` make the container write data as that host user instead of leaving the bind-mounted directory owned only by container root.
+
 The two migration flags are startup-only helpers for moving an existing local installation into MySQL:
 
 - `MIGRATE_LOCAL_PASTES=true` scans `DATA_DIR` for local paste files and their JSON sidecars, copies each paste into MySQL, then removes the local file pair after each successful copy.

@@ -12,6 +12,9 @@ services:
       MIRROR_URL: "https://mirror5.krfoss.org/alpine"
       # The default time zone is Asia/Seoul (GMT +9). Change it as needed.
       # TZ: "Asia/Seoul"
+      # Match these to the host user that should own ./data, for example UID: "1000" and GID: "1000".
+      # UID: "1000"
+      # GID: "1000"
       LANGUAGE: "en" # value: ko/en
       # Paste content storage backend. Use "local" for /paste-data files or "mysql" for an external MySQL/MariaDB database.
       STORAGE_BACKEND: "local" # value: local/mysql

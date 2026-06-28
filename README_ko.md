@@ -160,6 +160,8 @@ environment:
 
 `local` 모드에서는 Paste 본문이 `DATA_DIR` 아래 파일로 저장되고 메타데이터는 JSON sidecar 파일로 저장됩니다. `mysql` 모드에서는 Paste 본문과 관리자 계정, 관리자 세션, 관리자 설정이 설정된 MySQL 또는 MariaDB 데이터베이스에 저장됩니다. SQLite(`/paste-data/pastebox.db`)는 마이그레이션 완료 표시만 보관합니다.
 
+`./data:/paste-data` 같은 bind mount를 사용할 때 호스트 사용자 계정이 저장 파일에 직접 접근해야 하면 `UID`와 `GID`를 호스트 사용자의 숫자 UID/GID로 맞춰 주세요. 예를 들어 `UID=1000`, `GID=1000`으로 설정하면 bind-mounted 데이터가 컨테이너 root 전용처럼 굳지 않고 해당 호스트 사용자 기준으로 기록됩니다.
+
 두 마이그레이션 플래그는 기존 로컬 설치를 MySQL로 옮길 때만 쓰는 시작 시점 전용 도구입니다.
 
 - `MIGRATE_LOCAL_PASTES=true`는 `DATA_DIR` 안의 로컬 Paste 파일과 JSON sidecar를 찾아 각 Paste를 MySQL로 복사한 뒤, 복사가 끝난 개별 항목부터 로컬 파일과 메타데이터를 삭제합니다.

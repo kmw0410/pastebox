@@ -41,7 +41,7 @@
         >
           Copy
         </button>
-        <form method="post" action="/{{ .ID }}">
+        <form method="post" action="/{{ .ID }}?clone=1">
           {{ if .Password }}
           <input type="hidden" name="password" value="{{ .Password }}">
           {{ end }}

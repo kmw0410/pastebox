@@ -42,6 +42,11 @@ func (a *app) cloneHandler(w http.ResponseWriter, r *http.Request, id string) {
 	meta, newPassword, deleteToken, manageToken, err := a.store.Clone(id, password, usePassword, policy, customCode)
 	if err != nil {
 		if errors.Is(err, pastebox.ErrInvalidPassword) {
+			if isBrowserRequest(r) {
+				a.renderPasswordPage(w, r, id, "/"+id+"?clone=1", http.MethodPost, a.localizedText("paste_clone", "Clone"))
+				return
+			}
+
 			a.respondRequestError(w, r, http.StatusUnauthorized, "password required or invalid. use ?password=... or paste-password header")
 			return
 		}

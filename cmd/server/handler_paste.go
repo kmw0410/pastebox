@@ -117,11 +117,25 @@ func (a *app) passwordRequiredHandler(w http.ResponseWriter, r *http.Request, id
 		return
 	}
 
+	a.renderPasswordPage(w, r, id, "/"+id, http.MethodGet, a.localizedText("password_open_paste", "Open paste"))
+}
+
+func (a *app) renderPasswordPage(w http.ResponseWriter, r *http.Request, id string, action string, method string, submitLabel string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusUnauthorized)
 
 	_ = a.passwordPage.Execute(w, map[string]any{
-		"ID":     id,
-		"Action": "/" + id,
+		"ID":          id,
+		"Action":      action,
+		"Method":      method,
+		"SubmitLabel": submitLabel,
 	})
+}
+
+func (a *app) localizedText(key string, fallback string) string {
+	if a.i18n == nil {
+		return fallback
+	}
+
+	return a.i18n.T(key)
 }

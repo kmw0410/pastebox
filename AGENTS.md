@@ -74,6 +74,7 @@ Host mapping is typically `./data:/paste-data`.
 - Before starting work, always consult `WORK.md` alongside `AGENTS.md` so recent task history is part of the working context.
 - After any commit+push sequence, record in `WORK.md` what work was done and what mostly changed, using the existing date-based log format, and include the commit ID plus commit message when available.
 - If a follow-up fix is needed because of the agent's own mistake, record that in `WORK.md` as well, including what was wrong and how it was corrected.
+- In `WORK.md`, every work-entry line under a date heading must start with `- ` so dated blocks are easy to scan.
 - When a problem, regression, or unexpected behavior is reported or discovered, inspect the relevant git history before fixing it. Use commands such as `git log --follow -p -- <file>` and `git blame <file>` to identify when the affected code changed and what part changed.
 - When fixing code after an error occurs, record the problematic code area, the root cause, and the fix in `AGENTS.md`, including a small relevant code snippet when useful.
 - Before making a similar future change, review those recorded error-fix notes to avoid repeating the same mistake.
@@ -259,10 +260,11 @@ UI consistency rules:
   - Home button
   - GitHub button
   - Copy curl example button
-- Index page should use:
-```html
-<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-```
+- Template styling should use the current external CSS files under `templates/css/`:
+  - `templates/css/common.css` for shared layout, variables, panels, forms, and buttons.
+  - `templates/css/pages.css` for index/admin/password/clone/manage/404 page layouts.
+  - `templates/css/paste.css` for the paste viewer and paste toolbar.
+- New UI work should follow and extend the existing dark CSS class system.
 - Admin/password templates should remain visually aligned with the dark UI system.
 - Password page must remain centered.
 - Admin stats and upload-control cards should keep intended dark card style.
@@ -346,6 +348,7 @@ docker exec pastebox cat /etc/apk/repositories
 
 ## 16. Detailed Work Log
 - Each dated `WORK.md` block must use at least two lines.
+  - Each work-entry line under the date heading must start with `- `.
   - Line 1 should summarize what changed.
   - Line 2 should spell out the concrete code/file or behavior changes.
   - If a commit+push happened, add the commit ID and commit message on the same dated block.

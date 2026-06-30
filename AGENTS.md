@@ -74,6 +74,7 @@ Host mapping is typically `./data:/paste-data`.
 - Before starting work, always consult `WORK.md` alongside `AGENTS.md` so recent task history is part of the working context.
 - After any commit+push sequence, record in `WORK.md` what work was done and what mostly changed, using the existing date-based log format, and include the commit ID plus commit message when available.
 - If a follow-up fix is needed because of the agent's own mistake, record that in `WORK.md` as well, including what was wrong and how it was corrected.
+- When a problem, regression, or unexpected behavior is reported or discovered, inspect the relevant git history before fixing it. Use commands such as `git log --follow -p -- <file>` and `git blame <file>` to identify when the affected code changed and what part changed.
 - When fixing code after an error occurs, record the problematic code area, the root cause, and the fix in `AGENTS.md`, including a small relevant code snippet when useful.
 - Before making a similar future change, review those recorded error-fix notes to avoid repeating the same mistake.
 
@@ -388,6 +389,17 @@ Use this section to record recurring lessons from error-driven code fixes. Each 
   maxExpires := after.Add(time.Hour).Truncate(time.Second).Add(time.Second)
   ```
   Prevention: When testing user-visible timestamps, align assertions to the timestamp format precision before comparing parsed values.
+
+- Problematic code area: `templates/paste.html` clone form and `cmd/server/handler_clone.go` password failure path.
+  Cause: The paste view clone form posted to the same paste path without an explicit clone marker, and a protected paste clone attempt with a missing password fell through to a generic password failure instead of a password form that submits back to the clone action.
+  Fix: Mark the clone form action explicitly and render the password page with a POST clone action when a browser clone request needs a password:
+  ```html
+  <form method="post" action="/{{ .ID }}?clone=1">
+  ```
+  ```go
+  a.renderPasswordPage(w, r, id, "/"+id+"?clone=1", http.MethodPost, a.localizedText("paste_clone", "Clone"))
+  ```
+  Prevention: When adding paste-page actions that can require password authentication, make the intended action explicit in the form URL and ensure the password prompt submits back to that same action.
 
 ## 18. Commit Message Examples
 Use short, conventional commit messages:

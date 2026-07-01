@@ -52,6 +52,8 @@ func formatLogEvent(event string, fields map[string]any) string {
 		return fmt.Sprintf("delete denied: id=%s remote=%s", field(fields, "id"), field(fields, "remote"))
 	case "paste.deleted":
 		return fmt.Sprintf("deleted: id=%s remote=%s", field(fields, "id"), field(fields, "remote"))
+	case "discord.webhook_failed":
+		return fmt.Sprintf("discord webhook failed: event=%s error=%s", field(fields, "event"), field(fields, "error"))
 	case "admin.audit":
 		return "admin audit: " + formatFields(fields)
 	case "admin.csrf_validation_failed":

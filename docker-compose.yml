@@ -15,6 +15,8 @@ services:
       # UID: "1000"
       # GID: "1000"
       LANGUAGE: "en" # value: ko/en
+      # Optional Discord webhook URL for paste create/clone/delete notifications.
+      # DISCORD_WEBHOOK: "https://discord.com/api/webhooks/..."
       # Paste content storage backend. Use "local" for /paste-data files or "mysql" for an external MySQL/MariaDB database.
       STORAGE_BACKEND: "local" # value: local/mysql
       # Required only when STORAGE_BACKEND=mysql. Keep parseTime=true and utf8mb4 options for compatibility.

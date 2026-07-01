@@ -88,6 +88,7 @@ func (a *app) manageHandler(w http.ResponseWriter, r *http.Request, id string) {
 				a.renderManageError(w, r, id, token, a.manageErrorMessage(err))
 				return
 			}
+			a.notifyDiscordPasteDeleted(id, "manage page")
 			a.renderManageDeleted(w, r, id, token)
 		default:
 			a.renderManageError(w, r, id, token, a.i18n.T("manage_error_invalid_action"))

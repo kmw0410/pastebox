@@ -147,6 +147,7 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		"remote":       r.RemoteAddr,
 		"size":         meta.Size,
 	})
+	a.notifyDiscordPasteCreated(r, meta, password != "", "")
 
 	a.writeUploadResponse(w, r, meta, password, deleteToken, manageToken)
 }

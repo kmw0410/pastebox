@@ -638,6 +638,7 @@ func (a *app) adminDeleteAllHandler(w http.ResponseWriter, r *http.Request) {
 	a.logAdminAction("pastes.delete_all", actor, "success", map[string]any{
 		"deleted_count": count,
 	})
+	a.notifyDiscordPastesDeleted(count, "admin delete all")
 
 	setAdminFlash(w, fmt.Sprintf(a.i18n.T("admin_flash_delete_all"), count))
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
@@ -696,6 +697,7 @@ func (a *app) adminDeleteHandler(w http.ResponseWriter, r *http.Request) {
 				"deleted_count": deleted,
 				"ids":           summarizeAdminIDs(selectedIDs),
 			})
+			a.notifyDiscordPastesDeleted(deleted, "admin bulk delete")
 			setAdminFlash(w, fmt.Sprintf(a.i18n.T("admin_flash_delete_all"), deleted))
 		}
 		http.Redirect(w, r, "/admin", http.StatusSeeOther)
@@ -715,6 +717,7 @@ func (a *app) adminDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	a.logAdminAction("paste.delete", actor, "success", map[string]any{
 		"id": id,
 	})
+	a.notifyDiscordPasteDeleted(id, "admin")
 
 	setAdminFlash(w, fmt.Sprintf(a.i18n.T("admin_flash_delete_one"), id))
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)

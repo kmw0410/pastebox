@@ -33,6 +33,7 @@ func (a *app) deleteHandler(w http.ResponseWriter, r *http.Request, id string, t
 		"id":     id,
 		"remote": r.RemoteAddr,
 	})
+	a.notifyDiscordPasteDeleted(id, "delete link")
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	fmt.Fprintln(w, "deleted")

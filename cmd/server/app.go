@@ -29,6 +29,7 @@ type app struct {
 	adminSetupToken string
 	adminResetToken string
 	authLimiter     *authAttemptLimiter
+	discordWebhook  *discordWebhookNotifier
 }
 
 type adminActor struct {

@@ -21,6 +21,7 @@ func main() {
 	migrateSQLiteAdminAccounts := getenvBool("MIGRATE_SQLITE_ADMIN_ACCOUNTS", false)
 	i18n := loadLocalizer(getenv("LANGUAGE", "en"))
 	adminResetToken := strings.TrimSpace(os.Getenv("ADMIN_RESET_TOKEN"))
+	discordWebhookURL := strings.TrimSpace(os.Getenv("DISCORD_WEBHOOK"))
 
 	store, err := pastebox.NewStoreWithOptions(pastebox.StoreOptions{
 		DataDir:                    dataDir,
@@ -45,6 +46,7 @@ func main() {
 			"error": err,
 		})
 	}
+	a.discordWebhook = newDiscordWebhookNotifier(discordWebhookURL)
 
 	go func() {
 		ticker := time.NewTicker(1 * time.Hour)

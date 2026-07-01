@@ -75,6 +75,7 @@ func (a *app) cloneHandler(w http.ResponseWriter, r *http.Request, id string) {
 		"size":         meta.Size,
 		"source":       id,
 	})
+	a.notifyDiscordPasteCreated(r, meta, newPassword != "", id)
 
 	a.writeCloneResponse(w, r, meta, newPassword, deleteToken, manageToken)
 }

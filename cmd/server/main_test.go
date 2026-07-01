@@ -179,6 +179,89 @@ func TestHealthHandlerServiceUnavailableOnStoreFailure(t *testing.T) {
 	}
 }
 
+func TestFilterAdminPasteItems(t *testing.T) {
+	now := time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)
+	items := []pastebox.AdminPasteItem{
+		{
+			ID:         "build-log",
+			Filename:   "server.log",
+			DataPolicy: "temporary",
+			ExpiresAt:  now.Add(48 * time.Hour),
+			Protected:  false,
+		},
+		{
+			ID:         "secret",
+			Filename:   "config.yaml",
+			DataPolicy: "permanent",
+			Protected:  true,
+		},
+		{
+			ID:         "once1",
+			Filename:   "readme.md",
+			DataPolicy: "once",
+			ExpiresAt:  now.Add(30 * time.Minute),
+			Protected:  false,
+		},
+		{
+			ID:         "custom1",
+			Filename:   "trace.txt",
+			DataPolicy: "12h",
+			ExpiresAt:  now.Add(-time.Hour),
+			Protected:  true,
+		},
+	}
+
+	tests := []struct {
+		name    string
+		filters adminPasteFilters
+		want    []string
+	}{
+		{
+			name:    "query matches code and filename",
+			filters: adminPasteFilters{Query: "LOG"},
+			want:    []string{"build-log"},
+		},
+		{
+			name:    "custom policy",
+			filters: adminPasteFilters{Policy: "custom"},
+			want:    []string{"custom1"},
+		},
+		{
+			name:    "protected",
+			filters: adminPasteFilters{Protected: "yes"},
+			want:    []string{"secret", "custom1"},
+		},
+		{
+			name:    "expiring",
+			filters: adminPasteFilters{Status: "expiring"},
+			want:    []string{"once1"},
+		},
+		{
+			name:    "no expiration",
+			filters: adminPasteFilters{Status: "no-expiration"},
+			want:    []string{"secret"},
+		},
+		{
+			name:    "combined filters",
+			filters: adminPasteFilters{Policy: "custom", Protected: "yes", Status: "expired"},
+			want:    []string{"custom1"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := filterAdminPasteItems(items, tt.filters, now)
+			gotIDs := make([]string, 0, len(got))
+			for _, item := range got {
+				gotIDs = append(gotIDs, item.ID)
+			}
+			if strings.Join(gotIDs, ",") != strings.Join(tt.want, ",") {
+				t.Fatalf("filterAdminPasteItems() = %v, want %v", gotIDs, tt.want)
+			}
+		})
+	}
+}
+
 func TestNewAppGeneratesSetupTokenOnlyWithoutAdmin(t *testing.T) {
 	originalWD, err := os.Getwd()
 	if err != nil {
@@ -221,10 +304,10 @@ func TestNewAppGeneratesSetupTokenOnlyWithoutAdmin(t *testing.T) {
 
 func TestParseManagePolicyForm(t *testing.T) {
 	tests := []struct {
-		name         string
-		form         string
-		want         string
-		wantErr      error
+		name    string
+		form    string
+		want    string
+		wantErr error
 	}{
 		{
 			name: "temporary",

@@ -57,6 +57,8 @@ func (a *app) adminIndexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	items = localizeAdminPasteItems(items, time.Local)
+	filters := adminPasteFiltersFromRequest(r)
+	filteredItems := filterAdminPasteItems(items, filters, time.Now().UTC())
 
 	uploadsDisabled, err := a.store.UploadsDisabled()
 	if err != nil {
@@ -65,8 +67,10 @@ func (a *app) adminIndexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := map[string]any{
-		"Items":           items,
+		"Items":           filteredItems,
 		"Stats":           buildAdminStats(items),
+		"Filters":         filters,
+		"FilteredCount":   len(filteredItems),
 		"BaseURL":         requestBaseURL(r),
 		"StorageBackend":  a.store.StorageBackend,
 		"UploadsDisabled": uploadsDisabled,
@@ -78,6 +82,90 @@ func (a *app) adminIndexHandler(w http.ResponseWriter, r *http.Request) {
 	if err := a.adminList.Execute(w, data); err != nil {
 		http.Error(w, "template error", http.StatusInternalServerError)
 	}
+}
+
+type adminPasteFilters struct {
+	Query     string
+	Policy    string
+	Protected string
+	Status    string
+}
+
+func adminPasteFiltersFromRequest(r *http.Request) adminPasteFilters {
+	return adminPasteFilters{
+		Query:     strings.TrimSpace(r.URL.Query().Get("q")),
+		Policy:    normalizeAdminFilterValue(r.URL.Query().Get("policy"), "temporary", "permanent", "once", "custom"),
+		Protected: normalizeAdminFilterValue(r.URL.Query().Get("protected"), "yes", "no"),
+		Status:    normalizeAdminFilterValue(r.URL.Query().Get("status"), "active", "expiring", "expired", "no-expiration"),
+	}
+}
+
+func normalizeAdminFilterValue(value string, allowed ...string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	for _, item := range allowed {
+		if value == item {
+			return value
+		}
+	}
+	return ""
+}
+
+func filterAdminPasteItems(items []pastebox.AdminPasteItem, filters adminPasteFilters, now time.Time) []pastebox.AdminPasteItem {
+	query := strings.ToLower(filters.Query)
+	if query == "" && filters.Policy == "" && filters.Protected == "" && filters.Status == "" {
+		return items
+	}
+
+	out := make([]pastebox.AdminPasteItem, 0, len(items))
+	for _, item := range items {
+		if query != "" && !strings.Contains(strings.ToLower(item.ID), query) && !strings.Contains(strings.ToLower(item.Filename), query) {
+			continue
+		}
+
+		if filters.Policy != "" {
+			policy := strings.ToLower(strings.TrimSpace(item.DataPolicy))
+			if filters.Policy == "custom" {
+				if policy == "" || policy == "temporary" || policy == "permanent" || policy == "once" {
+					continue
+				}
+			} else if policy != filters.Policy {
+				continue
+			}
+		}
+
+		if filters.Protected != "" {
+			wantProtected := filters.Protected == "yes"
+			if item.Protected != wantProtected {
+				continue
+			}
+		}
+
+		if filters.Status != "" {
+			if !adminPasteMatchesStatus(item, filters.Status, now) {
+				continue
+			}
+		}
+
+		out = append(out, item)
+	}
+
+	return out
+}
+
+func adminPasteMatchesStatus(item pastebox.AdminPasteItem, status string, now time.Time) bool {
+	if item.ExpiresAt.IsZero() {
+		return status == "no-expiration"
+	}
+
+	if now.After(item.ExpiresAt) {
+		return status == "expired"
+	}
+
+	if item.ExpiresAt.Sub(now) <= 24*time.Hour {
+		return status == "expiring"
+	}
+
+	return status == "active"
 }
 
 const adminFlashCookieName = "pastebox_admin_flash"

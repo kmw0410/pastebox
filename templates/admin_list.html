@@ -124,6 +124,59 @@
         </div>
       </div>
 
+      <div class="card mt-lg">
+        <form class="admin-filter-form" method="get" action="/admin">
+          <div>
+            <p class="eyebrow">{{ t "admin_filter_title" }}</p>
+            <p class="notice-text">{{ t "admin_filter_desc" }}</p>
+          </div>
+
+          <label class="form-field">
+            <span>{{ t "admin_filter_query" }}</span>
+            <input class="input" type="search" name="q" value="{{ .Filters.Query }}" placeholder="{{ t "admin_filter_query_placeholder" }}">
+          </label>
+
+          <label class="form-field">
+            <span>{{ t "admin_filter_policy" }}</span>
+            <select class="input" name="policy">
+              <option value="">{{ t "admin_filter_all" }}</option>
+              <option value="temporary"{{ if eq .Filters.Policy "temporary" }} selected{{ end }}>{{ t "manage_policy_temporary" }}</option>
+              <option value="permanent"{{ if eq .Filters.Policy "permanent" }} selected{{ end }}>{{ t "manage_policy_permanent" }}</option>
+              <option value="once"{{ if eq .Filters.Policy "once" }} selected{{ end }}>{{ t "manage_policy_once" }}</option>
+              <option value="custom"{{ if eq .Filters.Policy "custom" }} selected{{ end }}>{{ t "manage_policy_custom" }}</option>
+            </select>
+          </label>
+
+          <label class="form-field">
+            <span>{{ t "admin_filter_protected" }}</span>
+            <select class="input" name="protected">
+              <option value="">{{ t "admin_filter_all" }}</option>
+              <option value="yes"{{ if eq .Filters.Protected "yes" }} selected{{ end }}>{{ t "admin_filter_protected_yes" }}</option>
+              <option value="no"{{ if eq .Filters.Protected "no" }} selected{{ end }}>{{ t "admin_filter_protected_no" }}</option>
+            </select>
+          </label>
+
+          <label class="form-field">
+            <span>{{ t "admin_filter_status" }}</span>
+            <select class="input" name="status">
+              <option value="">{{ t "admin_filter_all" }}</option>
+              <option value="active"{{ if eq .Filters.Status "active" }} selected{{ end }}>{{ t "admin_filter_status_active" }}</option>
+              <option value="expiring"{{ if eq .Filters.Status "expiring" }} selected{{ end }}>{{ t "admin_filter_status_expiring" }}</option>
+              <option value="expired"{{ if eq .Filters.Status "expired" }} selected{{ end }}>{{ t "admin_filter_status_expired" }}</option>
+              <option value="no-expiration"{{ if eq .Filters.Status "no-expiration" }} selected{{ end }}>{{ t "admin_filter_status_no_expiration" }}</option>
+            </select>
+          </label>
+
+          <div class="admin-filter-actions">
+            <p class="notice-text">{{ .FilteredCount }} {{ t "admin_filter_results" }}</p>
+            <div class="button-row">
+              <a class="button" href="/admin">{{ t "admin_filter_reset" }}</a>
+              <button class="button" type="submit">{{ t "admin_filter_apply" }}</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
       <div class="table-wrap mt-lg">
         <table class="admin-table">
           <thead>

@@ -296,7 +296,8 @@ a {
   text-align: left;
 }
 
-.form-field label {
+.form-field label,
+.form-field > span {
   color: var(--muted);
   font-size: 0.875rem;
 }

@@ -201,6 +201,17 @@
   gap: 1rem;
 }
 
+.admin-filter-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-filter-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
 .table-wrap {
   overflow-x: auto;
   border: 1px solid var(--line);
@@ -409,6 +420,22 @@
   .admin-control,
   .danger-row,
   .generated-password {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .admin-filter-form {
+    grid-template-columns: minmax(13rem, 1.3fr) minmax(12rem, 1fr) minmax(10rem, 0.85fr) minmax(12rem, 1fr);
+    align-items: end;
+  }
+
+  .admin-filter-form > div:first-child,
+  .admin-filter-actions {
+    grid-column: 1 / -1;
+  }
+
+  .admin-filter-actions {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;

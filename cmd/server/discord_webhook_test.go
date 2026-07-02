@@ -39,6 +39,11 @@ func TestBuildDiscordWebhookPayloadForCreatedPaste(t *testing.T) {
 	if embed.Author.Name != "Pastebox" {
 		t.Fatalf("Author.Name = %q, want Pastebox", embed.Author.Name)
 	}
+	if body, err := json.Marshal(embed); err != nil {
+		t.Fatalf("Marshal embed failed: %v", err)
+	} else if strings.Contains(string(body), "\"footer\"") {
+		t.Fatalf("embed unexpectedly contains footer: %s", string(body))
+	}
 	if embed.Timestamp != "2026-07-01T12:00:00Z" {
 		t.Fatalf("Timestamp = %q, want created timestamp", embed.Timestamp)
 	}

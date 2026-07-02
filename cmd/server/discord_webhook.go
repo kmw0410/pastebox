@@ -47,7 +47,6 @@ type discordEmbed struct {
 	Author      discordEmbedAuthor  `json:"author,omitempty"`
 	Fields      []discordEmbedField `json:"fields,omitempty"`
 	Timestamp   string              `json:"timestamp,omitempty"`
-	Footer      discordEmbedFooter  `json:"footer,omitempty"`
 }
 
 type discordEmbedAuthor struct {
@@ -58,10 +57,6 @@ type discordEmbedField struct {
 	Name   string `json:"name"`
 	Value  string `json:"value"`
 	Inline bool   `json:"inline"`
-}
-
-type discordEmbedFooter struct {
-	Text string `json:"text,omitempty"`
 }
 
 func newDiscordWebhookNotifier(webhookURL string) *discordWebhookNotifier {
@@ -162,7 +157,6 @@ func buildDiscordWebhookPayload(event discordPasteEvent, i18n *localizer) discor
 		Title:     discordText(i18n, discordTitleKey(event), discordFallbackTitle(event)),
 		Color:     discordEventColor(event),
 		Author:    discordEmbedAuthor{Name: "Pastebox"},
-		Footer:    discordEmbedFooter{Text: "Pastebox"},
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 	}
 	if !event.CreatedAt.IsZero() {

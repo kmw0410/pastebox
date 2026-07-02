@@ -52,7 +52,6 @@ pastebox/
 ├── README_ko.md
 ├── 404.png
 ├── admin.png
-├── docker-compose-build.yml
 ├── docker-compose.yml
 ├── docker-entrypoint.sh
 ├── go.mod
@@ -313,7 +312,7 @@ Both migrations are protected by a completion marker stored in SQLite under `pas
 
 17. **Admin Page**: You can access the admin page by adding `/admin` after the IP address or domain. If no account exists, the first created account becomes the administrator account, and additional account creation is disabled afterward. When `STORAGE_BACKEND=mysql`, the admin account, admin sessions, and admin settings are stored in MySQL. SQLite at `/paste-data/pastebox.db` inside the container, or `./data/pastebox.db` on the host, is then used only for migration completion markers. Passwords are stored in hashed form. The admin dashboard shows paste counts, storage usage, policy breakdown, expiring and expired items, and the current paste storage backend. It also lets administrators enable or disable uploads, delete a single paste, or bulk-delete selected pastes.
 
-18. **Admin Password Reset**: If you lose the admin password, set `ADMIN_RESET_TOKEN` in `docker-compose-build.yml` (or `docker-compose.yml`), restart the container, and open `/admin/reset`. Enter the reset token and a new password. After reset, existing admin sessions are invalidated and you must log in again with the new password.
+18. **Admin Password Reset**: If you lose the admin password, set `ADMIN_RESET_TOKEN` in `docker-compose.yml`, restart the container, and open `/admin/reset`. Enter the reset token and a new password. After reset, existing admin sessions are invalidated and you must log in again with the new password.
 
 19. **Admin Manage Page**: Every successful upload also gets a private manage URL using `?manage=...`. The manage page lets you copy the public URL and manage URL, switch between public and password-protected access, change the retention policy, and delete the paste. If a password-protected paste is converted back to public, Pastebox first asks for the current generated password.
 

@@ -328,5 +328,7 @@ Both migrations are protected by a completion marker stored in SQLite under `pas
 
 22. **Paste Clone**: You can clone the current paste into a new link by clicking the `Clone` button on the view page.
 
+23. **Open Graph Metadata**: Paste pages expose a `Pastebox - CODE` preview title. Public pastes use the original filename as the preview description when available, while password-protected pastes expose only `Password-protected paste` and never reveal the filename, label, content, password, or management tokens.
+
 ### Data Policy
 For details about the data policy header, see [DATA_POLICY.md](./DATA_POLICY.md)

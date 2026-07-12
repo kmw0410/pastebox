@@ -330,5 +330,7 @@ environment:
 
 22. **Paste 복제 지원**: 보기 페이지에서 `Clone` 버튼을 눌러 현재 Paste 내용을 새로운 링크로 복제할 수 있습니다.
 
+23. **Open Graph 메타데이터**: Paste 페이지는 `Pastebox - 코드` 형식의 미리보기 제목을 제공합니다. 공개 Paste는 원본 파일명이 있으면 미리보기 설명으로 사용하고, 비밀번호 보호 Paste는 `Password-protected paste`만 표시하여 파일명, 라벨, 내용, 비밀번호 및 관리 토큰을 노출하지 않습니다.
+
 ### 데이터 정책
 데이터 정책 헤더에 대한 설명은 [DATA_POLICY_ko.md](./DATA_POLICY_ko.md)를 참고하세요.

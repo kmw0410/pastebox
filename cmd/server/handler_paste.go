@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	pastebox "pastebox/internal"
 )
@@ -77,12 +78,15 @@ func (a *app) viewHandler(w http.ResponseWriter, r *http.Request, id string) {
 			w.WriteHeader(http.StatusOK)
 
 			return a.paste.Execute(w, map[string]any{
-				"ID":       entry.Meta.ID,
-				"Filename": entry.Meta.Filename,
-				"Label":    entry.Meta.Label,
-				"Content":  string(content),
-				"Language": syntaxLanguage(entry.Meta.Filename, entry.Meta.ContentType),
-				"Password": password,
+				"ID":            entry.Meta.ID,
+				"Filename":      entry.Meta.Filename,
+				"Label":         entry.Meta.Label,
+				"Content":       string(content),
+				"Language":      syntaxLanguage(entry.Meta.Filename, entry.Meta.ContentType),
+				"Password":      password,
+				"OGTitle":       "Pastebox - " + entry.Meta.ID,
+				"OGDescription": pasteOpenGraphDescription(entry.Meta),
+				"PublicURL":     strings.TrimRight(requestBaseURL(r), "/") + "/" + entry.Meta.ID,
 			})
 		}
 
@@ -129,11 +133,24 @@ func (a *app) renderPasswordPage(w http.ResponseWriter, r *http.Request, id stri
 	w.WriteHeader(http.StatusUnauthorized)
 
 	_ = a.passwordPage.Execute(w, map[string]any{
-		"ID":          id,
-		"Action":      action,
-		"Method":      method,
-		"SubmitLabel": submitLabel,
+		"ID":            id,
+		"Action":        action,
+		"Method":        method,
+		"SubmitLabel":   submitLabel,
+		"OGTitle":       "Pastebox - " + id,
+		"OGDescription": "Password-protected paste",
+		"PublicURL":     strings.TrimRight(requestBaseURL(r), "/") + "/" + id,
 	})
+}
+
+func pasteOpenGraphDescription(meta pastebox.Metadata) string {
+	if meta.PasswordHash != "" {
+		return "Password-protected paste"
+	}
+	if filename := strings.TrimSpace(meta.Filename); filename != "" {
+		return filename
+	}
+	return "Shared text paste"
 }
 
 func (a *app) localizedText(key string, fallback string) string {

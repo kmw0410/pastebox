@@ -146,6 +146,26 @@ func TestViewHandlerLimitsHTMLRenderingByPasteSize(t *testing.T) {
 	}
 }
 
+func TestPasteOpenGraphDescription(t *testing.T) {
+	tests := []struct {
+		name string
+		meta pastebox.Metadata
+		want string
+	}{
+		{name: "public filename", meta: pastebox.Metadata{Filename: "server.log"}, want: "server.log"},
+		{name: "public without filename", meta: pastebox.Metadata{}, want: "Shared text paste"},
+		{name: "protected hides filename", meta: pastebox.Metadata{Filename: "secret.env", Label: "production", PasswordHash: "hash"}, want: "Password-protected paste"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := pasteOpenGraphDescription(tt.meta); got != tt.want {
+				t.Fatalf("description = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestUploadHandlerCustomDataPolicyDuration(t *testing.T) {
 	app := newTestApp(t)
 	loc := time.FixedZone("Test/KST", 9*60*60)

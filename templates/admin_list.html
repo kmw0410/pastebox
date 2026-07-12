@@ -183,6 +183,7 @@
             <tr>
               <th>{{ t "admin_table_code" }}</th>
               <th>{{ t "admin_table_filename" }}</th>
+              <th>{{ t "admin_table_label" }}</th>
               <th>{{ t "admin_table_policy" }}</th>
               <th>{{ t "admin_table_size" }}</th>
               <th>{{ t "admin_table_protected" }}</th>
@@ -201,6 +202,7 @@
                 <a class="table-link" href="{{ $.BaseURL }}/{{ .ID }}" target="_blank">{{ .ID }}</a>
               </td>
               <td class="truncate-cell">{{ if .Filename }}{{ .Filename }}{{ else }}-{{ end }}</td>
+              <td class="truncate-cell">{{ if .Label }}{{ .Label }}{{ else }}-{{ end }}</td>
               <td>{{ .DataPolicy }}</td>
               <td>{{ .Size }}</td>
               <td>{{ .Protected }}</td>
@@ -216,7 +218,7 @@
             </tr>
             {{ else }}
             <tr>
-              <td class="muted-cell empty-cell" colspan="8">{{ t "admin_no_pastes" }}</td>
+              <td class="muted-cell empty-cell" colspan="9">{{ t "admin_no_pastes" }}</td>
             </tr>
             {{ end }}
           </tbody>

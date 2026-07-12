@@ -28,6 +28,9 @@
         {{ if .Filename }}
         <span class="paste-filename">{{ .Filename }}</span>
         {{ end }}
+        {{ if .Label }}
+        <span class="paste-filename">{{ .Label }}</span>
+        {{ end }}
         <span class="paste-badge">{{ .Language }}</span>
         <span id="longLineHint" class="paste-badge warning is-hidden">Long line detected</span>
       </div>

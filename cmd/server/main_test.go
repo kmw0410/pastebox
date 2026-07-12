@@ -200,6 +200,29 @@ func TestUploadHandlerCustomDataPolicyDuration(t *testing.T) {
 	}
 }
 
+func TestUploadHandlerStoresLabel(t *testing.T) {
+	app := newTestApp(t)
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("labeled paste"))
+	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("label", " production log ")
+	req.Header.Set("code", "labeled")
+	rr := httptest.NewRecorder()
+
+	app.uploadHandler(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, body=%q", rr.Code, rr.Body.String())
+	}
+	entry, err := app.store.Open("labeled", "")
+	if err != nil {
+		t.Fatalf("Open failed: %v", err)
+	}
+	defer entry.File.Close()
+	if entry.Meta.Label != "production log" {
+		t.Fatalf("label = %q, want production log", entry.Meta.Label)
+	}
+}
+
 func TestHealthHandlerOK(t *testing.T) {
 	app := newTestApp(t)
 

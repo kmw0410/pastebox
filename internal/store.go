@@ -20,6 +20,7 @@ var (
 	ErrInvalidPolicy      = errors.New("invalid policy")
 	ErrInvalidCode        = errors.New("invalid code")
 	ErrCodeExists         = errors.New("code already exists")
+	ErrInvalidLabel       = errors.New("invalid label")
 )
 
 type Store struct {
@@ -45,6 +46,7 @@ type StoreOptions struct {
 type Metadata struct {
 	ID              string    `json:"id"`
 	Filename        string    `json:"filename,omitempty"`
+	Label           string    `json:"label,omitempty"`
 	PasswordHash    string    `json:"password_hash,omitempty"`
 	ManageTokenHash string    `json:"manage_token_hash,omitempty"`
 	DeleteTokenHash string    `json:"delete_token_hash,omitempty"`
@@ -63,6 +65,7 @@ type Entry struct {
 type AdminPasteItem struct {
 	ID          string
 	Filename    string
+	Label       string
 	CreatedAt   time.Time
 	ExpiresAt   time.Time
 	DataPolicy  string
@@ -145,13 +148,22 @@ func NewStoreWithOptions(opts StoreOptions) (*Store, error) {
 }
 
 func (s *Store) Create(r io.Reader, filename string, contentType string, usePassword bool, policy DataPolicy, customCode string) (Metadata, string, string, string, error) {
+	return s.CreateWithLabel(r, filename, contentType, usePassword, policy, customCode, "")
+}
+
+func (s *Store) CreateWithLabel(r io.Reader, filename string, contentType string, usePassword bool, policy DataPolicy, customCode string, label string) (Metadata, string, string, string, error) {
 	var err error
 	policy, err = policy.validated()
 	if err != nil {
 		return Metadata{}, "", "", "", err
 	}
 
-	return s.createFromReader(r, filename, contentType, usePassword, policy, customCode)
+	label, err = normalizeLabel(label)
+	if err != nil {
+		return Metadata{}, "", "", "", err
+	}
+
+	return s.createFromReader(r, filename, contentType, usePassword, policy, customCode, label)
 }
 
 func (s *Store) Clone(id string, password string, usePassword bool, policy DataPolicy, customCode string) (Metadata, string, string, string, error) {
@@ -167,15 +179,15 @@ func (s *Store) Clone(id string, password string, usePassword bool, policy DataP
 	}
 	defer entry.File.Close()
 
-	return s.createFromReader(entry.File, entry.Meta.Filename, entry.Meta.ContentType, usePassword, policy, customCode)
+	return s.createFromReader(entry.File, entry.Meta.Filename, entry.Meta.ContentType, usePassword, policy, customCode, entry.Meta.Label)
 }
 
-func (s *Store) createFromReader(r io.Reader, filename string, contentType string, usePassword bool, policy DataPolicy, customCode string) (Metadata, string, string, string, error) {
+func (s *Store) createFromReader(r io.Reader, filename string, contentType string, usePassword bool, policy DataPolicy, customCode string, label string) (Metadata, string, string, string, error) {
 	if s.StorageBackend == "mysql" {
-		return s.createMySQLFromReader(r, filename, contentType, usePassword, policy, customCode)
+		return s.createMySQLFromReader(r, filename, contentType, usePassword, policy, customCode, label)
 	}
 
-	return s.createLocalFromReader(r, filename, contentType, usePassword, policy, customCode)
+	return s.createLocalFromReader(r, filename, contentType, usePassword, policy, customCode, label)
 }
 
 func (s *Store) Open(id string, password string) (*Entry, error) {
@@ -272,6 +284,17 @@ func (s *Store) SetDataPolicy(id string, token string, policy string) (Metadata,
 	}
 
 	return s.setDataPolicyLocal(id, token, policy)
+}
+
+func (s *Store) SetLabel(id string, token string, label string) (Metadata, error) {
+	label, err := normalizeLabel(label)
+	if err != nil {
+		return Metadata{}, err
+	}
+	if s.StorageBackend == "mysql" {
+		return s.setLabelMySQL(id, token, label)
+	}
+	return s.setLabelLocal(id, token, label)
 }
 
 func (s *Store) HealthCheck(ctx context.Context) error {

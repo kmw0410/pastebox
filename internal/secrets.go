@@ -9,7 +9,22 @@ import (
 	"errors"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 )
+
+func normalizeLabel(label string) (string, error) {
+	label = strings.TrimSpace(label)
+	if !utf8.ValidString(label) || utf8.RuneCountInString(label) > 100 {
+		return "", ErrInvalidLabel
+	}
+	for _, r := range label {
+		if unicode.IsControl(r) {
+			return "", ErrInvalidLabel
+		}
+	}
+	return label, nil
+}
 
 func maybeCreatePassword(usePassword bool) (string, string, error) {
 	if !usePassword {

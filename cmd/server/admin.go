@@ -118,7 +118,7 @@ func filterAdminPasteItems(items []pastebox.AdminPasteItem, filters adminPasteFi
 
 	out := make([]pastebox.AdminPasteItem, 0, len(items))
 	for _, item := range items {
-		if query != "" && !strings.Contains(strings.ToLower(item.ID), query) && !strings.Contains(strings.ToLower(item.Filename), query) {
+		if query != "" && !strings.Contains(strings.ToLower(item.ID), query) && !strings.Contains(strings.ToLower(item.Filename), query) && !strings.Contains(strings.ToLower(item.Label), query) {
 			continue
 		}
 

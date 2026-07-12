@@ -112,13 +112,14 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	customCode := strings.TrimSpace(r.Header.Get("code"))
+	label := r.Header.Get("label")
 
 	if _, err := tempFile.Seek(0, io.SeekStart); err != nil {
 		a.respondRequestError(w, r, http.StatusInternalServerError, "failed to process upload")
 		return
 	}
 
-	meta, password, deleteToken, manageToken, err := a.store.Create(tempFile, filename, contentType, usePassword, policy, customCode)
+	meta, password, deleteToken, manageToken, err := a.store.CreateWithLabel(tempFile, filename, contentType, usePassword, policy, customCode, label)
 	if err != nil {
 		logEvent("upload.create_failed", map[string]any{
 			"error": err,
@@ -131,6 +132,10 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 		if errors.Is(err, pastebox.ErrCodeExists) {
 			a.respondRequestError(w, r, http.StatusConflict, "code already exists")
+			return
+		}
+		if errors.Is(err, pastebox.ErrInvalidLabel) {
+			a.respondRequestError(w, r, http.StatusBadRequest, "invalid label. use at most 100 characters without control characters")
 			return
 		}
 

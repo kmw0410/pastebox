@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func (s *Store) createLocalFromReader(r io.Reader, filename string, contentType string, usePassword bool, policy DataPolicy, customCode string) (Metadata, string, string, string, error) {
+func (s *Store) createLocalFromReader(r io.Reader, filename string, contentType string, usePassword bool, policy DataPolicy, customCode string, label string) (Metadata, string, string, string, error) {
 	id, path, err := s.reserveLocalPath(customCode)
 	if err != nil {
 		return Metadata{}, "", "", "", err
@@ -67,6 +67,7 @@ func (s *Store) createLocalFromReader(r io.Reader, filename string, contentType 
 	meta := Metadata{
 		ID:              id,
 		Filename:        strings.TrimSpace(filename),
+		Label:           label,
 		PasswordHash:    passwordHash,
 		ManageTokenHash: hashSecret(manageToken),
 		DeleteTokenHash: hashSecret(deleteToken),
@@ -405,6 +406,7 @@ func (s *Store) listPastesLocal() ([]AdminPasteItem, error) {
 		items = append(items, AdminPasteItem{
 			ID:          meta.ID,
 			Filename:    meta.Filename,
+			Label:       meta.Label,
 			CreatedAt:   meta.CreatedAt,
 			ExpiresAt:   meta.ExpiresAt,
 			DataPolicy:  meta.DataPolicy,
@@ -415,6 +417,21 @@ func (s *Store) listPastesLocal() ([]AdminPasteItem, error) {
 	}
 
 	return items, nil
+}
+
+func (s *Store) setLabelLocal(id string, token string, label string) (Metadata, error) {
+	meta, err := s.manageMetadataLocal(id, token)
+	if err != nil {
+		return Metadata{}, err
+	}
+
+	unlock := s.locks.Lock(id)
+	defer unlock()
+	meta.Label = label
+	if err := s.writeMetadata(meta); err != nil {
+		return Metadata{}, err
+	}
+	return meta, nil
 }
 
 func (s *Store) manageMetadataLocal(id string, token string) (Metadata, error) {

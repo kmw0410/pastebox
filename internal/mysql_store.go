@@ -71,6 +71,7 @@ func openMySQLPasteDB(dsn string) (*sql.DB, error) {
 		CREATE TABLE IF NOT EXISTS paste_metadata (
 			id VARCHAR(10) PRIMARY KEY,
 			filename TEXT NULL,
+			label VARCHAR(100) NULL,
 			password_hash VARCHAR(128) NULL,
 			manage_token_hash VARCHAR(128) NOT NULL,
 			delete_token_hash VARCHAR(128) NOT NULL,
@@ -86,6 +87,13 @@ func openMySQLPasteDB(dsn string) (*sql.DB, error) {
 	`); err != nil {
 		_ = db.Close()
 		return nil, err
+	}
+	if _, err := db.Exec(`ALTER TABLE paste_metadata ADD COLUMN label VARCHAR(100) NULL AFTER filename`); err != nil {
+		var mysqlErr *mysql.MySQLError
+		if !errors.As(err, &mysqlErr) || mysqlErr.Number != 1060 {
+			_ = db.Close()
+			return nil, err
+		}
 	}
 
 	if _, err := db.Exec(`
@@ -106,7 +114,7 @@ func openMySQLPasteDB(dsn string) (*sql.DB, error) {
 	return db, nil
 }
 
-func (s *Store) createMySQLFromReader(r io.Reader, filename string, contentType string, usePassword bool, policy DataPolicy, customCode string) (Metadata, string, string, string, error) {
+func (s *Store) createMySQLFromReader(r io.Reader, filename string, contentType string, usePassword bool, policy DataPolicy, customCode string, label string) (Metadata, string, string, string, error) {
 	customCode = strings.TrimSpace(customCode)
 	if customCode != "" && !validID(customCode) {
 		return Metadata{}, "", "", "", ErrInvalidCode
@@ -133,6 +141,7 @@ func (s *Store) createMySQLFromReader(r io.Reader, filename string, contentType 
 
 	baseMeta := Metadata{
 		Filename:        strings.TrimSpace(filename),
+		Label:           label,
 		PasswordHash:    passwordHash,
 		ManageTokenHash: hashSecret(manageToken),
 		DeleteTokenHash: hashSecret(deleteToken),
@@ -187,6 +196,7 @@ func (s *Store) createMySQLWithID(id string, meta Metadata, r io.Reader) (Metada
 		INSERT INTO paste_metadata (
 			id,
 			filename,
+			label,
 			password_hash,
 			manage_token_hash,
 			delete_token_hash,
@@ -196,8 +206,8 @@ func (s *Store) createMySQLWithID(id string, meta Metadata, r io.Reader) (Metada
 			size,
 			compressed_size,
 			content_type
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)
-	`, meta.ID, meta.Filename, meta.PasswordHash, meta.ManageTokenHash, meta.DeleteTokenHash, meta.CreatedAt.Unix(), expiresAt, meta.DataPolicy, meta.ContentType)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)
+	`, meta.ID, meta.Filename, meta.Label, meta.PasswordHash, meta.ManageTokenHash, meta.DeleteTokenHash, meta.CreatedAt.Unix(), expiresAt, meta.DataPolicy, meta.ContentType)
 	if err != nil {
 		if isMySQLDuplicate(err) {
 			return Metadata{}, ErrCodeExists
@@ -412,6 +422,7 @@ func (s *Store) listPastesMySQL() ([]AdminPasteItem, error) {
 		SELECT
 			id,
 			filename,
+			label,
 			password_hash,
 			created_at_unix,
 			expires_at_unix,
@@ -430,6 +441,7 @@ func (s *Store) listPastesMySQL() ([]AdminPasteItem, error) {
 	for rows.Next() {
 		var id string
 		var filename sql.NullString
+		var label sql.NullString
 		var passwordHash sql.NullString
 		var createdAt int64
 		var expiresAt sql.NullInt64
@@ -437,13 +449,14 @@ func (s *Store) listPastesMySQL() ([]AdminPasteItem, error) {
 		var size int64
 		var contentType sql.NullString
 
-		if err := rows.Scan(&id, &filename, &passwordHash, &createdAt, &expiresAt, &dataPolicy, &size, &contentType); err != nil {
+		if err := rows.Scan(&id, &filename, &label, &passwordHash, &createdAt, &expiresAt, &dataPolicy, &size, &contentType); err != nil {
 			return nil, err
 		}
 
 		items = append(items, AdminPasteItem{
 			ID:          id,
 			Filename:    filename.String,
+			Label:       label.String,
 			CreatedAt:   time.Unix(createdAt, 0).UTC(),
 			ExpiresAt:   mysqlUnixTime(expiresAt),
 			DataPolicy:  dataPolicy,
@@ -458,6 +471,18 @@ func (s *Store) listPastesMySQL() ([]AdminPasteItem, error) {
 	}
 
 	return items, nil
+}
+
+func (s *Store) setLabelMySQL(id string, token string, label string) (Metadata, error) {
+	meta, err := s.manageMetadataMySQL(id, token)
+	if err != nil {
+		return Metadata{}, err
+	}
+	if _, err := s.mysqlDB.Exec(`UPDATE paste_metadata SET label = ? WHERE id = ?`, label, id); err != nil {
+		return Metadata{}, err
+	}
+	meta.Label = label
+	return meta, nil
 }
 
 func (s *Store) manageMetadataMySQL(id string, token string) (Metadata, error) {
@@ -626,6 +651,7 @@ func (s *Store) setDataPolicyMySQL(id string, token string, policy string) (Meta
 func (s *Store) readMySQLMetadata(id string) (Metadata, error) {
 	var meta Metadata
 	var filename sql.NullString
+	var label sql.NullString
 	var passwordHash sql.NullString
 	var createdAt int64
 	var expiresAt sql.NullInt64
@@ -635,6 +661,7 @@ func (s *Store) readMySQLMetadata(id string) (Metadata, error) {
 		SELECT
 			id,
 			filename,
+			label,
 			password_hash,
 			manage_token_hash,
 			delete_token_hash,
@@ -648,6 +675,7 @@ func (s *Store) readMySQLMetadata(id string) (Metadata, error) {
 	`, id).Scan(
 		&meta.ID,
 		&filename,
+		&label,
 		&passwordHash,
 		&meta.ManageTokenHash,
 		&meta.DeleteTokenHash,
@@ -662,6 +690,7 @@ func (s *Store) readMySQLMetadata(id string) (Metadata, error) {
 	}
 
 	meta.Filename = filename.String
+	meta.Label = label.String
 	meta.PasswordHash = passwordHash.String
 	meta.CreatedAt = time.Unix(createdAt, 0).UTC()
 	meta.ExpiresAt = mysqlUnixTime(expiresAt)

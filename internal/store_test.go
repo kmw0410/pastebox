@@ -155,6 +155,36 @@ func TestStoreCloneDoesNotConsumeOnceSource(t *testing.T) {
 	_ = entry.File.Close()
 }
 
+func TestStoreLabelLifecycle(t *testing.T) {
+	store := newTestStore(t)
+	meta, _, _, manageToken, err := store.CreateWithLabel(strings.NewReader("labeled"), "service.log", "text/plain", false, mustParsePolicy(t, "temporary"), "label1", "production log")
+	if err != nil {
+		t.Fatalf("CreateWithLabel failed: %v", err)
+	}
+	if meta.Label != "production log" {
+		t.Fatalf("label = %q, want production log", meta.Label)
+	}
+
+	clone, _, _, _, err := store.Clone(meta.ID, "", false, mustParsePolicy(t, "temporary"), "label2")
+	if err != nil {
+		t.Fatalf("Clone failed: %v", err)
+	}
+	if clone.Label != meta.Label {
+		t.Fatalf("clone label = %q, want %q", clone.Label, meta.Label)
+	}
+
+	updated, err := store.SetLabel(meta.ID, manageToken, "deployment log")
+	if err != nil {
+		t.Fatalf("SetLabel failed: %v", err)
+	}
+	if updated.Label != "deployment log" {
+		t.Fatalf("updated label = %q", updated.Label)
+	}
+	if _, err := store.SetLabel(meta.ID, manageToken, strings.Repeat("a", 101)); !errors.Is(err, ErrInvalidLabel) {
+		t.Fatalf("SetLabel oversized error = %v, want ErrInvalidLabel", err)
+	}
+}
+
 func TestStoreCreateCustomDataPolicy(t *testing.T) {
 	store := newTestStore(t)
 

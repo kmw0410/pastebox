@@ -261,6 +261,12 @@ Both migrations are protected by a completion marker stored in SQLite under `pas
    curl -H "code: custom123" -F "file=@secret.txt" http://localhost:8080/
    ```
 
+   Use the optional `label: ...` header to identify a paste independently from its code and original filename. Labels may contain up to 100 characters, are preserved when cloning, and can be changed from the private manage page.
+
+   ```bash
+   curl -H "label: production deploy log" -F "file=@server.log" http://localhost:8080/
+   ```
+
 11. **Upload Response Format**: When an upload succeeds, Pastebox returns the URL, expiration time, and delete link. If the upload is password-protected, the `password` field is also included.
 
    ```

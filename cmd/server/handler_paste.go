@@ -79,6 +79,7 @@ func (a *app) viewHandler(w http.ResponseWriter, r *http.Request, id string) {
 			return a.paste.Execute(w, map[string]any{
 				"ID":       entry.Meta.ID,
 				"Filename": entry.Meta.Filename,
+				"Label":    entry.Meta.Label,
 				"Content":  string(content),
 				"Language": syntaxLanguage(entry.Meta.Filename, entry.Meta.ContentType),
 				"Password": password,

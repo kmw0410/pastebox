@@ -12,6 +12,7 @@ import (
 type managePageData struct {
 	ID                string
 	Filename          string
+	Label             string
 	PublicURL         string
 	ManageURL         string
 	CreatedAt         time.Time
@@ -83,6 +84,13 @@ func (a *app) manageHandler(w http.ResponseWriter, r *http.Request, id string) {
 				return
 			}
 			a.renderManagePage(w, r, meta, token, a.i18n.T("manage_policy_updated"), "", "", false)
+		case "set_label":
+			meta, err := a.store.SetLabel(id, token, r.FormValue("label"))
+			if err != nil {
+				a.renderManageError(w, r, id, token, a.manageErrorMessage(err))
+				return
+			}
+			a.renderManagePage(w, r, meta, token, a.i18n.T("manage_label_updated"), "", "", false)
 		case "delete":
 			if err := a.store.DeleteManaged(id, token); err != nil {
 				a.renderManageError(w, r, id, token, a.manageErrorMessage(err))
@@ -134,6 +142,7 @@ func (a *app) renderManagePage(w http.ResponseWriter, r *http.Request, meta past
 	_ = a.managePage.Execute(w, managePageData{
 		ID:                meta.ID,
 		Filename:          meta.Filename,
+		Label:             meta.Label,
 		PublicURL:         publicURL,
 		ManageURL:         manageURL,
 		CreatedAt:         meta.CreatedAt,
@@ -189,6 +198,8 @@ func (a *app) manageErrorMessage(err error) string {
 		return a.i18n.T("manage_error_invalid_token")
 	case errors.Is(err, pastebox.ErrAlreadyProtected):
 		return a.i18n.T("manage_error_already_protected")
+	case errors.Is(err, pastebox.ErrInvalidLabel):
+		return a.i18n.T("manage_error_invalid_label")
 	case errors.Is(err, pastebox.ErrInvalidPolicy):
 		return a.i18n.T("manage_error_invalid_policy")
 	default:

@@ -60,6 +60,10 @@
               <span>{{ if .Filename }}{{ .Filename }}{{ else }}-{{ end }}</span>
             </div>
             <div class="info-row">
+              <span>{{ t "manage_info_label" }}</span>
+              <span>{{ if .Label }}{{ .Label }}{{ else }}-{{ end }}</span>
+            </div>
+            <div class="info-row">
               <span>{{ t "manage_info_visibility" }}</span>
               <span>{{ if .PasswordProtected }}{{ t "manage_visibility_private" }}{{ else }}{{ t "manage_visibility_public" }}{{ end }}</span>
             </div>
@@ -72,6 +76,14 @@
               <span>{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</span>
             </div>
           </div>
+          <form class="form mt-md" method="post" action="{{ .ManageURL }}">
+            <input type="hidden" name="manage_action" value="set_label">
+            <div class="form-field">
+              <label for="label">{{ t "manage_label_title" }}</label>
+              <input id="label" name="label" type="text" class="input" value="{{ .Label }}" maxlength="100" placeholder="{{ t "manage_label_placeholder" }}">
+            </div>
+            <button class="button" type="submit">{{ t "manage_label_save" }}</button>
+          </form>
         </article>
 
         <div class="manage-side-stack">

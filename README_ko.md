@@ -278,6 +278,12 @@ environment:
    ```bash
    curl -H "code: custom123" -F "file=@secret.txt" http://localhost:8080/
    ```
+
+   선택 사항인 `label: ...` 헤더를 사용하면 코드 및 원본 파일명과 별개로 Paste를 구분할 수 있습니다. 라벨은 최대 100자이며 clone 시 유지되고 비공개 관리 페이지에서 변경할 수 있습니다.
+
+   ```bash
+   curl -H "label: 운영 배포 로그" -F "file=@server.log" http://localhost:8080/
+   ```
    
 11. **업로드 응답 형식**: 업로드가 성공하면 URL, 만료 시간, 삭제 링크가 반환됩니다. 비밀번호 링크인 경우 `password` 항목도 함께 반환됩니다.
 

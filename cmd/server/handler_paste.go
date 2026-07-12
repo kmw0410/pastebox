@@ -9,6 +9,8 @@ import (
 	pastebox "pastebox/internal"
 )
 
+const maxHTMLViewSize int64 = 10 << 20 // 10 MiB
+
 func (a *app) deleteHandler(w http.ResponseWriter, r *http.Request, id string, token string) {
 	if r.Method == http.MethodHead {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -65,7 +67,7 @@ func (a *app) viewHandler(w http.ResponseWriter, r *http.Request, id string) {
 		raw := responseFormat(r) == "raw"
 		browser := isBrowserRequest(r)
 
-		if !raw && browser && isTextEntry(entry) {
+		if !raw && browser && entry.Meta.Size <= maxHTMLViewSize && isTextEntry(entry) {
 			content, err := io.ReadAll(entry.File)
 			if err != nil {
 				return err

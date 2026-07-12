@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"html/template"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -87,6 +88,61 @@ func TestViewHandlerGetConsumesOncePaste(t *testing.T) {
 			_ = entry.File.Close()
 		}
 		t.Fatalf("expected ErrNotFound after GET, got entry=%v err=%v", entry != nil, err)
+	}
+}
+
+func TestViewHandlerLimitsHTMLRenderingByPasteSize(t *testing.T) {
+	tests := []struct {
+		name        string
+		size        int64
+		contentType string
+		wantBody    string
+	}{
+		{
+			name:        "renders paste at HTML view limit",
+			size:        maxHTMLViewSize,
+			contentType: "text/html; charset=utf-8",
+			wantBody:    "html-view",
+		},
+		{
+			name:        "streams paste above HTML view limit",
+			size:        maxHTMLViewSize + 1,
+			contentType: "text/plain; charset=utf-8",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := newTestApp(t)
+			app.paste = template.Must(template.New("paste").Parse("html-view"))
+			content := bytes.Repeat([]byte("a"), int(tt.size))
+			meta, _, _, _, err := app.store.Create(bytes.NewReader(content), "large.txt", "text/plain; charset=utf-8", false, mustParsePolicy(t, "temporary"), "large1")
+			if err != nil {
+				t.Fatalf("Create failed: %v", err)
+			}
+
+			req := httptest.NewRequest(http.MethodGet, "/"+meta.ID, nil)
+			req.Header.Set("Accept", "text/html")
+			rr := httptest.NewRecorder()
+
+			app.viewHandler(rr, req, meta.ID)
+
+			if rr.Code != http.StatusOK {
+				t.Fatalf("expected status 200, got %d", rr.Code)
+			}
+			if got := rr.Header().Get("Content-Type"); got != tt.contentType {
+				t.Fatalf("Content-Type = %q, want %q", got, tt.contentType)
+			}
+			if tt.wantBody != "" {
+				if got := rr.Body.String(); got != tt.wantBody {
+					t.Fatalf("body = %q, want %q", got, tt.wantBody)
+				}
+				return
+			}
+			if got := int64(rr.Body.Len()); got != tt.size {
+				t.Fatalf("streamed body size = %d, want %d", got, tt.size)
+			}
+		})
 	}
 }
 

@@ -3,8 +3,6 @@ curl 기반 파일 공유 서비스
 
 [English](./README.md) | Korean
 
-CLI 패키지: [설치 및 사용법](./package_ko.md)
-
 ![](./main.png)
 
 <details>

@@ -3,8 +3,6 @@ curl-based file sharing service
 
 English | [Korean](./README_ko.md)
 
-CLI packages: [installation and usage](./package.md)
-
 ![](./main.png)
 
 <details>

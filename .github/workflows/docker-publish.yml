@@ -1,4 +1,4 @@
-name: Release Build
+name: Docker Publish
 
 on:
   push:
@@ -13,88 +13,12 @@ on:
       - "**/*.png"
   workflow_dispatch:
 
-concurrency:
-  group: release-build
-  cancel-in-progress: false
-
 jobs:
-  prepare:
-    runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-
-    outputs:
-      scope: ${{ steps.scope.outputs.scope }}
-      tag: ${{ steps.version.outputs.tag }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Determine release scope
-        id: scope
-        shell: bash
-        run: |
-          SCOPE="full"
-
-          if [ "${{ github.event_name }}" = "push" ]; then
-            BEFORE="${{ github.event.before }}"
-            AFTER="${{ github.sha }}"
-
-            if [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
-              CHANGED_FILES="$(git diff --name-only "$BEFORE" "$AFTER")"
-            else
-              CHANGED_FILES="$(git diff-tree --root --no-commit-id --name-only -r "$AFTER")"
-            fi
-
-            SCOPE="cli"
-            while IFS= read -r FILE; do
-              [ -z "$FILE" ] && continue
-
-              case "$FILE" in
-                cli/*)
-                  ;;
-                .github/workflows/*|*/LICENSE|LICENSE|*.md|*/*.md|*.jpg|*/*.jpg|*.jpeg|*/*.jpeg|*.png|*/*.png)
-                  ;;
-                *)
-                  SCOPE="full"
-                  break
-                  ;;
-              esac
-            done <<< "$CHANGED_FILES"
-          fi
-
-          echo "scope=$SCOPE" >> "$GITHUB_OUTPUT"
-          echo "Release scope: $SCOPE"
-
-      - name: Set release tag
-        id: version
-        shell: bash
-        run: |
-          BASE_TAG="v$(date -u +'%y.%m.%d')"
-          TAG="$BASE_TAG"
-          COUNT=0
-
-          git fetch --tags --force
-
-          while git rev-parse "$TAG" >/dev/null 2>&1; do
-            COUNT=$((COUNT + 1))
-            TAG="${BASE_TAG}-${COUNT}"
-          done
-
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "Using tag: $TAG"
-
   docker:
-    needs: prepare
-    if: needs.prepare.outputs.scope == 'full'
     runs-on: [self-hosted, Linux, X64]
 
     permissions:
-      contents: read
+      contents: write
       packages: write
 
     steps:
@@ -111,6 +35,24 @@ jobs:
           IMAGE="ghcr.io/${REPO}"
           echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
           echo "Using image: ${IMAGE}"
+
+      - name: Set image tag
+        id: version
+        shell: bash
+        run: |
+          BASE_TAG="v$(date -u +'%y.%m.%d')"
+          TAG="$BASE_TAG"
+          COUNT=0
+
+          git fetch --tags --force
+
+          while git rev-parse "$TAG" >/dev/null 2>&1; do
+            COUNT=$((COUNT + 1))
+            TAG="${BASE_TAG}-${COUNT}"
+          done
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Using tag: $TAG"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -134,40 +76,20 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             ${{ steps.image.outputs.image }}:latest
-            ${{ steps.image.outputs.image }}:${{ needs.prepare.outputs.tag }}
+            ${{ steps.image.outputs.image }}:${{ steps.version.outputs.tag }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.description=Pastebox
             org.opencontainers.image.licenses=MIT
-            org.opencontainers.image.version=${{ needs.prepare.outputs.tag }}
-
-  tag:
-    needs:
-      - prepare
-      - docker
-    if: >
-      always() &&
-      needs.prepare.result == 'success' &&
-      (needs.prepare.outputs.scope == 'cli' || needs.docker.result == 'success')
-    runs-on: ubuntu-latest
-
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
+            org.opencontainers.image.version=${{ steps.version.outputs.tag }}
 
       - name: Create git tag
         shell: bash
         run: |
-          TAG="${{ needs.prepare.outputs.tag }}"
-          SCOPE="${{ needs.prepare.outputs.scope }}"
+          TAG="${{ steps.version.outputs.tag }}"
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git tag -a "$TAG" -m "Release $TAG" -m "release-scope: $SCOPE"
+          git tag "$TAG"
           git push origin "$TAG"

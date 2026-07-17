@@ -65,9 +65,42 @@ func TestLoadConfigMissingFile(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	for _, want := range []string{path, "Create it with:", `"server_url"`} {
+	for _, want := range []string{path, "Run pb without arguments", "set server_url"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Fatalf("error = %q, want %q", err, want)
 		}
+	}
+}
+
+func TestInitializeConfig(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "nested", "pastebox", "config.json")
+	created, err := initializeConfig(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !created {
+		t.Fatal("config was not created")
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != initialConfig {
+		t.Fatalf("config = %q", data)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o600 {
+		t.Fatalf("config mode = %o", info.Mode().Perm())
+	}
+
+	created, err = initializeConfig(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if created {
+		t.Fatal("existing config was overwritten")
 	}
 }

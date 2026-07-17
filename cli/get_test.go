@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -62,5 +64,36 @@ func TestRunConfigValidate(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "valid config: "+path) || !strings.Contains(stdout.String(), "server_url: https://paste.example.com") {
 		t.Fatalf("stdout = %q", stdout.String())
+	}
+}
+
+func TestRunWithoutArgumentsCreatesConfig(t *testing.T) {
+	path := filepath.Join(t.TempDir(), ".config", "pastebox", "config.json")
+	app, stdout, stderr := testApplication(path, bytes.NewReader(nil))
+	app.stdinTTY = true
+	if code := app.run(nil); code != 0 {
+		t.Fatalf("exit = %d, stderr = %s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "created config: "+path) || !strings.Contains(stdout.String(), "Edit server_url") {
+		t.Fatalf("stdout = %q", stdout.String())
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != initialConfig {
+		t.Fatalf("config = %q", data)
+	}
+}
+
+func TestRunWithoutArgumentsDoesNotOverwriteConfig(t *testing.T) {
+	path := writeTestConfig(t, `{"server_url":"https://paste.example.com"}`)
+	app, _, stderr := testApplication(path, bytes.NewReader(nil))
+	app.stdinTTY = true
+	if code := app.run(nil); code != 2 {
+		t.Fatalf("exit = %d", code)
+	}
+	if !strings.Contains(stderr.String(), "no input") {
+		t.Fatalf("stderr = %q", stderr.String())
 	}
 }

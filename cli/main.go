@@ -114,6 +114,17 @@ func (a application) runUpload(args []string) int {
 		fmt.Fprintln(a.stderr, "invalid arguments: provide one file or use stdin")
 		return 2
 	}
+	if len(args) == 0 && a.stdinTTY {
+		created, err := initializeConfig(a.configPath)
+		if err != nil {
+			fmt.Fprintln(a.stderr, err)
+			return 2
+		}
+		if created {
+			fmt.Fprintf(a.stdout, "created config: %s\nEdit server_url in this file before using pb.\n", a.configPath)
+			return 0
+		}
+	}
 
 	filename := ""
 	reader := a.stdin

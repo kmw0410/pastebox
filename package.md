@@ -37,16 +37,26 @@ The CLI reads only this per-user configuration file:
 ~/.config/pastebox/config.json
 ```
 
-Create it manually:
+Run `pb` without input once to create it:
 
 ```bash
-mkdir -p ~/.config/pastebox
-chmod 700 ~/.config/pastebox
-printf '%s\n' '{"server_url":"https://paste.example.com"}' > ~/.config/pastebox/config.json
-chmod 600 ~/.config/pastebox/config.json
+pb
 ```
 
-Replace the example URL with your Pastebox server. A server installed below a URL path is also supported, for example `https://example.com/pastebox`.
+```text
+created config: /home/user/.config/pastebox/config.json
+Edit server_url in this file before using pb.
+```
+
+The generated file has user-only `0600` permissions and an empty `server_url`. Edit it and set your Pastebox server before uploading:
+
+```json
+{
+  "server_url": "https://paste.example.com"
+}
+```
+
+A server installed below a URL path is also supported, for example `https://example.com/pastebox`. Running `pb` again never overwrites an existing config file.
 
 Validate the file before uploading:
 

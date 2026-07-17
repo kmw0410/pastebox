@@ -16,6 +16,8 @@ type config struct {
 	ServerURL string
 }
 
+const initialConfig = "{\n  \"server_url\": \"\"\n}\n"
+
 func defaultConfigPath() string {
 	home, err := os.UserHomeDir()
 	if err != nil || home == "" {
@@ -24,11 +26,39 @@ func defaultConfigPath() string {
 	return filepath.Join(home, ".config", "pastebox", "config.json")
 }
 
+func initializeConfig(path string) (bool, error) {
+	if _, err := os.Stat(path); err == nil {
+		return false, nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return false, fmt.Errorf("cannot inspect config %s: %w", path, err)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return false, fmt.Errorf("cannot create config directory %s: %w", filepath.Dir(path), err)
+	}
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		if errors.Is(err, os.ErrExist) {
+			return false, nil
+		}
+		return false, fmt.Errorf("cannot create config %s: %w", path, err)
+	}
+	if _, err := file.WriteString(initialConfig); err != nil {
+		_ = file.Close()
+		_ = os.Remove(path)
+		return false, fmt.Errorf("cannot write config %s: %w", path, err)
+	}
+	if err := file.Close(); err != nil {
+		return false, fmt.Errorf("cannot close config %s: %w", path, err)
+	}
+	return true, nil
+}
+
 func loadConfig(path string) (config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return config{}, fmt.Errorf("config file not found: %s\n\nCreate it with:\n{\n  \"server_url\": \"https://paste.example.com\"\n}", path)
+			return config{}, fmt.Errorf("config file not found: %s\n\nRun pb without arguments to create it, then set server_url before use", path)
 		}
 		return config{}, fmt.Errorf("cannot read config %s: %w", path, err)
 	}

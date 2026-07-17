@@ -37,16 +37,26 @@ CLI는 사용자별로 다음 설정 파일만 읽습니다.
 ~/.config/pastebox/config.json
 ```
 
-설정 파일을 직접 생성합니다.
+입력 없이 `pb`를 한 번 실행하면 설정 파일이 생성됩니다.
 
 ```bash
-mkdir -p ~/.config/pastebox
-chmod 700 ~/.config/pastebox
-printf '%s\n' '{"server_url":"https://paste.example.com"}' > ~/.config/pastebox/config.json
-chmod 600 ~/.config/pastebox/config.json
+pb
 ```
 
-예시 URL을 실제 Pastebox 서버 주소로 바꾸세요. `https://example.com/pastebox`처럼 하위 경로에 설치된 서버도 지원합니다.
+```text
+created config: /home/user/.config/pastebox/config.json
+Edit server_url in this file before using pb.
+```
+
+생성된 파일은 사용자만 읽고 쓸 수 있는 `0600` 권한이며 `server_url`은 빈 값입니다. 업로드하기 전에 실제 Pastebox 서버 주소로 수정하세요.
+
+```json
+{
+  "server_url": "https://paste.example.com"
+}
+```
+
+`https://example.com/pastebox`처럼 하위 경로에 설치된 서버도 지원합니다. `pb`를 다시 실행해도 기존 설정 파일은 덮어쓰지 않습니다.
 
 업로드 전에 설정을 검사할 수 있습니다.
 

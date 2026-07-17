@@ -3,19 +3,17 @@ name: Release
 on:
   workflow_run:
     workflows:
-      - Docker Publish
+      - CLI Package Build
     types:
       - completed
-  workflow_dispatch:
 
 jobs:
   release:
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
 
     permissions:
+      actions: read
       contents: write
 
     steps:
@@ -23,127 +21,33 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || github.event.workflow_run.head_sha }}
+          ref: ${{ github.event.workflow_run.head_sha }}
 
-      - name: Resolve release tag
+      - name: Download CLI packages
+        uses: actions/download-artifact@v5
+        with:
+          name: pastebox-cli-packages
+          path: ${{ runner.temp }}/pastebox-cli-packages
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve release tag from package artifact
         id: tag
         shell: bash
         run: |
           git fetch --tags --force
+          PACKAGE_DIR="$RUNNER_TEMP/pastebox-cli-packages"
+          TAG="$(tr -d '\r\n' < "$PACKAGE_DIR/release-tag.txt")"
 
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG="$(git tag --sort=-v:refname | grep '^v' | head -n 1)"
-          else
-            SHA="${{ github.event.workflow_run.head_sha }}"
-            TAG="$(git tag --points-at "$SHA" | grep '^v' | sort -V | tail -n 1)"
-          fi
-
-          if [ -z "$TAG" ]; then
-            echo "No release tag found." >&2
+          if [[ ! "$TAG" =~ ^v[0-9][0-9A-Za-z._-]*$ ]]; then
+            echo "Invalid release tag in package artifact: $TAG" >&2
             exit 1
           fi
 
+          git rev-parse --verify "${TAG}^{commit}" >/dev/null
+
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Using tag: $TAG"
-
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version-file: cli/go.mod
-          cache: false
-
-      - name: Install nFPM
-        shell: bash
-        run: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.47.0
-
-      - name: Build CLI binaries
-        shell: bash
-        run: |
-          TAG="${{ steps.tag.outputs.tag }}"
-          SHORT_SHA="$(git rev-parse --short HEAD)"
-          mkdir -p dist/build
-
-          for ARCH in amd64 arm64; do
-            (
-              cd cli
-              CGO_ENABLED=0 GOOS=linux GOARCH="$ARCH" go build \
-                -trimpath \
-                -ldflags "-s -w -X main.version=${TAG} -X main.commit=${SHORT_SHA}" \
-                -o "../dist/build/pb_${ARCH}" .
-            )
-          done
-
-      - name: Build Linux packages
-        shell: bash
-        run: |
-          TAG="${{ steps.tag.outputs.tag }}"
-          PACKAGE_VERSION="${TAG#v}"
-          PACKAGE_VERSION="${PACKAGE_VERSION//-/.}"
-
-          for ARCH in amd64 arm64; do
-            if [ "$ARCH" = "amd64" ]; then
-              DEB_ARCH="amd64"
-              ARCH_ARCH="x86_64"
-            else
-              DEB_ARCH="arm64"
-              ARCH_ARCH="aarch64"
-            fi
-
-            export PACKAGE_ARCH="$ARCH"
-            export PACKAGE_VERSION
-            export PACKAGE_BINARY="$PWD/dist/build/pb_${ARCH}"
-
-            nfpm package \
-              --config cli/packaging/nfpm.yaml \
-              --packager deb \
-              --target "dist/pastebox-cli_${PACKAGE_VERSION}-1_${DEB_ARCH}.deb"
-            nfpm package \
-              --config cli/packaging/nfpm.yaml \
-              --packager archlinux \
-              --target "dist/pastebox-cli-${PACKAGE_VERSION}-1-${ARCH_ARCH}.pkg.tar.zst"
-          done
-
-          (
-            cd dist
-            sha256sum ./*.deb ./*.pkg.tar.zst > checksums.txt
-          )
-
-      - name: Set up QEMU for package tests
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
-      - name: Verify Linux packages
-        shell: bash
-        run: |
-          TAG="${{ steps.tag.outputs.tag }}"
-          PACKAGE_VERSION="${TAG#v}"
-          PACKAGE_VERSION="${PACKAGE_VERSION//-/.}"
-
-          for ENTRY in "amd64:amd64" "arm64:arm64"; do
-            PLATFORM="${ENTRY%%:*}"
-            DEB_ARCH="${ENTRY##*:}"
-            DEB_FILE="pastebox-cli_${PACKAGE_VERSION}-1_${DEB_ARCH}.deb"
-            docker run --rm \
-              --platform "linux/${PLATFORM}" \
-              -v "$PWD/dist:/dist:ro" \
-              debian:stable-slim \
-              sh -c "dpkg -i /dist/${DEB_FILE} && pb version | grep -F '${TAG}'"
-          done
-
-          ARCH_FILE="pastebox-cli-${PACKAGE_VERSION}-1-x86_64.pkg.tar.zst"
-          docker run --rm \
-            --platform linux/amd64 \
-            -v "$PWD/dist:/dist:ro" \
-            archlinux:base \
-            sh -c "pacman -U --noconfirm /dist/${ARCH_FILE} && pb version | grep -F '${TAG}'"
-
-          ARM_ARCH_FILE="pastebox-cli-${PACKAGE_VERSION}-1-aarch64.pkg.tar.zst"
-          docker run --rm \
-            --platform linux/amd64 \
-            -v "$PWD/dist:/dist:ro" \
-            archlinux:base \
-            sh -c "bsdtar -xOf /dist/${ARM_ARCH_FILE} .PKGINFO | grep -F 'arch = aarch64'"
 
       - name: Generate release notes
         id: notes
@@ -181,30 +85,36 @@ jobs:
             echo
           } > release-notes.md
 
-      - name: Create GitHub Release
+      - name: Create immutable GitHub Release with CLI packages
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           TAG="${{ steps.tag.outputs.tag }}"
+          PACKAGE_DIR="$RUNNER_TEMP/pastebox-cli-packages"
 
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release edit "$TAG" \
-              --title "$TAG" \
-              --notes-file release-notes.md
-          else
-            gh release create "$TAG" \
-              --title "$TAG" \
-              --notes-file release-notes.md
+            RELEASE_ASSETS="$(gh release view "$TAG" --json assets --jq '.assets[].name')"
+            MISSING=0
+            for FILE in "$PACKAGE_DIR"/*.deb "$PACKAGE_DIR"/*.pkg.tar.zst "$PACKAGE_DIR/checksums.txt"; do
+              NAME="$(basename "$FILE")"
+              if ! grep -Fxq "$NAME" <<< "$RELEASE_ASSETS"; then
+                echo "Immutable release $TAG is missing asset: $NAME" >&2
+                MISSING=1
+              fi
+            done
+            if [ "$MISSING" -ne 0 ]; then
+              echo "Create a new release tag; published immutable releases cannot accept additional assets." >&2
+              exit 1
+            fi
+            echo "Release $TAG already contains every CLI package asset."
+            exit 0
           fi
 
-      - name: Upload CLI packages
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          gh release upload "${{ steps.tag.outputs.tag }}" \
-            dist/*.deb \
-            dist/*.pkg.tar.zst \
-            dist/checksums.txt \
-            --clobber
+          gh release create "$TAG" \
+            "$PACKAGE_DIR"/*.deb \
+            "$PACKAGE_DIR"/*.pkg.tar.zst \
+            "$PACKAGE_DIR/checksums.txt" \
+            --verify-tag \
+            --title "$TAG" \
+            --notes-file release-notes.md

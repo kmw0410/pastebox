@@ -438,3 +438,62 @@ When editing, preserve:
 - clone UX from paste view page
 - language fallback correctness
 - Docker runtime mirror/timezone behavior
+
+## 20. Planned CLI and Linux Packages
+The terminal client should be developed as an independent Go module inside this repository rather than under `cmd/pb`.
+
+Planned layout:
+```text
+pastebox/
+├── cli/
+│   ├── go.mod
+│   ├── main.go
+│   ├── config.go
+│   ├── upload.go
+│   ├── get.go
+│   ├── output.go
+│   ├── *_test.go
+│   └── packaging/
+│       └── nfpm.yaml
+├── package.md
+└── package_ko.md
+```
+
+CLI architecture and behavior:
+- The installed package name should be `pastebox-cli`, and the installed command should be `pb`.
+- Keep `cli/` as a separate Go module so CLI dependencies do not enter the server module.
+- The CLI must communicate with Pastebox only through the public HTTP API and must not import server `internal` packages.
+- Support file uploads with multipart requests so original filenames are preserved.
+- Support stdin uploads with streaming raw request bodies; do not load full uploads into memory.
+- Support temporary uploads by default plus permanent, once, custom expiration, generated password, custom code, and label options.
+- Support normal human-readable output, public-URL-only quiet output, and JSON output.
+- Support raw paste retrieval with `pb get`; send paste passwords through the `paste-password` header rather than a query string.
+- Never print secrets in diagnostic logs. Normal successful output may display the password and manage/delete URLs returned for that upload because the user needs those one-time results.
+- Keep CLI argument/config errors distinct from network/server errors through documented nonzero exit codes.
+
+CLI configuration:
+- Read configuration only from `~/.config/pastebox/config.json`.
+- Initially support only this structure, with no config schema version:
+  ```json
+  {
+    "server_url": "https://paste.example.com"
+  }
+  ```
+- Do not initially add profiles, `--server`, `PASTEBOX_URL`, `XDG_CONFIG_HOME`, alternate config paths, or config set/get/show commands.
+- Provide only `pb config validate` for explicit config inspection; normal CLI operations must use the same validation path automatically.
+- Validation errors must identify the config path and the precise problem. Include the JSON line and column when available, name unknown or mistyped fields, and explain missing fields, invalid value types, empty values, unsupported URL schemes, missing hosts, query/fragment usage, and embedded URL credentials.
+- Allow only `http://` and `https://` server URLs. Allow deployments below a URL path, normalize trailing slashes internally, and reject query strings, fragments, and embedded user credentials.
+- If the config file is missing, report its exact expected path and show a minimal valid example.
+- Package installation must not create a config file inside a user's home directory.
+
+Testing and packaging:
+- Run server tests and CLI-module tests separately because root `go test ./...` does not traverse a nested Go module.
+- Test file/stdin streaming, headers and policies, output modes, raw/password retrieval, URL joining, config diagnostics, HTTP error mapping, exit codes, and secret-safe failures with local HTTP test servers.
+- Build static CLI binaries with `CGO_ENABLED=0` for `linux/amd64` and `linux/arm64`.
+- Use nFPM from `cli/packaging/nfpm.yaml` to create Debian `.deb` packages and Arch Linux `.pkg.tar.zst` packages.
+- Map `amd64` to Debian `amd64` and Arch `x86_64`; map `arm64` to Debian `arm64` and Arch `aarch64`.
+- Normalize date-based Git tags for package versions so tags such as `v26.07.17-1` remain upgradeable on both Debian and Arch, while `pb version` retains the original Git tag and commit ID.
+- Produce SHA-256 checksums and verify package installation with Debian/Ubuntu and Arch Linux containers before attaching artifacts to a GitHub Release.
+- Extend the existing Docker-tag-to-Release workflow so CLI packages use the same release tag and are attached to the existing GitHub Release.
+- Keep CLI/package documentation in root `package.md` and `package_ko.md`; the main English and Korean READMEs should contain only concise links to the matching package documents.
+- Install the CLI binary at `/usr/bin/pb` and package documentation under `/usr/share/doc/pastebox-cli/`.

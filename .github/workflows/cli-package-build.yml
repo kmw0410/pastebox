@@ -3,7 +3,7 @@ name: CLI Package Build
 on:
   workflow_run:
     workflows:
-      - Docker Publish
+      - Release Build
     types:
       - completed
 
@@ -36,8 +36,17 @@ jobs:
           fi
 
           git checkout --detach "$TAG"
+
+          SCOPE="$(git for-each-ref --format='%(contents)' "refs/tags/$TAG" | sed -n 's/^release-scope: //p' | tail -n 1)"
+          if [ "$SCOPE" != "cli" ] && [ "$SCOPE" != "full" ]; then
+            echo "Invalid or missing release scope for tag $TAG." >&2
+            exit 1
+          fi
+
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "scope=$SCOPE" >> "$GITHUB_OUTPUT"
           echo "Using tag: $TAG"
+          echo "Release scope: $SCOPE"
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -97,6 +106,7 @@ jobs:
           done
 
           printf '%s\n' "$TAG" > dist/release-tag.txt
+          printf '%s\n' "${{ steps.tag.outputs.scope }}" > dist/release-scope.txt
           (
             cd dist
             sha256sum ./*.deb ./*.pkg.tar.zst > checksums.txt
@@ -148,5 +158,6 @@ jobs:
             dist/*.pkg.tar.zst
             dist/checksums.txt
             dist/release-tag.txt
+            dist/release-scope.txt
           if-no-files-found: error
           retention-days: 7

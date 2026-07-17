@@ -40,16 +40,23 @@ jobs:
           git fetch --tags --force
           PACKAGE_DIR="$RUNNER_TEMP/pastebox-cli-packages"
           TAG="$(tr -d '\r\n' < "$PACKAGE_DIR/release-tag.txt")"
+          SCOPE="$(tr -d '\r\n' < "$PACKAGE_DIR/release-scope.txt")"
 
           if [[ ! "$TAG" =~ ^v[0-9][0-9A-Za-z._-]*$ ]]; then
             echo "Invalid release tag in package artifact: $TAG" >&2
+            exit 1
+          fi
+          if [ "$SCOPE" != "cli" ] && [ "$SCOPE" != "full" ]; then
+            echo "Invalid release scope in package artifact: $SCOPE" >&2
             exit 1
           fi
 
           git rev-parse --verify "${TAG}^{commit}" >/dev/null
 
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "scope=$SCOPE" >> "$GITHUB_OUTPUT"
           echo "Using tag: $TAG"
+          echo "Release scope: $SCOPE"
 
       - name: Generate release notes
         id: notes
@@ -58,18 +65,24 @@ jobs:
           TAG="${{ steps.tag.outputs.tag }}"
           REPO="${GITHUB_REPOSITORY,,}"
           IMAGE="ghcr.io/${REPO}"
+          SCOPE="${{ steps.tag.outputs.scope }}"
 
           {
-            echo "## Container Images"
-            echo
-            echo "- \`${IMAGE}:latest\`"
-            echo "- \`${IMAGE}:${TAG}\`"
-            echo
-            echo "## Supported Platforms"
-            echo
-            echo "- linux/amd64"
-            echo "- linux/arm64"
-            echo
+            if [ "$SCOPE" = "full" ]; then
+              echo "## Container Images"
+              echo
+              echo "- \`${IMAGE}:latest\`"
+              echo "- \`${IMAGE}:${TAG}\`"
+              echo
+              echo "## Container Platforms"
+              echo
+              echo "- linux/amd64"
+              echo "- linux/arm64"
+              echo
+            else
+              echo "This release contains CLI package changes only. No container image was published for \`${TAG}\`."
+              echo
+            fi
             echo "## CLI Packages"
             echo
             echo "- Debian / Ubuntu: .deb"

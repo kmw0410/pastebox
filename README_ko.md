@@ -3,6 +3,8 @@ curl 기반 파일 공유 서비스
 
 [English](./README.md) | Korean
 
+CLI 패키지와 사용법은 [pastebox-cli](https://github.com/kmw0410/pastebox-cli)에서 확인하세요.
+
 ![](./main.png)
 
 <details>

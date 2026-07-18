@@ -3,6 +3,8 @@ curl-based file sharing service
 
 English | [Korean](./README_ko.md)
 
+For CLI packages and usage, see [pastebox-cli](https://github.com/kmw0410/pastebox-cli).
+
 ![](./main.png)
 
 <details>

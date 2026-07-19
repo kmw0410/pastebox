@@ -216,7 +216,11 @@ func (s *Store) createMySQLWithID(id string, meta Metadata, r io.Reader) (Metada
 	}
 
 	counter := &countingReader{r: r}
-	chunks := newMySQLChunkWriter(tx, meta.ID)
+	chunks, err := newMySQLChunkWriter(tx, meta.ID)
+	if err != nil {
+		return Metadata{}, err
+	}
+	defer chunks.Close()
 	encoder, err := zstd.NewWriter(chunks, zstd.WithEncoderLevel(zstd.EncoderLevelFromZstd(s.zstdLevel)))
 	if err != nil {
 		return Metadata{}, err
@@ -225,6 +229,7 @@ func (s *Store) createMySQLWithID(id string, meta Metadata, r io.Reader) (Metada
 	_, copyErr := io.Copy(encoder, counter)
 	closeErr := encoder.Close()
 	flushErr := chunks.Flush()
+	statementCloseErr := chunks.Close()
 	if copyErr != nil {
 		return Metadata{}, copyErr
 	}
@@ -233,6 +238,9 @@ func (s *Store) createMySQLWithID(id string, meta Metadata, r io.Reader) (Metada
 	}
 	if flushErr != nil {
 		return Metadata{}, flushErr
+	}
+	if statementCloseErr != nil {
+		return Metadata{}, statementCloseErr
 	}
 
 	meta.Size = counter.n
@@ -289,8 +297,8 @@ func (s *Store) viewMySQL(id string, password string, fn func(*Entry) error) err
 		return ErrNotFound
 	}
 
-	unlock := s.locks.Lock(id)
-	defer unlock()
+	unlock := s.locks.RLock(id)
+	defer func() { unlock() }()
 
 	meta, err := s.readMySQLMetadata(id)
 	if err != nil {
@@ -304,6 +312,23 @@ func (s *Store) viewMySQL(id string, password string, fn func(*Entry) error) err
 
 	if err := checkPassword(meta, password); err != nil {
 		return err
+	}
+
+	if strings.EqualFold(meta.DataPolicy, "once") {
+		unlock()
+		unlock = s.locks.Lock(id)
+
+		meta, err = s.readMySQLMetadata(id)
+		if err != nil {
+			return ErrNotFound
+		}
+		if isExpired(meta, time.Now().UTC()) {
+			_ = s.deleteMySQLRows(id)
+			return ErrNotFound
+		}
+		if err := checkPassword(meta, password); err != nil {
+			return err
+		}
 	}
 
 	reader, err := s.openMySQLContent(id)
@@ -322,7 +347,10 @@ func (s *Store) viewMySQL(id string, password string, fn func(*Entry) error) err
 	}
 
 	if strings.EqualFold(meta.DataPolicy, "once") {
-		return s.deleteMySQLRows(id)
+		if err := s.deleteMySQLRows(id); err != nil {
+			return err
+		}
+		s.invalidatePasteList()
 	}
 
 	return nil
@@ -771,19 +799,27 @@ func (r *countingReader) Read(p []byte) (int, error) {
 }
 
 type mysqlChunkWriter struct {
-	tx             *sql.Tx
+	statement      *sql.Stmt
 	pasteID        string
 	chunkIndex     int
 	buf            []byte
 	compressedSize int64
 }
 
-func newMySQLChunkWriter(tx *sql.Tx, pasteID string) *mysqlChunkWriter {
-	return &mysqlChunkWriter{
-		tx:      tx,
-		pasteID: pasteID,
-		buf:     make([]byte, 0, mysqlChunkSize),
+func newMySQLChunkWriter(tx *sql.Tx, pasteID string) (*mysqlChunkWriter, error) {
+	statement, err := tx.Prepare(`
+		INSERT INTO paste_content_chunks (paste_id, chunk_index, data)
+		VALUES (?, ?, ?)
+	`)
+	if err != nil {
+		return nil, err
 	}
+
+	return &mysqlChunkWriter{
+		statement: statement,
+		pasteID:   pasteID,
+		buf:       make([]byte, 0, mysqlChunkSize),
+	}, nil
 }
 
 func (w *mysqlChunkWriter) Write(p []byte) (int, error) {
@@ -812,20 +848,25 @@ func (w *mysqlChunkWriter) Flush() error {
 		return nil
 	}
 
-	data := append([]byte(nil), w.buf...)
-	_, err := w.tx.Exec(`
-		INSERT INTO paste_content_chunks (paste_id, chunk_index, data)
-		VALUES (?, ?, ?)
-	`, w.pasteID, w.chunkIndex, data)
+	_, err := w.statement.Exec(w.pasteID, w.chunkIndex, w.buf)
 	if err != nil {
 		return err
 	}
 
-	w.compressedSize += int64(len(data))
+	w.compressedSize += int64(len(w.buf))
 	w.chunkIndex++
 	w.buf = w.buf[:0]
 
 	return nil
+}
+
+func (w *mysqlChunkWriter) Close() error {
+	if w.statement == nil {
+		return nil
+	}
+	err := w.statement.Close()
+	w.statement = nil
+	return err
 }
 
 type mysqlChunkReader struct {

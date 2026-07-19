@@ -13,10 +13,18 @@ import (
 )
 
 const discordWebhookTimeout = 5 * time.Second
+const discordWebhookQueueSize = 64
+const discordWebhookWorkers = 2
 
 type discordWebhookNotifier struct {
 	url    string
 	client *http.Client
+	queue  chan discordNotification
+}
+
+type discordNotification struct {
+	event discordPasteEvent
+	i18n  *localizer
 }
 
 type discordPasteEvent struct {
@@ -65,11 +73,39 @@ func newDiscordWebhookNotifier(webhookURL string) *discordWebhookNotifier {
 		return nil
 	}
 
-	return &discordWebhookNotifier{
+	notifier := &discordWebhookNotifier{
 		url: webhookURL,
 		client: &http.Client{
 			Timeout: discordWebhookTimeout,
 		},
+		queue: make(chan discordNotification, discordWebhookQueueSize),
+	}
+	for range discordWebhookWorkers {
+		go notifier.runWorker()
+	}
+	return notifier
+}
+
+func (n *discordWebhookNotifier) runWorker() {
+	for notification := range n.queue {
+		ctx, cancel := context.WithTimeout(context.Background(), discordWebhookTimeout)
+		err := n.notify(ctx, notification.event, notification.i18n)
+		cancel()
+		if err != nil {
+			logEvent("discord.webhook_failed", map[string]any{
+				"error": err,
+				"event": notification.event.Action,
+			})
+		}
+	}
+}
+
+func (n *discordWebhookNotifier) enqueue(event discordPasteEvent, i18n *localizer) bool {
+	select {
+	case n.queue <- discordNotification{event: event, i18n: i18n}:
+		return true
+	default:
+		return false
 	}
 }
 
@@ -108,17 +144,12 @@ func (a *app) notifyDiscordPasteEvent(event discordPasteEvent) {
 		return
 	}
 
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), discordWebhookTimeout)
-		defer cancel()
-
-		if err := a.discordWebhook.notify(ctx, event, a.i18n); err != nil {
-			logEvent("discord.webhook_failed", map[string]any{
-				"error": err,
-				"event": event.Action,
-			})
-		}
-	}()
+	if !a.discordWebhook.enqueue(event, a.i18n) {
+		logEvent("discord.webhook_dropped", map[string]any{
+			"event":  event.Action,
+			"reason": "queue_full",
+		})
+	}
 }
 
 func (a *app) notifyDiscordPasteCreated(r *http.Request, meta pastebox.Metadata, protected bool, source string) {

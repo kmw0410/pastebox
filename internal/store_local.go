@@ -127,8 +127,8 @@ func (s *Store) viewLocal(id string, password string, fn func(*Entry) error) err
 		return ErrNotFound
 	}
 
-	unlock := s.locks.Lock(id)
-	defer unlock()
+	unlock := s.locks.RLock(id)
+	defer func() { unlock() }()
 
 	path := s.path(id)
 
@@ -145,6 +145,24 @@ func (s *Store) viewLocal(id string, password string, fn func(*Entry) error) err
 
 	if err := checkPassword(meta, password); err != nil {
 		return err
+	}
+
+	if strings.EqualFold(meta.DataPolicy, "once") {
+		unlock()
+		unlock = s.locks.Lock(id)
+
+		meta, err = s.readMetadata(id)
+		if err != nil {
+			return ErrNotFound
+		}
+		if isExpired(meta, time.Now().UTC()) {
+			_ = os.Remove(path)
+			_ = os.Remove(metaPath(path))
+			return ErrNotFound
+		}
+		if err := checkPassword(meta, password); err != nil {
+			return err
+		}
 	}
 
 	file, err := os.Open(path)
@@ -179,6 +197,7 @@ func (s *Store) viewLocal(id string, password string, fn func(*Entry) error) err
 		if metaErr != nil && !errors.Is(metaErr, os.ErrNotExist) {
 			return metaErr
 		}
+		s.invalidatePasteList()
 	}
 
 	return nil

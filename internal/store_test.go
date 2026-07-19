@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -109,6 +110,140 @@ func TestStoreViewConsumesOnceOnSuccess(t *testing.T) {
 			_ = entry.File.Close()
 		}
 		t.Fatalf("expected ErrNotFound after successful once view, got entry=%v err=%v", entry != nil, err)
+	}
+}
+
+func TestStoreViewAllowsConcurrentReads(t *testing.T) {
+	store := newTestStore(t)
+	meta, _, _, _, err := store.Create(strings.NewReader("shared"), "shared.txt", "text/plain", false, mustParsePolicy(t, "permanent"), "shared1")
+	if err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	entered := make(chan struct{}, 2)
+	release := make(chan struct{})
+	errs := make(chan error, 2)
+	var workers sync.WaitGroup
+	for range 2 {
+		workers.Add(1)
+		go func() {
+			defer workers.Done()
+			errs <- store.View(meta.ID, "", func(entry *Entry) error {
+				entered <- struct{}{}
+				<-release
+				_, readErr := io.ReadAll(entry.File)
+				return readErr
+			})
+		}()
+	}
+
+	for range 2 {
+		select {
+		case <-entered:
+		case <-time.After(time.Second):
+			close(release)
+			workers.Wait()
+			t.Fatal("concurrent view was serialized")
+		}
+	}
+	close(release)
+	workers.Wait()
+	close(errs)
+	for err := range errs {
+		if err != nil {
+			t.Fatalf("View failed: %v", err)
+		}
+	}
+}
+
+func TestStoreViewStillSerializesOnceReads(t *testing.T) {
+	store := newTestStore(t)
+	meta, _, _, _, err := store.Create(strings.NewReader("once"), "once.txt", "text/plain", false, mustParsePolicy(t, "once"), "once4")
+	if err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	firstEntered := make(chan struct{})
+	releaseFirst := make(chan struct{})
+	results := make(chan error, 2)
+	go func() {
+		results <- store.View(meta.ID, "", func(entry *Entry) error {
+			close(firstEntered)
+			<-releaseFirst
+			_, readErr := io.ReadAll(entry.File)
+			return readErr
+		})
+	}()
+	<-firstEntered
+	go func() {
+		results <- store.View(meta.ID, "", func(entry *Entry) error {
+			_, readErr := io.ReadAll(entry.File)
+			return readErr
+		})
+	}()
+
+	select {
+	case err := <-results:
+		t.Fatalf("once view completed before the active view released its lock: %v", err)
+	case <-time.After(50 * time.Millisecond):
+	}
+	close(releaseFirst)
+
+	var successes int
+	var notFound int
+	for range 2 {
+		err := <-results
+		switch {
+		case err == nil:
+			successes++
+		case errors.Is(err, ErrNotFound):
+			notFound++
+		default:
+			t.Fatalf("unexpected View error: %v", err)
+		}
+	}
+	if successes != 1 || notFound != 1 {
+		t.Fatalf("once results: successes=%d notFound=%d", successes, notFound)
+	}
+}
+
+func TestStoreListCacheInvalidatesOnMutation(t *testing.T) {
+	store := newTestStore(t)
+	first, _, _, manageToken, err := store.Create(strings.NewReader("one"), "one.txt", "text/plain", false, mustParsePolicy(t, "temporary"), "cache1")
+	if err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	items, err := store.ListPastes()
+	if err != nil || len(items) != 1 {
+		t.Fatalf("initial ListPastes = %d items, err=%v", len(items), err)
+	}
+	if _, _, _, _, err := store.Create(strings.NewReader("two"), "two.txt", "text/plain", false, mustParsePolicy(t, "temporary"), "cache2"); err != nil {
+		t.Fatalf("second Create failed: %v", err)
+	}
+	items, err = store.ListPastes()
+	if err != nil || len(items) != 2 {
+		t.Fatalf("ListPastes after create = %d items, err=%v", len(items), err)
+	}
+
+	if _, err := store.SetLabel(first.ID, manageToken, "updated"); err != nil {
+		t.Fatalf("SetLabel failed: %v", err)
+	}
+	items, err = store.ListPastes()
+	if err != nil {
+		t.Fatalf("ListPastes after label failed: %v", err)
+	}
+	found := false
+	for _, item := range items {
+		if item.ID == first.ID {
+			found = true
+			if item.Label != "updated" {
+				t.Fatalf("cached label = %q, want updated", item.Label)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("updated paste %q missing from cached list", first.ID)
 	}
 }
 

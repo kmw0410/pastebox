@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -23,6 +24,8 @@ var (
 	ErrInvalidLabel       = errors.New("invalid label")
 )
 
+const pasteListCacheTTL = 5 * time.Second
+
 type Store struct {
 	DataDir        string
 	TTL            time.Duration
@@ -31,6 +34,10 @@ type Store struct {
 	adminDB        *sql.DB
 	mysqlDB        *sql.DB
 	zstdLevel      int
+	listCacheMu    sync.RWMutex
+	listCache      []AdminPasteItem
+	listCacheUntil time.Time
+	listCacheGen   uint64
 }
 
 type StoreOptions struct {
@@ -163,7 +170,11 @@ func (s *Store) CreateWithLabel(r io.Reader, filename string, contentType string
 		return Metadata{}, "", "", "", err
 	}
 
-	return s.createFromReader(r, filename, contentType, usePassword, policy, customCode, label)
+	meta, password, deleteToken, manageToken, err := s.createFromReader(r, filename, contentType, usePassword, policy, customCode, label)
+	if err == nil {
+		s.invalidatePasteList()
+	}
+	return meta, password, deleteToken, manageToken, err
 }
 
 func (s *Store) Clone(id string, password string, usePassword bool, policy DataPolicy, customCode string) (Metadata, string, string, string, error) {
@@ -179,7 +190,11 @@ func (s *Store) Clone(id string, password string, usePassword bool, policy DataP
 	}
 	defer entry.File.Close()
 
-	return s.createFromReader(entry.File, entry.Meta.Filename, entry.Meta.ContentType, usePassword, policy, customCode, entry.Meta.Label)
+	meta, generatedPassword, deleteToken, manageToken, err := s.createFromReader(entry.File, entry.Meta.Filename, entry.Meta.ContentType, usePassword, policy, customCode, entry.Meta.Label)
+	if err == nil {
+		s.invalidatePasteList()
+	}
+	return meta, generatedPassword, deleteToken, manageToken, err
 }
 
 func (s *Store) createFromReader(r io.Reader, filename string, contentType string, usePassword bool, policy DataPolicy, customCode string, label string) (Metadata, string, string, string, error) {
@@ -207,51 +222,89 @@ func (s *Store) View(id string, password string, fn func(*Entry) error) error {
 }
 
 func (s *Store) Delete(id string, token string) error {
+	var err error
 	if s.StorageBackend == "mysql" {
-		return s.deleteMySQL(id, token)
+		err = s.deleteMySQL(id, token)
+	} else {
+		err = s.deleteLocal(id, token)
 	}
-
-	return s.deleteLocal(id, token)
+	if err == nil {
+		s.invalidatePasteList()
+	}
+	return err
 }
 
 func (s *Store) DeleteManaged(id string, token string) error {
+	var err error
 	if s.StorageBackend == "mysql" {
-		return s.deleteManagedMySQL(id, token)
+		err = s.deleteManagedMySQL(id, token)
+	} else {
+		err = s.deleteManagedLocal(id, token)
 	}
-
-	return s.deleteManagedLocal(id, token)
+	if err == nil {
+		s.invalidatePasteList()
+	}
+	return err
 }
 
 func (s *Store) AdminDelete(id string) error {
+	var err error
 	if s.StorageBackend == "mysql" {
-		return s.adminDeleteMySQL(id)
+		err = s.adminDeleteMySQL(id)
+	} else {
+		err = s.adminDeleteLocal(id)
 	}
-
-	return s.adminDeleteLocal(id)
+	if err == nil {
+		s.invalidatePasteList()
+	}
+	return err
 }
 
 func (s *Store) AdminDeleteAll() (int, error) {
+	var count int
+	var err error
 	if s.StorageBackend == "mysql" {
-		return s.adminDeleteAllMySQL()
+		count, err = s.adminDeleteAllMySQL()
+	} else {
+		count, err = s.adminDeleteAllLocal()
 	}
-
-	return s.adminDeleteAllLocal()
+	if err == nil {
+		s.invalidatePasteList()
+	}
+	return count, err
 }
 
 func (s *Store) CleanupExpired() error {
+	var err error
 	if s.StorageBackend == "mysql" {
-		return s.cleanupExpiredMySQL()
+		err = s.cleanupExpiredMySQL()
+	} else {
+		err = s.cleanupExpiredLocal()
 	}
-
-	return s.cleanupExpiredLocal()
+	if err == nil {
+		s.invalidatePasteList()
+	}
+	return err
 }
 
 func (s *Store) ListPastes() ([]AdminPasteItem, error) {
-	if s.StorageBackend == "mysql" {
-		return s.listPastesMySQL()
+	if items, ok := s.cachedPasteList(time.Now()); ok {
+		return items, nil
 	}
+	cacheGeneration := s.pasteListGeneration()
 
-	return s.listPastesLocal()
+	var items []AdminPasteItem
+	var err error
+	if s.StorageBackend == "mysql" {
+		items, err = s.listPastesMySQL()
+	} else {
+		items, err = s.listPastesLocal()
+	}
+	if err != nil {
+		return nil, err
+	}
+	s.cachePasteList(items, time.Now().Add(pasteListCacheTTL), cacheGeneration)
+	return cloneAdminPasteItems(items), nil
 }
 
 func (s *Store) ManageMetadata(id string, token string) (Metadata, error) {
@@ -263,27 +316,46 @@ func (s *Store) ManageMetadata(id string, token string) (Metadata, error) {
 }
 
 func (s *Store) SetPasswordProtection(id string, token string) (Metadata, string, error) {
+	var meta Metadata
+	var password string
+	var err error
 	if s.StorageBackend == "mysql" {
-		return s.setPasswordProtectionMySQL(id, token)
+		meta, password, err = s.setPasswordProtectionMySQL(id, token)
+	} else {
+		meta, password, err = s.setPasswordProtectionLocal(id, token)
 	}
-
-	return s.setPasswordProtectionLocal(id, token)
+	if err == nil {
+		s.invalidatePasteList()
+	}
+	return meta, password, err
 }
 
 func (s *Store) ClearPasswordProtection(id string, token string, password string) (Metadata, error) {
+	var meta Metadata
+	var err error
 	if s.StorageBackend == "mysql" {
-		return s.clearPasswordProtectionMySQL(id, token, password)
+		meta, err = s.clearPasswordProtectionMySQL(id, token, password)
+	} else {
+		meta, err = s.clearPasswordProtectionLocal(id, token, password)
 	}
-
-	return s.clearPasswordProtectionLocal(id, token, password)
+	if err == nil {
+		s.invalidatePasteList()
+	}
+	return meta, err
 }
 
 func (s *Store) SetDataPolicy(id string, token string, policy string) (Metadata, error) {
+	var meta Metadata
+	var err error
 	if s.StorageBackend == "mysql" {
-		return s.setDataPolicyMySQL(id, token, policy)
+		meta, err = s.setDataPolicyMySQL(id, token, policy)
+	} else {
+		meta, err = s.setDataPolicyLocal(id, token, policy)
 	}
-
-	return s.setDataPolicyLocal(id, token, policy)
+	if err == nil {
+		s.invalidatePasteList()
+	}
+	return meta, err
 }
 
 func (s *Store) SetLabel(id string, token string, label string) (Metadata, error) {
@@ -291,10 +363,52 @@ func (s *Store) SetLabel(id string, token string, label string) (Metadata, error
 	if err != nil {
 		return Metadata{}, err
 	}
+	var meta Metadata
 	if s.StorageBackend == "mysql" {
-		return s.setLabelMySQL(id, token, label)
+		meta, err = s.setLabelMySQL(id, token, label)
+	} else {
+		meta, err = s.setLabelLocal(id, token, label)
 	}
-	return s.setLabelLocal(id, token, label)
+	if err == nil {
+		s.invalidatePasteList()
+	}
+	return meta, err
+}
+
+func (s *Store) cachedPasteList(now time.Time) ([]AdminPasteItem, bool) {
+	s.listCacheMu.RLock()
+	defer s.listCacheMu.RUnlock()
+	if !now.Before(s.listCacheUntil) {
+		return nil, false
+	}
+	return cloneAdminPasteItems(s.listCache), true
+}
+
+func (s *Store) cachePasteList(items []AdminPasteItem, until time.Time, generation uint64) {
+	s.listCacheMu.Lock()
+	if s.listCacheGen == generation {
+		s.listCache = cloneAdminPasteItems(items)
+		s.listCacheUntil = until
+	}
+	s.listCacheMu.Unlock()
+}
+
+func (s *Store) invalidatePasteList() {
+	s.listCacheMu.Lock()
+	s.listCache = nil
+	s.listCacheUntil = time.Time{}
+	s.listCacheGen++
+	s.listCacheMu.Unlock()
+}
+
+func (s *Store) pasteListGeneration() uint64 {
+	s.listCacheMu.RLock()
+	defer s.listCacheMu.RUnlock()
+	return s.listCacheGen
+}
+
+func cloneAdminPasteItems(items []AdminPasteItem) []AdminPasteItem {
+	return append([]AdminPasteItem(nil), items...)
 }
 
 func (s *Store) HealthCheck(ctx context.Context) error {

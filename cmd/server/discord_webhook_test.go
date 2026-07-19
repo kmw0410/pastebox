@@ -149,6 +149,18 @@ func TestDiscordWebhookNotifierPostsEmbed(t *testing.T) {
 	}
 }
 
+func TestDiscordWebhookNotifierBoundsQueue(t *testing.T) {
+	notifier := &discordWebhookNotifier{
+		queue: make(chan discordNotification, 1),
+	}
+	if !notifier.enqueue(discordPasteEvent{Action: "created"}, nil) {
+		t.Fatal("first notification was not queued")
+	}
+	if notifier.enqueue(discordPasteEvent{Action: "deleted"}, nil) {
+		t.Fatal("notification was queued beyond capacity")
+	}
+}
+
 func discordFieldsByName(fields []discordEmbedField) map[string]string {
 	out := make(map[string]string, len(fields))
 	for _, field := range fields {

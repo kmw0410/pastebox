@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"html/template"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -34,6 +36,54 @@ func mustParsePolicy(t *testing.T, value string) pastebox.DataPolicy {
 		t.Fatalf("ParseDataPolicy(%q) failed: %v", value, err)
 	}
 	return policy
+}
+
+func TestPrepareTextUploadReaderStreamsAfterSample(t *testing.T) {
+	source := strings.NewReader("abcdefghijkl")
+	reader, sample, err := prepareTextUploadReader(source, 12, 4)
+	if err != nil {
+		t.Fatalf("prepareTextUploadReader failed: %v", err)
+	}
+	if got := string(sample); got != "abcd" {
+		t.Fatalf("sample = %q, want %q", got, "abcd")
+	}
+	if remaining := source.Len(); remaining != 8 {
+		t.Fatalf("source bytes consumed before storage = %d, want 4", 12-remaining)
+	}
+
+	content, err := io.ReadAll(reader)
+	if err != nil {
+		t.Fatalf("stream read failed: %v", err)
+	}
+	if got := string(content); got != "abcdefghijkl" {
+		t.Fatalf("content = %q", got)
+	}
+}
+
+func TestPrepareTextUploadReaderEnforcesLimit(t *testing.T) {
+	reader, _, err := prepareTextUploadReader(strings.NewReader("abcdef"), 5, 2)
+	if err != nil {
+		t.Fatalf("prepareTextUploadReader failed: %v", err)
+	}
+
+	content, err := io.ReadAll(reader)
+	if !errors.Is(err, errUploadTooLarge) {
+		t.Fatalf("read error = %v, want errUploadTooLarge", err)
+	}
+	if got := string(content); got != "abcde" {
+		t.Fatalf("content before limit = %q, want %q", got, "abcde")
+	}
+}
+
+func TestAuthAttemptLimiterCapsDistinctKeys(t *testing.T) {
+	limiter := newAuthAttemptLimiter(time.Minute, 3)
+	now := time.Now()
+	for i := 0; i < maxAuthLimiterEntries+25; i++ {
+		limiter.recordFailure(strconv.Itoa(i), now)
+	}
+	if got := len(limiter.entries); got != maxAuthLimiterEntries {
+		t.Fatalf("limiter entries = %d, want %d", got, maxAuthLimiterEntries)
+	}
 }
 
 func TestViewHandlerHeadDoesNotConsumeOncePaste(t *testing.T) {

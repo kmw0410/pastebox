@@ -74,14 +74,21 @@ type authAttemptLimiter struct {
 	mu      sync.Mutex
 	window  time.Duration
 	limit   int
-	entries map[string][]time.Time
+	entries map[string]*authAttemptEntry
 }
+
+type authAttemptEntry struct {
+	attempts []time.Time
+	lastSeen time.Time
+}
+
+const maxAuthLimiterEntries = 10_000
 
 func newAuthAttemptLimiter(window time.Duration, limit int) *authAttemptLimiter {
 	return &authAttemptLimiter{
 		window:  window,
 		limit:   limit,
-		entries: make(map[string][]time.Time),
+		entries: make(map[string]*authAttemptEntry),
 	}
 }
 
@@ -106,7 +113,13 @@ func (l *authAttemptLimiter) recordFailure(key string, now time.Time) {
 	defer l.mu.Unlock()
 
 	attempts := l.pruneLocked(key, now)
-	l.entries[key] = append(attempts, now)
+	if _, exists := l.entries[key]; !exists && len(l.entries) >= maxAuthLimiterEntries {
+		l.pruneAllLocked(now)
+		if len(l.entries) >= maxAuthLimiterEntries {
+			l.evictOldestLocked()
+		}
+	}
+	l.entries[key] = &authAttemptEntry{attempts: append(attempts, now), lastSeen: now}
 }
 
 func (l *authAttemptLimiter) retryAfterAny(keys []string, now time.Time) (time.Duration, bool) {
@@ -154,14 +167,14 @@ func (l *authAttemptLimiter) clear(key string) {
 }
 
 func (l *authAttemptLimiter) pruneLocked(key string, now time.Time) []time.Time {
-	attempts := l.entries[key]
-	if len(attempts) == 0 {
+	entry := l.entries[key]
+	if entry == nil || len(entry.attempts) == 0 {
 		return nil
 	}
 
 	cutoff := now.Add(-l.window)
-	keep := attempts[:0]
-	for _, at := range attempts {
+	keep := entry.attempts[:0]
+	for _, at := range entry.attempts {
 		if at.After(cutoff) {
 			keep = append(keep, at)
 		}
@@ -172,8 +185,32 @@ func (l *authAttemptLimiter) pruneLocked(key string, now time.Time) []time.Time 
 		return nil
 	}
 
-	l.entries[key] = keep
+	entry.attempts = keep
+	entry.lastSeen = now
 	return keep
+}
+
+func (l *authAttemptLimiter) pruneAllLocked(now time.Time) {
+	cutoff := now.Add(-l.window)
+	for key, entry := range l.entries {
+		if entry == nil || len(entry.attempts) == 0 || !entry.attempts[len(entry.attempts)-1].After(cutoff) {
+			delete(l.entries, key)
+		}
+	}
+}
+
+func (l *authAttemptLimiter) evictOldestLocked() {
+	var oldestKey string
+	var oldestTime time.Time
+	for key, entry := range l.entries {
+		if oldestKey == "" || entry.lastSeen.Before(oldestTime) {
+			oldestKey = key
+			oldestTime = entry.lastSeen
+		}
+	}
+	if oldestKey != "" {
+		delete(l.entries, oldestKey)
+	}
 }
 
 func requestClientIP(r *http.Request) string {

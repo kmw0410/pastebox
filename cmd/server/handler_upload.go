@@ -6,7 +6,6 @@ import (
 	"io"
 	"mime"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -15,8 +14,6 @@ import (
 )
 
 func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
-
 	disabled, err := a.store.UploadsDisabled()
 	if err != nil {
 		logEvent("uploads.status_read_failed", map[string]any{
@@ -32,52 +29,60 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var reader io.Reader
+	var closeReader io.Closer
 	var filename string
 	contentType := r.Header.Get("Content-Type")
 
 	if strings.HasPrefix(strings.ToLower(contentType), "multipart/form-data") {
-		if err := r.ParseMultipartForm(64 << 20); err != nil {
-			if strings.Contains(strings.ToLower(err.Error()), "request body too large") {
-				a.respondRequestError(w, r, http.StatusRequestEntityTooLarge, "upload too large. maximum size is 1GB")
-				return
-			}
-
+		r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize+(1<<20))
+		multipartReader, err := r.MultipartReader()
+		if err != nil {
 			a.respondRequestError(w, r, http.StatusBadRequest, "invalid multipart form")
 			return
 		}
 
-		file, header, err := r.FormFile("file")
-		if err != nil {
+		for {
+			part, nextErr := multipartReader.NextPart()
+			if errors.Is(nextErr, io.EOF) {
+				break
+			}
+			if nextErr != nil {
+				a.respondRequestError(w, r, http.StatusBadRequest, "invalid multipart form")
+				return
+			}
+			if part.FormName() != "file" {
+				_ = part.Close()
+				continue
+			}
+
+			reader = part
+			closeReader = part
+			filename = part.FileName()
+			if partType := strings.TrimSpace(part.Header.Get("Content-Type")); partType != "" {
+				contentType = partType
+			}
+			if detected := mime.TypeByExtension(strings.ToLower(filepath.Ext(filename))); detected != "" {
+				contentType = detected
+			}
+			break
+		}
+
+		if reader == nil {
 			a.respondRequestError(w, r, http.StatusBadRequest, "missing file field")
 			return
 		}
-		defer file.Close()
-
-		reader = file
-
-		if header != nil {
-			filename = header.Filename
-
-			if header.Size > maxUploadSize {
-				a.respondRequestError(w, r, http.StatusRequestEntityTooLarge, "upload too large. maximum size is 1GB")
-				return
-			}
-
-			if partType := strings.TrimSpace(header.Header.Get("Content-Type")); partType != "" {
-				contentType = partType
-			}
-			if detected := mime.TypeByExtension(strings.ToLower(filepath.Ext(header.Filename))); detected != "" {
-				contentType = detected
-			}
-		}
 	} else {
+		r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize+1)
 		reader = r.Body
 		if strings.TrimSpace(contentType) == "" {
 			contentType = "text/plain; charset=utf-8"
 		}
 	}
+	if closeReader != nil {
+		defer closeReader.Close()
+	}
 
-	tempFile, sample, err := spoolUploadToTemp(reader, maxUploadSize, uploadSampleSize)
+	reader, sample, err := prepareTextUploadReader(reader, maxUploadSize, uploadSampleSize)
 	if err != nil {
 		if errors.Is(err, errUploadTooLarge) {
 			a.respondRequestError(w, r, http.StatusRequestEntityTooLarge, "upload too large. maximum size is 1GB")
@@ -86,11 +91,6 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		a.respondRequestError(w, r, http.StatusBadRequest, "failed to read upload")
 		return
 	}
-	defer func() {
-		_ = os.Remove(tempFile.Name())
-		_ = tempFile.Close()
-	}()
-
 	allowed, reason := allowTextUpload(filename, contentType, sample)
 	if !allowed {
 		logEvent("upload.blocked", map[string]any{
@@ -114,16 +114,16 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	customCode := strings.TrimSpace(r.Header.Get("code"))
 	label := r.Header.Get("label")
 
-	if _, err := tempFile.Seek(0, io.SeekStart); err != nil {
-		a.respondRequestError(w, r, http.StatusInternalServerError, "failed to process upload")
-		return
-	}
-
-	meta, password, deleteToken, manageToken, err := a.store.CreateWithLabel(tempFile, filename, contentType, usePassword, policy, customCode, label)
+	meta, password, deleteToken, manageToken, err := a.store.CreateWithLabel(reader, filename, contentType, usePassword, policy, customCode, label)
 	if err != nil {
 		logEvent("upload.create_failed", map[string]any{
 			"error": err,
 		})
+
+		if errors.Is(err, errUploadTooLarge) {
+			a.respondRequestError(w, r, http.StatusRequestEntityTooLarge, "upload too large. maximum size is 1GB")
+			return
+		}
 
 		if errors.Is(err, pastebox.ErrInvalidCode) {
 			a.respondRequestError(w, r, http.StatusBadRequest, "invalid code. use 1-10 characters: letters, numbers, underscore, or hyphen")

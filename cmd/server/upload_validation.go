@@ -1,56 +1,47 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
-	"errors"
 	"io"
-	"os"
 	"strings"
 	"unicode/utf8"
 )
 
-func spoolUploadToTemp(reader io.Reader, maxBytes int64, sampleLimit int) (*os.File, []byte, error) {
-	tmp, err := os.CreateTemp("", "pastebox-upload-*")
+type uploadLimitReader struct {
+	r         io.Reader
+	remaining int64
+}
+
+func (r *uploadLimitReader) Read(p []byte) (int, error) {
+	if r.remaining == 0 {
+		var probe [1]byte
+		for {
+			n, err := r.r.Read(probe[:])
+			if n > 0 {
+				return 0, errUploadTooLarge
+			}
+			if err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if int64(len(p)) > r.remaining {
+		p = p[:r.remaining]
+	}
+	n, err := r.r.Read(p)
+	r.remaining -= int64(n)
+	return n, err
+}
+
+func prepareTextUploadReader(reader io.Reader, maxBytes int64, sampleLimit int) (io.Reader, []byte, error) {
+	limited := &uploadLimitReader{r: reader, remaining: maxBytes}
+	sample, err := io.ReadAll(io.LimitReader(limited, int64(sampleLimit)))
 	if err != nil {
 		return nil, nil, err
 	}
-	buffered := bufio.NewReader(reader)
-	sample := make([]byte, 0, sampleLimit)
-	buf := make([]byte, 32*1024)
-	var total int64
-	for {
-		n, readErr := buffered.Read(buf)
-		if n > 0 {
-			total += int64(n)
-			if total > maxBytes {
-				_ = tmp.Close()
-				_ = os.Remove(tmp.Name())
-				return nil, nil, errUploadTooLarge
-			}
-			if _, err := tmp.Write(buf[:n]); err != nil {
-				_ = tmp.Close()
-				_ = os.Remove(tmp.Name())
-				return nil, nil, err
-			}
-			if len(sample) < sampleLimit {
-				need := sampleLimit - len(sample)
-				if need > n {
-					need = n
-				}
-				sample = append(sample, buf[:need]...)
-			}
-		}
-		if errors.Is(readErr, io.EOF) {
-			break
-		}
-		if readErr != nil {
-			_ = tmp.Close()
-			_ = os.Remove(tmp.Name())
-			return nil, nil, readErr
-		}
-	}
-	return tmp, sample, nil
+
+	return io.MultiReader(bytes.NewReader(sample), limited), sample, nil
 }
 
 func allowTextUpload(filename string, contentType string, content []byte) (bool, string) {

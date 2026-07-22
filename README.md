@@ -257,7 +257,7 @@ Both migrations are protected by a completion marker stored in SQLite under `pas
    curl "http://localhost:8080/RANDOM_CODE?password=RANDOM_PASSWORD"
    ```
 
-   Interactive clients may instead supply an 8-128 character password in the `new-paste-password` header. Do not combine it with `usepassword: true`. The supplied password is stored only as a hash and is not echoed in the upload response. JSON upload and clone responses include `password_protected` so clients can verify that protection was applied.
+   Interactive clients may instead supply an 8-128 character password in the `password` header. Do not combine it with `usepassword: true`. The supplied password is stored only as a hash and is not echoed in the upload response. JSON upload and clone responses include `password_protected` so clients can verify that protection was applied.
 
 10. **Custom Code**: You can use the `code: ...` header to create a link with a code of your choice instead of a randomly generated code. **Uppercase and lowercase English letters, numbers, and the special characters `_` and `-` are supported.** Codes longer than 10 characters or duplicate codes cannot be created.
 

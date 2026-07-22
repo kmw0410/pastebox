@@ -299,7 +299,7 @@ func TestUploadHandlerAcceptsCustomPassword(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/?format=json", strings.NewReader("protected paste"))
 	req.Header.Set("Content-Type", "text/plain")
 	req.Header.Set("code", "prompted")
-	req.Header.Set("new-paste-password", "custom-secret")
+	req.Header.Set("password", "custom-secret")
 	rr := httptest.NewRecorder()
 
 	app.uploadHandler(rr, req)
@@ -320,6 +320,40 @@ func TestUploadHandlerAcceptsCustomPassword(t *testing.T) {
 	entry, err := app.store.Open("prompted", "custom-secret")
 	if err != nil {
 		t.Fatalf("Open failed: %v", err)
+	}
+	_ = entry.File.Close()
+}
+
+func TestCloneHandlerAcceptsCustomPasswordHeader(t *testing.T) {
+	app := newTestApp(t)
+	source, _, _, _, err := app.store.Create(strings.NewReader("clone body"), "source.txt", "text/plain", false, mustParsePolicy(t, "temporary"), "sourcepw")
+	if err != nil {
+		t.Fatalf("Create source failed: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/"+source.ID+"?format=json", nil)
+	req.Header.Set("code", "clonepw")
+	req.Header.Set("password", "custom-secret")
+	rr := httptest.NewRecorder()
+
+	app.cloneHandler(rr, req, source.ID)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, body=%q", rr.Code, rr.Body.String())
+	}
+	if strings.Contains(rr.Body.String(), "custom-secret") {
+		t.Fatalf("response exposed supplied password: %q", rr.Body.String())
+	}
+	var response uploadResponse
+	if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if !response.PasswordProtected {
+		t.Fatalf("password_protected = false, body=%q", rr.Body.String())
+	}
+	entry, err := app.store.Open("clonepw", "custom-secret")
+	if err != nil {
+		t.Fatalf("Open clone failed: %v", err)
 	}
 	_ = entry.File.Close()
 }

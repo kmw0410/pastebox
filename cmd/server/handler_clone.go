@@ -32,7 +32,7 @@ func (a *app) cloneHandler(w http.ResponseWriter, r *http.Request, id string) {
 	}
 
 	usePassword := strings.EqualFold(strings.TrimSpace(r.Header.Get("usepassword")), "true")
-	newPassword := r.Header.Get("new-paste-password")
+	newPassword := r.Header.Get("password")
 	policy, err := pastebox.ParseDataPolicy(r.Header.Get("data-policy"))
 	if err != nil {
 		a.respondRequestError(w, r, http.StatusBadRequest, "invalid data-policy. use temporary, permanent, once, or a duration up to 30d like 30m, 12h, 7d")
@@ -63,7 +63,7 @@ func (a *app) cloneHandler(w http.ResponseWriter, r *http.Request, id string) {
 		}
 
 		if errors.Is(err, pastebox.ErrInvalidNewPassword) {
-			a.respondRequestError(w, r, http.StatusBadRequest, "invalid new-paste-password. use 8-128 characters without control characters and do not combine it with usepassword")
+			a.respondRequestError(w, r, http.StatusBadRequest, "invalid password header. use 8-128 characters without control characters and do not combine it with usepassword")
 			return
 		}
 

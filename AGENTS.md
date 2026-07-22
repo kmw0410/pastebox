@@ -69,6 +69,7 @@ Host mapping is typically `./data:/paste-data`.
 - When committing, exclude `WORK.md` and `AGENTS.md` unless the user explicitly asks to include them.
 - When committing, add a `Co-authored-by: Codex <codex@openai.com>` trailer unless the user explicitly asks not to.
 - If a change scope would be split into 2 or more commits, ask before pushing; otherwise commit only unless the user explicitly says to push.
+- When the user requests multiple distinct tasks and authorizes pushing them, finish and commit each task separately, run the final combined validation, and then push all resulting commits together once. Do not push each task immediately after its commit unless the user explicitly requests per-task pushes.
 - When modifying markdown files, include the filename in the commit subject or body so the changed docs are obvious.
 - Keep commit messages themselves in English and follow the existing short conventional style.
 - Before starting work, always consult `WORK.md` alongside `AGENTS.md` so recent task history is part of the working context.
@@ -403,6 +404,14 @@ Use this section to record recurring lessons from error-driven code fixes. Each 
   a.renderPasswordPage(w, r, id, "/"+id+"?clone=1", http.MethodPost, a.localizedText("paste_clone", "Clone"))
   ```
   Prevention: When adding paste-page actions that can require password authentication, make the intended action explicit in the form URL and ensure the password prompt submits back to that same action.
+
+- Problematic code area: `cmd/server/handler_upload.go` JSON upload/clone response compatibility for `new-paste-password`.
+  Cause: A new CLI could send the custom-password header to an older server that ignored it yet still returned a successful unprotected upload, leaving the client unable to distinguish protection from silent downgrade.
+  Fix: Include an explicit protection confirmation in every JSON upload and clone response:
+  ```go
+  PasswordProtected: meta.PasswordHash != "",
+  ```
+  Prevention: When a client depends on a newly introduced security header, add an explicit response field that proves the server applied it, and test older responses that omit the field.
 
 ## 18. Commit Message Examples
 Use short, conventional commit messages:

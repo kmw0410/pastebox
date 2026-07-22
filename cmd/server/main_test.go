@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"html/template"
 	"io"
@@ -308,6 +309,13 @@ func TestUploadHandlerAcceptsCustomPassword(t *testing.T) {
 	}
 	if strings.Contains(rr.Body.String(), "custom-secret") {
 		t.Fatalf("response exposed supplied password: %q", rr.Body.String())
+	}
+	var response uploadResponse
+	if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if !response.PasswordProtected {
+		t.Fatalf("password_protected = false, body=%q", rr.Body.String())
 	}
 	entry, err := app.store.Open("prompted", "custom-secret")
 	if err != nil {

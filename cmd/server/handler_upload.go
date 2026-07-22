@@ -186,11 +186,12 @@ func (a *app) writeUploadResponseWithMode(w http.ResponseWriter, r *http.Request
 		w.WriteHeader(http.StatusOK)
 
 		resp := uploadResponse{
-			URL:      url,
-			Expires:  expires,
-			Password: password,
-			Manage:   manageURL,
-			Delete:   deleteURL,
+			URL:               url,
+			Expires:           expires,
+			Password:          password,
+			Manage:            manageURL,
+			Delete:            deleteURL,
+			PasswordProtected: meta.PasswordHash != "",
 		}
 		_ = writePrettyJSON(w, resp)
 		return
@@ -226,11 +227,12 @@ func (a *app) writeUploadResponseWithMode(w http.ResponseWriter, r *http.Request
 }
 
 type uploadResponse struct {
-	URL      string `json:"url"`
-	Expires  string `json:"expires,omitempty"`
-	Password string `json:"password,omitempty"`
-	Manage   string `json:"manage,omitempty"`
-	Delete   string `json:"delete,omitempty"`
+	URL               string `json:"url"`
+	Expires           string `json:"expires,omitempty"`
+	Password          string `json:"password,omitempty"`
+	Manage            string `json:"manage,omitempty"`
+	Delete            string `json:"delete,omitempty"`
+	PasswordProtected bool   `json:"password_protected"`
 }
 
 func formatExpiresForResponse(meta pastebox.Metadata) string {

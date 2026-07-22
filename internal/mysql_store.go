@@ -543,7 +543,7 @@ func (s *Store) manageMetadataMySQL(id string, token string) (Metadata, error) {
 	return meta, nil
 }
 
-func (s *Store) setPasswordProtectionMySQL(id string, token string) (Metadata, string, error) {
+func (s *Store) setPasswordProtectionMySQL(id string, token string, newPassword string) (Metadata, string, error) {
 	if !validID(id) {
 		return Metadata{}, "", ErrNotFound
 	}
@@ -574,7 +574,7 @@ func (s *Store) setPasswordProtectionMySQL(id string, token string) (Metadata, s
 		return Metadata{}, "", ErrAlreadyProtected
 	}
 
-	password, passwordHash, err := maybeCreatePassword(true)
+	password, passwordHash, err := createPasswordProtection(newPassword == "", newPassword)
 	if err != nil {
 		return Metadata{}, "", err
 	}

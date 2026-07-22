@@ -307,6 +307,14 @@ Both migrations are protected by a completion marker stored in SQLite under `pas
 
    When converting a password-protected paste back to public, Pastebox requires the current generated password for verification first.
 
+   CLI and automation clients can use the versioned JSON API at `/api/v1/pastes/<code>`. Send the private token in `paste-manage-token` or `paste-delete-token`; tokens are never returned by this API. `GET` returns management metadata, `PATCH` accepts the actions `set_label`, `set_policy`, `enable_password`, and `disable_password`, and `DELETE` removes the paste.
+
+   ```bash
+   curl -H "paste-manage-token: MANAGE_TOKEN" http://localhost:8080/api/v1/pastes/RANDOM_CODE
+   curl -X PATCH -H "Content-Type: application/json" -H "paste-manage-token: MANAGE_TOKEN" --data '{"action":"set_policy","data_policy":"12h"}' http://localhost:8080/api/v1/pastes/RANDOM_CODE
+   curl -X DELETE -H "paste-delete-token: DELETE_TOKEN" http://localhost:8080/api/v1/pastes/RANDOM_CODE
+   ```
+
 13. **Copy Content in Browser**: When opening a text-based upload link in the browser, you can copy the content to your clipboard using the `Copy` button next to the `Raw` button.
 
 14. **Text File Rendering in Browser**: Text-based files such as `.txt` and `.log` are displayed directly in the browser instead of being downloaded. If you need the original raw response, use `?format=raw`.

@@ -359,6 +359,27 @@ func TestStoreRejectsInvalidCustomPassword(t *testing.T) {
 	}
 }
 
+func TestStoreManageEnablesCustomPassword(t *testing.T) {
+	store := newTestStore(t)
+	meta, _, _, manageToken, err := store.Create(strings.NewReader("body"), "", "text/plain", false, mustParsePolicy(t, "temporary"), "managepw")
+	if err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	updated, generated, err := store.SetPasswordProtectionWithPassword(meta.ID, manageToken, "managed-secret")
+	if err != nil {
+		t.Fatalf("SetPasswordProtectionWithPassword failed: %v", err)
+	}
+	if generated != "" || updated.PasswordHash == "" {
+		t.Fatalf("generated = %q, protected = %v", generated, updated.PasswordHash != "")
+	}
+	entry, err := store.Open(meta.ID, "managed-secret")
+	if err != nil {
+		t.Fatalf("Open failed: %v", err)
+	}
+	_ = entry.File.Close()
+}
+
 func TestStoreCreateCustomDataPolicy(t *testing.T) {
 	store := newTestStore(t)
 

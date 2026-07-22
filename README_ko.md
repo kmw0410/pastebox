@@ -309,6 +309,14 @@ environment:
 
    비밀번호 보호 Paste를 다시 공개로 돌릴 때는, 현재 생성된 비밀번호를 먼저 입력하여 검증해야 합니다.
 
+   CLI 및 자동화 클라이언트는 `/api/v1/pastes/<code>`의 버전 지정 JSON API를 사용할 수 있습니다. 비공개 토큰은 `paste-manage-token` 또는 `paste-delete-token` 헤더로 전달하며 이 API 응답에는 토큰이 포함되지 않습니다. `GET`은 관리 메타데이터를 반환하고, `PATCH`는 `set_label`, `set_policy`, `enable_password`, `disable_password` 작업을 처리하며, `DELETE`는 Paste를 삭제합니다.
+
+   ```bash
+   curl -H "paste-manage-token: MANAGE_TOKEN" http://localhost:8080/api/v1/pastes/RANDOM_CODE
+   curl -X PATCH -H "Content-Type: application/json" -H "paste-manage-token: MANAGE_TOKEN" --data '{"action":"set_policy","data_policy":"12h"}' http://localhost:8080/api/v1/pastes/RANDOM_CODE
+   curl -X DELETE -H "paste-delete-token: DELETE_TOKEN" http://localhost:8080/api/v1/pastes/RANDOM_CODE
+   ```
+
 13. **브라우저에서 내용 복사**: 텍스트 기반 업로드 링크를 브라우저에서 열면 `Raw` 버튼 옆의 `Copy` 버튼으로 내용을 클립보드에 복사할 수 있습니다.
 
 14. **텍스트 파일 브라우저 표시**: `.txt`, `.log` 같은 텍스트 기반 파일은 다운로드되지 않고 브라우저에서 바로 표시됩니다. 원본 raw 응답이 필요하면 `?format=raw`를 사용할 수 있습니다.

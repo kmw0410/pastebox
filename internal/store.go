@@ -325,13 +325,17 @@ func (s *Store) ManageMetadata(id string, token string) (Metadata, error) {
 }
 
 func (s *Store) SetPasswordProtection(id string, token string) (Metadata, string, error) {
+	return s.SetPasswordProtectionWithPassword(id, token, "")
+}
+
+func (s *Store) SetPasswordProtectionWithPassword(id string, token string, newPassword string) (Metadata, string, error) {
 	var meta Metadata
 	var password string
 	var err error
 	if s.StorageBackend == "mysql" {
-		meta, password, err = s.setPasswordProtectionMySQL(id, token)
+		meta, password, err = s.setPasswordProtectionMySQL(id, token, newPassword)
 	} else {
-		meta, password, err = s.setPasswordProtectionLocal(id, token)
+		meta, password, err = s.setPasswordProtectionLocal(id, token, newPassword)
 	}
 	if err == nil {
 		s.invalidatePasteList()

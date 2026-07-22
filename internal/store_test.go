@@ -320,6 +320,45 @@ func TestStoreLabelLifecycle(t *testing.T) {
 	}
 }
 
+func TestStoreCreateAndCloneWithCustomPassword(t *testing.T) {
+	store := newTestStore(t)
+	policy := mustParsePolicy(t, "temporary")
+
+	meta, generated, _, _, err := store.CreateWithPasswordAndLabel(strings.NewReader("protected"), "secret.txt", "text/plain", false, "custom-secret", policy, "custompw", "")
+	if err != nil {
+		t.Fatalf("CreateWithPasswordAndLabel failed: %v", err)
+	}
+	if generated != "" {
+		t.Fatalf("generated password = %q, want empty", generated)
+	}
+	entry, err := store.Open(meta.ID, "custom-secret")
+	if err != nil {
+		t.Fatalf("Open with custom password failed: %v", err)
+	}
+	_ = entry.File.Close()
+
+	clone, generated, _, _, err := store.CloneWithPassword(meta.ID, "custom-secret", false, "clone-secret", policy, "clonepw")
+	if err != nil {
+		t.Fatalf("CloneWithPassword failed: %v", err)
+	}
+	if generated != "" {
+		t.Fatalf("clone generated password = %q, want empty", generated)
+	}
+	entry, err = store.Open(clone.ID, "clone-secret")
+	if err != nil {
+		t.Fatalf("Open clone with custom password failed: %v", err)
+	}
+	_ = entry.File.Close()
+}
+
+func TestStoreRejectsInvalidCustomPassword(t *testing.T) {
+	store := newTestStore(t)
+	policy := mustParsePolicy(t, "temporary")
+	if _, _, _, _, err := store.CreateWithPasswordAndLabel(strings.NewReader("body"), "", "text/plain", false, "short", policy, "badpw", ""); !errors.Is(err, ErrInvalidNewPassword) {
+		t.Fatalf("error = %v, want ErrInvalidNewPassword", err)
+	}
+}
+
 func TestStoreCreateCustomDataPolicy(t *testing.T) {
 	store := newTestStore(t)
 

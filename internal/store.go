@@ -22,6 +22,7 @@ var (
 	ErrInvalidCode        = errors.New("invalid code")
 	ErrCodeExists         = errors.New("code already exists")
 	ErrInvalidLabel       = errors.New("invalid label")
+	ErrInvalidNewPassword = errors.New("invalid new password")
 )
 
 const pasteListCacheTTL = 5 * time.Second
@@ -159,6 +160,10 @@ func (s *Store) Create(r io.Reader, filename string, contentType string, usePass
 }
 
 func (s *Store) CreateWithLabel(r io.Reader, filename string, contentType string, usePassword bool, policy DataPolicy, customCode string, label string) (Metadata, string, string, string, error) {
+	return s.CreateWithPasswordAndLabel(r, filename, contentType, usePassword, "", policy, customCode, label)
+}
+
+func (s *Store) CreateWithPasswordAndLabel(r io.Reader, filename string, contentType string, usePassword bool, newPassword string, policy DataPolicy, customCode string, label string) (Metadata, string, string, string, error) {
 	var err error
 	policy, err = policy.validated()
 	if err != nil {
@@ -170,7 +175,7 @@ func (s *Store) CreateWithLabel(r io.Reader, filename string, contentType string
 		return Metadata{}, "", "", "", err
 	}
 
-	meta, password, deleteToken, manageToken, err := s.createFromReader(r, filename, contentType, usePassword, policy, customCode, label)
+	meta, password, deleteToken, manageToken, err := s.createFromReader(r, filename, contentType, usePassword, newPassword, policy, customCode, label)
 	if err == nil {
 		s.invalidatePasteList()
 	}
@@ -178,6 +183,10 @@ func (s *Store) CreateWithLabel(r io.Reader, filename string, contentType string
 }
 
 func (s *Store) Clone(id string, password string, usePassword bool, policy DataPolicy, customCode string) (Metadata, string, string, string, error) {
+	return s.CloneWithPassword(id, password, usePassword, "", policy, customCode)
+}
+
+func (s *Store) CloneWithPassword(id string, password string, usePassword bool, newPassword string, policy DataPolicy, customCode string) (Metadata, string, string, string, error) {
 	var err error
 	policy, err = policy.validated()
 	if err != nil {
@@ -190,19 +199,19 @@ func (s *Store) Clone(id string, password string, usePassword bool, policy DataP
 	}
 	defer entry.File.Close()
 
-	meta, generatedPassword, deleteToken, manageToken, err := s.createFromReader(entry.File, entry.Meta.Filename, entry.Meta.ContentType, usePassword, policy, customCode, entry.Meta.Label)
+	meta, generatedPassword, deleteToken, manageToken, err := s.createFromReader(entry.File, entry.Meta.Filename, entry.Meta.ContentType, usePassword, newPassword, policy, customCode, entry.Meta.Label)
 	if err == nil {
 		s.invalidatePasteList()
 	}
 	return meta, generatedPassword, deleteToken, manageToken, err
 }
 
-func (s *Store) createFromReader(r io.Reader, filename string, contentType string, usePassword bool, policy DataPolicy, customCode string, label string) (Metadata, string, string, string, error) {
+func (s *Store) createFromReader(r io.Reader, filename string, contentType string, usePassword bool, newPassword string, policy DataPolicy, customCode string, label string) (Metadata, string, string, string, error) {
 	if s.StorageBackend == "mysql" {
-		return s.createMySQLFromReader(r, filename, contentType, usePassword, policy, customCode, label)
+		return s.createMySQLFromReader(r, filename, contentType, usePassword, newPassword, policy, customCode, label)
 	}
 
-	return s.createLocalFromReader(r, filename, contentType, usePassword, policy, customCode, label)
+	return s.createLocalFromReader(r, filename, contentType, usePassword, newPassword, policy, customCode, label)
 }
 
 func (s *Store) Open(id string, password string) (*Entry, error) {

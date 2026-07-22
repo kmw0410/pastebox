@@ -27,6 +27,16 @@ func normalizeLabel(label string) (string, error) {
 }
 
 func maybeCreatePassword(usePassword bool) (string, string, error) {
+	return createPasswordProtection(usePassword, "")
+}
+
+func createPasswordProtection(usePassword bool, newPassword string) (string, string, error) {
+	if newPassword != "" {
+		if usePassword || !validNewPassword(newPassword) {
+			return "", "", ErrInvalidNewPassword
+		}
+		return "", hashSecret(newPassword), nil
+	}
 	if !usePassword {
 		return "", "", nil
 	}
@@ -37,6 +47,22 @@ func maybeCreatePassword(usePassword bool) (string, string, error) {
 	}
 
 	return password, hashSecret(password), nil
+}
+
+func validNewPassword(password string) bool {
+	if !utf8.ValidString(password) {
+		return false
+	}
+	length := utf8.RuneCountInString(password)
+	if length < 8 || length > 128 {
+		return false
+	}
+	for _, r := range password {
+		if unicode.IsControl(r) {
+			return false
+		}
+	}
+	return true
 }
 
 func checkPassword(meta Metadata, password string) error {

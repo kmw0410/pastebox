@@ -106,6 +106,7 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	contentType = normalizeTextContentType(filename, contentType)
 
 	usePassword := strings.EqualFold(strings.TrimSpace(r.Header.Get("usepassword")), "true")
+	newPassword := r.Header.Get("new-paste-password")
 	policy, err := pastebox.ParseDataPolicy(r.Header.Get("data-policy"))
 	if err != nil {
 		a.respondRequestError(w, r, http.StatusBadRequest, "invalid data-policy. use temporary, permanent, once, or a duration up to 30d like 30m, 12h, 7d")
@@ -114,7 +115,7 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	customCode := strings.TrimSpace(r.Header.Get("code"))
 	label := r.Header.Get("label")
 
-	meta, password, deleteToken, manageToken, err := a.store.CreateWithLabel(reader, filename, contentType, usePassword, policy, customCode, label)
+	meta, password, deleteToken, manageToken, err := a.store.CreateWithPasswordAndLabel(reader, filename, contentType, usePassword, newPassword, policy, customCode, label)
 	if err != nil {
 		logEvent("upload.create_failed", map[string]any{
 			"error": err,
@@ -138,6 +139,10 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 			a.respondRequestError(w, r, http.StatusBadRequest, "invalid label. use at most 100 characters without control characters")
 			return
 		}
+		if errors.Is(err, pastebox.ErrInvalidNewPassword) {
+			a.respondRequestError(w, r, http.StatusBadRequest, "invalid new-paste-password. use 8-128 characters without control characters and do not combine it with usepassword")
+			return
+		}
 
 		a.respondRequestError(w, r, http.StatusInternalServerError, "upload failed")
 		return
@@ -148,11 +153,11 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		"expires":      formatExpiresForLog(meta),
 		"id":           meta.ID,
 		"policy":       meta.DataPolicy,
-		"protected":    password != "",
+		"protected":    password != "" || newPassword != "",
 		"remote":       r.RemoteAddr,
 		"size":         meta.Size,
 	})
-	a.notifyDiscordPasteCreated(r, meta, password != "", "")
+	a.notifyDiscordPasteCreated(r, meta, password != "" || newPassword != "", "")
 
 	a.writeUploadResponse(w, r, meta, password, deleteToken, manageToken)
 }

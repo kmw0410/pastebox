@@ -114,13 +114,13 @@ func openMySQLPasteDB(dsn string) (*sql.DB, error) {
 	return db, nil
 }
 
-func (s *Store) createMySQLFromReader(r io.Reader, filename string, contentType string, usePassword bool, policy DataPolicy, customCode string, label string) (Metadata, string, string, string, error) {
+func (s *Store) createMySQLFromReader(r io.Reader, filename string, contentType string, usePassword bool, newPassword string, policy DataPolicy, customCode string, label string) (Metadata, string, string, string, error) {
 	customCode = strings.TrimSpace(customCode)
 	if customCode != "" && !validID(customCode) {
 		return Metadata{}, "", "", "", ErrInvalidCode
 	}
 
-	password, passwordHash, err := maybeCreatePassword(usePassword)
+	password, passwordHash, err := createPasswordProtection(usePassword, newPassword)
 	if err != nil {
 		return Metadata{}, "", "", "", err
 	}

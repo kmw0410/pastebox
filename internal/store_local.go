@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func (s *Store) createLocalFromReader(r io.Reader, filename string, contentType string, usePassword bool, policy DataPolicy, customCode string, label string) (Metadata, string, string, string, error) {
+func (s *Store) createLocalFromReader(r io.Reader, filename string, contentType string, usePassword bool, newPassword string, policy DataPolicy, customCode string, label string) (Metadata, string, string, string, error) {
 	id, path, err := s.reserveLocalPath(customCode)
 	if err != nil {
 		return Metadata{}, "", "", "", err
@@ -41,7 +41,7 @@ func (s *Store) createLocalFromReader(r io.Reader, filename string, contentType 
 		return Metadata{}, "", "", "", closeErr
 	}
 
-	password, passwordHash, err := maybeCreatePassword(usePassword)
+	password, passwordHash, err := createPasswordProtection(usePassword, newPassword)
 	if err != nil {
 		_ = os.Remove(path)
 		return Metadata{}, "", "", "", err

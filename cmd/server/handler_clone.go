@@ -32,6 +32,7 @@ func (a *app) cloneHandler(w http.ResponseWriter, r *http.Request, id string) {
 	}
 
 	usePassword := strings.EqualFold(strings.TrimSpace(r.Header.Get("usepassword")), "true")
+	newPassword := r.Header.Get("new-paste-password")
 	policy, err := pastebox.ParseDataPolicy(r.Header.Get("data-policy"))
 	if err != nil {
 		a.respondRequestError(w, r, http.StatusBadRequest, "invalid data-policy. use temporary, permanent, once, or a duration up to 30d like 30m, 12h, 7d")
@@ -39,7 +40,7 @@ func (a *app) cloneHandler(w http.ResponseWriter, r *http.Request, id string) {
 	}
 	customCode := strings.TrimSpace(r.Header.Get("code"))
 
-	meta, newPassword, deleteToken, manageToken, err := a.store.Clone(id, password, usePassword, policy, customCode)
+	meta, generatedPassword, deleteToken, manageToken, err := a.store.CloneWithPassword(id, password, usePassword, newPassword, policy, customCode)
 	if err != nil {
 		if errors.Is(err, pastebox.ErrInvalidPassword) {
 			if isBrowserRequest(r) {
@@ -61,6 +62,11 @@ func (a *app) cloneHandler(w http.ResponseWriter, r *http.Request, id string) {
 			return
 		}
 
+		if errors.Is(err, pastebox.ErrInvalidNewPassword) {
+			a.respondRequestError(w, r, http.StatusBadRequest, "invalid new-paste-password. use 8-128 characters without control characters and do not combine it with usepassword")
+			return
+		}
+
 		http.NotFound(w, r)
 		return
 	}
@@ -70,12 +76,12 @@ func (a *app) cloneHandler(w http.ResponseWriter, r *http.Request, id string) {
 		"expires":      formatExpiresForLog(meta),
 		"id":           meta.ID,
 		"policy":       meta.DataPolicy,
-		"protected":    newPassword != "",
+		"protected":    generatedPassword != "" || newPassword != "",
 		"remote":       r.RemoteAddr,
 		"size":         meta.Size,
 		"source":       id,
 	})
 	a.notifyDiscordPasteCreated(r, meta, newPassword != "", id)
 
-	a.writeCloneResponse(w, r, meta, newPassword, deleteToken, manageToken)
+	a.writeCloneResponse(w, r, meta, generatedPassword, deleteToken, manageToken)
 }

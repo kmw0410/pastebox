@@ -293,6 +293,29 @@ func TestUploadHandlerStoresLabel(t *testing.T) {
 	}
 }
 
+func TestUploadHandlerAcceptsCustomPassword(t *testing.T) {
+	app := newTestApp(t)
+	req := httptest.NewRequest(http.MethodPost, "/?format=json", strings.NewReader("protected paste"))
+	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("code", "prompted")
+	req.Header.Set("new-paste-password", "custom-secret")
+	rr := httptest.NewRecorder()
+
+	app.uploadHandler(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, body=%q", rr.Code, rr.Body.String())
+	}
+	if strings.Contains(rr.Body.String(), "custom-secret") {
+		t.Fatalf("response exposed supplied password: %q", rr.Body.String())
+	}
+	entry, err := app.store.Open("prompted", "custom-secret")
+	if err != nil {
+		t.Fatalf("Open failed: %v", err)
+	}
+	_ = entry.File.Close()
+}
+
 func TestHealthHandlerOK(t *testing.T) {
 	app := newTestApp(t)
 

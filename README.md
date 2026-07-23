@@ -5,6 +5,8 @@ English | [Korean](./README_ko.md)
 
 For CLI packages and usage, see [pastebox-cli](https://github.com/kmw0410/pastebox-cli).
 
+For upload, retrieval, clone, and management endpoints, see the [English HTTP API reference](./API.md).
+
 ![](./main.png)
 
 <details>
@@ -46,6 +48,8 @@ pastebox/
 │       ├── docker-publish.yml
 │       └── release.yml
 ├── AGENTS.md
+├── API.md
+├── API_ko.md
 ├── DATA_POLICY.md
 ├── DATA_POLICY_ko.md
 ├── Dockerfile

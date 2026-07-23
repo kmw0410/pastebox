@@ -5,6 +5,8 @@ curl 기반 파일 공유 서비스
 
 CLI 패키지와 사용법은 [pastebox-cli](https://github.com/kmw0410/pastebox-cli)에서 확인하세요.
 
+업로드, 조회, 복제, 관리 엔드포인트는 [한국어 HTTP API 문서](./API_ko.md)를 참고하세요.
+
 ![](./main.png)
 
 <details>
@@ -47,6 +49,8 @@ pastebox/
 │       ├── docker-publish.yml
 │       └── release.yml
 ├── AGENTS.md
+├── API.md
+├── API_ko.md
 ├── DATA_POLICY.md
 ├── DATA_POLICY_ko.md
 ├── Dockerfile

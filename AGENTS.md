@@ -22,6 +22,8 @@ pastebox/
 ├── go.sum
 ├── README.md
 ├── README_ko.md
+├── API.md
+├── API_ko.md
 ├── AGENTS.md
 ├── cmd/
 │   └── server/
@@ -124,8 +126,9 @@ Successful upload response should include:
 - `url`
 - `manage`
 - `expires` (when applicable; omitted for permanent)
-- `delete`
 - `password` (when applicable)
+
+Upload and clone responses must not issue a separate delete URL. New clients should delete with the manage token through the management API.
 
 Response formats:
 - Upload success and upload error responses may return JSON when `?format=json` is present.
@@ -161,9 +164,10 @@ Behavior rules:
 - Do not require users to manually use `/clone` or `?clone=1` as a primary UX.
 - Clone must preserve original filename.
 - Clone must be blocked when uploads are disabled.
-- Clone result page (`templates/clone.html`) should show URL, expiration (if any), generated password (if any), manage URL, and delete URL.
+- Clone result page (`templates/clone.html`) should show URL, expiration (if any), generated password (if any), and manage URL.
 - Every successful upload and clone also produces a private manage URL using `?manage=<token>`.
 - Manage page (`templates/manage.html`) should allow viewing paste metadata, copying the public/manage URLs, enabling or disabling password protection, changing the retention policy, and deleting the paste.
+- The manage page delete button must send `DELETE /api/v1/pastes/<code>` with the manage token in the `paste-manage-token` header. Do not restore the old POST form action.
 - Disabling password protection from the manage page requires the current password.
 - When password protection is enabled from the manage page, the generated password must be shown once and then only stored hashed.
 
@@ -209,6 +213,11 @@ Locale files:
 - `locales/en.json` is the default English source.
 - `locales/ko.json` may provide Korean translations.
 - Missing or empty Korean values must fallback to English.
+
+API documentation:
+- Keep the English HTTP API reference in `API.md` and the Korean reference in `API_ko.md`.
+- Keep both API documents behaviorally aligned with the implemented handlers.
+- `README.md` should link to `API.md`, and `README_ko.md` should link to `API_ko.md`.
 
 Template translation:
 - Templates should use `{{ t "key" }}`.
@@ -321,8 +330,8 @@ curl -H "code: my-log" -F "file=@test.txt" http://localhost:8080/
 curl "http://localhost:8080/<code>?raw=1"
 curl -H "paste-password: <password>" http://localhost:8080/<code>
 
-# Delete
-curl "http://localhost:8080/<code>?delete=<delete-token>"
+# Delete through the management API
+curl -X DELETE -H "paste-manage-token: <manage-token>" http://localhost:8080/api/v1/pastes/<code>
 
 # Binary block test (expect 415)
 head -c 1024 /dev/urandom > binary.bin
@@ -477,7 +486,7 @@ CLI architecture and behavior:
 - Support temporary uploads by default plus permanent, once, custom expiration, generated password, custom code, and label options.
 - Support normal human-readable output, public-URL-only quiet output, and JSON output.
 - Support raw paste retrieval with `pb get`; send paste passwords through the `paste-password` header rather than a query string.
-- Never print secrets in diagnostic logs. Normal successful output may display the password and manage/delete URLs returned for that upload because the user needs those one-time results.
+- Never print secrets in diagnostic logs. Normal successful output may display the password and manage URL returned for that upload because the user needs those one-time results.
 - Keep CLI argument/config errors distinct from network/server errors through documented nonzero exit codes.
 
 CLI configuration:

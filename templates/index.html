@@ -59,12 +59,14 @@ curl -H "data-policy: 12h" -F "file=@debug.log" {{ .BaseURL }}/</code></pre>
           <p class="description">{{ t "index_expiration_desc" }}</p>
           <pre class="plain-code mt-sm"><code>url: {{ .BaseURL }}/AbC12
 expires: 2026-06-24T14:10:26+09:00
-delete: {{ .BaseURL }}/AbC12?delete=DELETE_TOKEN</code></pre>
+manage: {{ .BaseURL }}/AbC12?manage=MANAGE_TOKEN</code></pre>
         </article>
         <article class="card wide-card">
           <p class="example-label">{{ t "index_manual_deletion" }}</p>
           <p class="description">{{ t "index_manual_deletion_desc" }}</p>
-          <pre class="plain-code mt-sm"><code>curl "{{ .BaseURL }}/AbC12?delete=DELETE_TOKEN"</code></pre>
+          <pre class="plain-code mt-sm"><code>curl -X DELETE \
+  -H "paste-manage-token: MANAGE_TOKEN" \
+  {{ .BaseURL }}/api/v1/pastes/AbC12</code></pre>
         </article>
       </section>
     </div>

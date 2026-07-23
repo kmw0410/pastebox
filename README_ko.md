@@ -237,7 +237,7 @@ environment:
    ```
    url: http://localhost:8080/RANDOM_CODE
    expires: 2026-06-24T14:10:26+09:00
-   delete: http://localhost:8080/RANDOM_CODE?delete=DELETE_TOKEN
+   manage: http://localhost:8080/RANDOM_CODE?manage=MANAGE_TOKEN
    ```
 
    스크립트나 다른 도구에서 파싱할 수 있도록 JSON 응답이 필요하면 업로드 요청에 `?format=json`을 붙이면 됩니다.
@@ -252,14 +252,14 @@ environment:
      "expires": "2026-06-24T14:10:26+09:00",
      "password": "RANDOM_PASSWORD",
      "manage": "http://localhost:8080/RANDOM_CODE?manage=MANAGE_TOKEN",
-     "delete": "http://localhost:8080/RANDOM_CODE?delete=DELETE_TOKEN"
+     "password_protected": true
    }
    ```
 
-8. **수동 삭제**: 업로드 시 발급되는 삭제 URL을 사용하여 파일을 직접 삭제할 수 있습니다. 삭제 요청은 컨테이너 로그에도 기록됩니다.
+8. **수동 삭제**: 업로드 응답의 비공개 관리 URL을 열고 삭제 버튼을 사용합니다. 관리 페이지는 관리 API에 인증된 `DELETE` 요청을 보냅니다. CLI 클라이언트도 관리 토큰으로 같은 요청을 보낼 수 있으며, 삭제 요청은 컨테이너 로그에도 기록됩니다.
 
    ```bash
-   curl "http://localhost:8080/RANDOM_CODE?delete=DELETE_TOKEN"
+   curl -X DELETE -H "paste-manage-token: MANAGE_TOKEN" http://localhost:8080/api/v1/pastes/RANDOM_CODE
    ```
 
 9. **비밀번호 링크**: `usepassword: true` 헤더를 사용한 비공개 업로드 링크 생성을 지원합니다. 헤더 사용 시 **영문 대문자 + 영문 소문자 + 숫자 + 특수문자** 조합으로 생성된 8자리 비밀번호가 발급됩니다. 파일은 `?password=...` 쿼리 파라미터 또는 `paste-password: ...` 헤더를 사용하여 바로 확인하거나 브라우저에서 접근 시 직접 비밀번호를 입력하여 확인할 수 있습니다.
@@ -289,14 +289,13 @@ environment:
    curl -H "label: 운영 배포 로그" -F "file=@server.log" http://localhost:8080/
    ```
    
-11. **업로드 응답 형식**: 업로드가 성공하면 URL, 만료 시간, 삭제 링크가 반환됩니다. 비밀번호 링크인 경우 `password` 항목도 함께 반환됩니다.
+11. **업로드 응답 형식**: 업로드가 성공하면 URL, 만료 시간, 비공개 관리 링크가 반환됩니다. 생성 비밀번호를 사용하는 경우 `password` 항목도 함께 반환됩니다.
 
    ```
    url: http://localhost:8080/RANDOM_CODE
    expires: 2026-06-24T14:10:26+09:00
    password: RANDOM_PASSWORD
    manage: http://localhost:8080/RANDOM_CODE?manage=MANAGE_TOKEN
-   delete: http://localhost:8080/RANDOM_CODE?delete=DELETE_TOKEN
    ```
 
 12. **Paste 관리 링크**: 모든 성공한 업로드는 비공개 관리 URL도 함께 생성합니다. 이 링크는 `?manage=...` 쿼리 파라미터 형태로 업로드 응답에 포함되며, 비밀번호 입력 없이 바로 관리 페이지에 접근할 수 있습니다. 이후에도 관리 페이지를 열 때는 동일한 `manage` 토큰을 URL에 포함해야 합니다.
@@ -309,12 +308,12 @@ environment:
 
    비밀번호 보호 Paste를 다시 공개로 돌릴 때는, 현재 생성된 비밀번호를 먼저 입력하여 검증해야 합니다.
 
-   CLI 및 자동화 클라이언트는 `/api/v1/pastes/<code>`의 버전 지정 JSON API를 사용할 수 있습니다. 비공개 토큰은 `paste-manage-token` 또는 `paste-delete-token` 헤더로 전달하며 이 API 응답에는 토큰이 포함되지 않습니다. `GET`은 관리 메타데이터를 반환하고, `PATCH`는 `set_label`, `set_policy`, `enable_password`, `disable_password` 작업을 처리하며, `DELETE`는 Paste를 삭제합니다.
+   CLI 및 자동화 클라이언트는 `/api/v1/pastes/<code>`의 버전 지정 JSON API를 사용할 수 있습니다. 비공개 관리 토큰은 `paste-manage-token` 헤더로 전달하며 이 API 응답에는 토큰이 포함되지 않습니다. `GET`은 관리 메타데이터를 반환하고, `PATCH`는 `set_label`, `set_policy`, `enable_password`, `disable_password` 작업을 처리하며, `DELETE`는 Paste를 삭제합니다.
 
    ```bash
    curl -H "paste-manage-token: MANAGE_TOKEN" http://localhost:8080/api/v1/pastes/RANDOM_CODE
    curl -X PATCH -H "Content-Type: application/json" -H "paste-manage-token: MANAGE_TOKEN" --data '{"action":"set_policy","data_policy":"12h"}' http://localhost:8080/api/v1/pastes/RANDOM_CODE
-   curl -X DELETE -H "paste-delete-token: DELETE_TOKEN" http://localhost:8080/api/v1/pastes/RANDOM_CODE
+   curl -X DELETE -H "paste-manage-token: MANAGE_TOKEN" http://localhost:8080/api/v1/pastes/RANDOM_CODE
    ```
 
 13. **브라우저에서 내용 복사**: 텍스트 기반 업로드 링크를 브라우저에서 열면 `Raw` 버튼 옆의 `Copy` 버튼으로 내용을 클립보드에 복사할 수 있습니다.

@@ -40,7 +40,7 @@ func (a *app) cloneHandler(w http.ResponseWriter, r *http.Request, id string) {
 	}
 	customCode := strings.TrimSpace(r.Header.Get("code"))
 
-	meta, generatedPassword, deleteToken, manageToken, err := a.store.CloneWithPassword(id, password, usePassword, newPassword, policy, customCode)
+	meta, generatedPassword, _, manageToken, err := a.store.CloneWithPassword(id, password, usePassword, newPassword, policy, customCode)
 	if err != nil {
 		if errors.Is(err, pastebox.ErrInvalidPassword) {
 			if isBrowserRequest(r) {
@@ -83,5 +83,5 @@ func (a *app) cloneHandler(w http.ResponseWriter, r *http.Request, id string) {
 	})
 	a.notifyDiscordPasteCreated(r, meta, newPassword != "", id)
 
-	a.writeCloneResponse(w, r, meta, generatedPassword, deleteToken, manageToken)
+	a.writeCloneResponse(w, r, meta, generatedPassword, manageToken)
 }

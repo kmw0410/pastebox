@@ -21,7 +21,7 @@ curl -F "file=@test.txt" http://localhost:8080
 ```
 
 ## Permanent Storage
-Files are stored permanently without automatic deletion and remain available until manually deleted. You can delete them directly using the link with the `?delete=code` parameter issued at upload time.
+Files are stored permanently without automatic deletion and remain available until manually deleted. Open the private manage URL returned at upload time and use its delete button, or send an authenticated `DELETE` request to the management API.
 
 ```bash
 curl -H "data-policy: permanent" -F "file=@test.txt" http://localhost:8080

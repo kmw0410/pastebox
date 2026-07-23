@@ -17,18 +17,15 @@
           <p class="description">{{ t "manage_desc" }}</p>
         </div>
 
-        {{ if not .Deleted }}
-        <div class="manage-actions">
+        <div class="manage-actions" id="manage-active-actions">
           <a class="button" href="{{ .PublicURL }}" target="_blank" rel="noopener noreferrer">{{ t "manage_open_paste" }}</a>
           <button class="button" type="button" data-copy="{{ .PublicURL }}" onclick="copyButton(this)">{{ t "manage_copy_public_url" }}</button>
           <button class="button" type="button" data-copy="{{ .ManageURL }}" onclick="copyButton(this)">{{ t "manage_copy_manage_url" }}</button>
           <a class="button" href="/">{{ t "home" }}</a>
         </div>
-        {{ else }}
-        <div class="manage-actions">
+        <div class="manage-actions is-hidden" id="manage-deleted-actions">
           <a class="button" href="/">{{ t "home" }}</a>
         </div>
-        {{ end }}
       </div>
 
       {{ if .Notice }}
@@ -38,6 +35,8 @@
       {{ if .Error }}
       <div class="alert error mt-lg">{{ .Error }}</div>
       {{ end }}
+
+      <div class="alert error mt-lg is-hidden" id="manage-delete-error"></div>
 
       {{ if .GeneratedPassword }}
       <div class="alert info mt-lg">
@@ -50,8 +49,7 @@
       </div>
       {{ end }}
 
-      {{ if not .Deleted }}
-      <div class="manage-grid mt-lg">
+      <div class="manage-grid mt-lg" id="manage-active-content">
         <article class="card manage-details-card">
           <p class="eyebrow">{{ t "manage_info_title" }}</p>
           <div class="manage-info">
@@ -111,10 +109,7 @@
           <article class="card">
             <p class="eyebrow">{{ t "manage_danger_title" }}</p>
             <p class="description">{{ t "manage_delete_desc" }}</p>
-            <form class="mt-md" method="post" action="{{ .ManageURL }}" onsubmit="return confirm('{{ t "manage_delete_confirm" }}')">
-              <input type="hidden" name="manage_action" value="delete">
-              <button class="button" type="submit">{{ t "manage_delete_button" }}</button>
-            </form>
+            <button class="button mt-md" type="button" data-delete-url="/api/v1/pastes/{{ .ID }}" data-manage-token="{{ .ManageToken }}" onclick="deleteManagedPaste(this)">{{ t "manage_delete_button" }}</button>
           </article>
         </div>
 
@@ -147,17 +142,48 @@
           </form>
         </article>
       </div>
-      {{ end }}
 
-      {{ if .Deleted }}
-      <div class="alert error mt-lg">
+      <div class="alert error mt-lg is-hidden" id="manage-deleted-notice">
+        <p>{{ t "manage_deleted" }}</p>
         <p>{{ t "manage_deleted_desc" }}</p>
       </div>
-      {{ end }}
     </div>
   </main>
 
   <script>
+    async function deleteManagedPaste(button) {
+      if (!window.confirm("{{ t "manage_delete_confirm" }}")) {
+        return;
+      }
+
+      const errorBox = document.getElementById("manage-delete-error");
+      button.disabled = true;
+      errorBox.classList.add("is-hidden");
+
+      try {
+        const response = await fetch(button.dataset.deleteUrl, {
+          method: "DELETE",
+          headers: {
+            "Accept": "application/json",
+            "paste-manage-token": button.dataset.manageToken || ""
+          }
+        });
+        if (!response.ok) {
+          const result = await response.json().catch(() => ({}));
+          throw new Error(result.error || "{{ t "manage_error_generic" }}");
+        }
+
+        document.getElementById("manage-active-actions").classList.add("is-hidden");
+        document.getElementById("manage-active-content").classList.add("is-hidden");
+        document.getElementById("manage-deleted-actions").classList.remove("is-hidden");
+        document.getElementById("manage-deleted-notice").classList.remove("is-hidden");
+      } catch (error) {
+        errorBox.textContent = error.message || "{{ t "manage_error_generic" }}";
+        errorBox.classList.remove("is-hidden");
+        button.disabled = false;
+      }
+    }
+
     async function copyButton(button) {
       const text = button.dataset.copy || "";
       const original = button.innerText;

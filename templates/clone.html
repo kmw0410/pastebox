@@ -39,10 +39,6 @@
           <a class="result-value result-link" href="{{ .ManageURL }}">{{ .ManageURL }}</a>
         </div>
 
-        <div class="result-card">
-          <p class="eyebrow">{{ t "clone_delete" }}</p>
-          <p class="result-value">{{ .DeleteURL }}</p>
-        </div>
       </div>
 
       <div class="button-row center mt-lg">
@@ -60,8 +56,7 @@
         "url: {{ .URL }}",
         {{ if .Expires }}"expires: {{ .Expires }}",{{ end }}
         {{ if .Password }}"password: {{ .Password }}",{{ end }}
-        "manage: {{ .ManageURL }}",
-        "delete: {{ .DeleteURL }}"
+        "manage: {{ .ManageURL }}"
       ].join("\n");
 
       try {

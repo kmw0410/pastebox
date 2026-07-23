@@ -21,7 +21,7 @@ curl -F "file=@test.txt" http://localhost:8080
 ```
 
 ## 영구 저장
-삭제 없이 영구적으로 저장하며 수동으로 삭제하기 전까지 보관됩니다. 업로드시 발급된 `?delete=코드` 파라미터가 붙은 링크로 직접 삭제할 수 있습니다.
+삭제 없이 영구적으로 저장하며 수동으로 삭제하기 전까지 보관됩니다. 업로드 시 반환된 비공개 관리 URL의 삭제 버튼을 사용하거나 관리 API에 인증된 `DELETE` 요청을 보내 삭제할 수 있습니다.
 
 ```bash
 curl -H "data-policy: permanent" -F "file=@test.txt" http://localhost:8080

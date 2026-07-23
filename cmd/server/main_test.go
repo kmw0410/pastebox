@@ -324,6 +324,65 @@ func TestUploadHandlerAcceptsCustomPassword(t *testing.T) {
 	_ = entry.File.Close()
 }
 
+func TestUploadResponseOmitsDeleteLink(t *testing.T) {
+	app := newTestApp(t)
+
+	plainRequest := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("plain response"))
+	plainRequest.Header.Set("Content-Type", "text/plain")
+	plainRequest.Header.Set("code", "nodelete1")
+	plainResponse := httptest.NewRecorder()
+	app.uploadHandler(plainResponse, plainRequest)
+	if plainResponse.Code != http.StatusOK {
+		t.Fatalf("plain status = %d, body=%q", plainResponse.Code, plainResponse.Body.String())
+	}
+	if strings.Contains(plainResponse.Body.String(), "delete:") || strings.Contains(plainResponse.Body.String(), "?delete=") {
+		t.Fatalf("plain response exposed delete link: %q", plainResponse.Body.String())
+	}
+	if !strings.Contains(plainResponse.Body.String(), "manage:") {
+		t.Fatalf("plain response omitted manage link: %q", plainResponse.Body.String())
+	}
+
+	jsonRequest := httptest.NewRequest(http.MethodPost, "/?format=json", strings.NewReader("json response"))
+	jsonRequest.Header.Set("Content-Type", "text/plain")
+	jsonRequest.Header.Set("code", "nodelete2")
+	jsonResponse := httptest.NewRecorder()
+	app.uploadHandler(jsonResponse, jsonRequest)
+	if jsonResponse.Code != http.StatusOK {
+		t.Fatalf("JSON status = %d, body=%q", jsonResponse.Code, jsonResponse.Body.String())
+	}
+	var fields map[string]any
+	if err := json.Unmarshal(jsonResponse.Body.Bytes(), &fields); err != nil {
+		t.Fatalf("decode JSON response: %v", err)
+	}
+	if _, ok := fields["delete"]; ok {
+		t.Fatalf("JSON response exposed delete link: %q", jsonResponse.Body.String())
+	}
+	if _, ok := fields["manage"]; !ok {
+		t.Fatalf("JSON response omitted manage link: %q", jsonResponse.Body.String())
+	}
+}
+
+func TestManagePageDeletesThroughAPI(t *testing.T) {
+	templateSource, err := os.ReadFile("../../templates/manage.html")
+	if err != nil {
+		t.Fatalf("read manage template: %v", err)
+	}
+
+	source := string(templateSource)
+	for _, required := range []string{
+		`data-delete-url="/api/v1/pastes/{{ .ID }}"`,
+		`method: "DELETE"`,
+		`"paste-manage-token": button.dataset.manageToken`,
+	} {
+		if !strings.Contains(source, required) {
+			t.Fatalf("manage template does not use authenticated DELETE API; missing %q", required)
+		}
+	}
+	if strings.Contains(source, `name="manage_action" value="delete"`) {
+		t.Fatal("manage template still submits the legacy POST delete action")
+	}
+}
+
 func TestCloneHandlerAcceptsCustomPasswordHeader(t *testing.T) {
 	app := newTestApp(t)
 	source, _, _, _, err := app.store.Create(strings.NewReader("clone body"), "source.txt", "text/plain", false, mustParsePolicy(t, "temporary"), "sourcepw")

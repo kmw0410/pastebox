@@ -133,7 +133,6 @@
   "clone_url": "URL",
   "clone_expires": "Expires",
   "clone_password": "Password",
-  "clone_delete": "Delete",
   "clone_open_paste": "Open paste",
   "clone_copy_info": "Copy info",
   "clone_manage": "Manage URL",
@@ -206,7 +205,7 @@
   "index_expiration_info": "Expiration information",
   "index_expiration_desc": "Temporary and custom-duration uploads include an expiration date in the upload response. Permanent uploads do not include an expiration date, and one-time uploads are deleted after the first successful view.",
   "index_manual_deletion": "Manual deletion",
-  "index_manual_deletion_desc": "Each upload returns a delete URL. Open the URL or request it with curl to remove the uploaded content manually.",
+  "index_manual_deletion_desc": "Delete a paste from its private manage page, or send an authenticated DELETE request to the management API.",
   "index_permanent": "Save permanently",
   "index_copy_curl": "Copy curl example"
 }

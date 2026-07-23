@@ -115,7 +115,7 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	customCode := strings.TrimSpace(r.Header.Get("code"))
 	label := r.Header.Get("label")
 
-	meta, password, deleteToken, manageToken, err := a.store.CreateWithPasswordAndLabel(reader, filename, contentType, usePassword, newPassword, policy, customCode, label)
+	meta, password, _, manageToken, err := a.store.CreateWithPasswordAndLabel(reader, filename, contentType, usePassword, newPassword, policy, customCode, label)
 	if err != nil {
 		logEvent("upload.create_failed", map[string]any{
 			"error": err,
@@ -159,20 +159,19 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	})
 	a.notifyDiscordPasteCreated(r, meta, password != "" || newPassword != "", "")
 
-	a.writeUploadResponse(w, r, meta, password, deleteToken, manageToken)
+	a.writeUploadResponse(w, r, meta, password, manageToken)
 }
 
-func (a *app) writeUploadResponse(w http.ResponseWriter, r *http.Request, meta pastebox.Metadata, password string, deleteToken string, manageToken string) {
-	a.writeUploadResponseWithMode(w, r, meta, password, deleteToken, manageToken, false)
+func (a *app) writeUploadResponse(w http.ResponseWriter, r *http.Request, meta pastebox.Metadata, password string, manageToken string) {
+	a.writeUploadResponseWithMode(w, r, meta, password, manageToken, false)
 }
 
-func (a *app) writeCloneResponse(w http.ResponseWriter, r *http.Request, meta pastebox.Metadata, password string, deleteToken string, manageToken string) {
-	a.writeUploadResponseWithMode(w, r, meta, password, deleteToken, manageToken, true)
+func (a *app) writeCloneResponse(w http.ResponseWriter, r *http.Request, meta pastebox.Metadata, password string, manageToken string) {
+	a.writeUploadResponseWithMode(w, r, meta, password, manageToken, true)
 }
 
-func (a *app) writeUploadResponseWithMode(w http.ResponseWriter, r *http.Request, meta pastebox.Metadata, password string, deleteToken string, manageToken string, clone bool) {
+func (a *app) writeUploadResponseWithMode(w http.ResponseWriter, r *http.Request, meta pastebox.Metadata, password string, manageToken string, clone bool) {
 	url := strings.TrimRight(requestBaseURL(r), "/") + "/" + meta.ID
-	deleteURL := url + "?delete=" + deleteToken
 	manageURL := url + "?manage=" + manageToken
 	format := responseFormat(r)
 
@@ -190,7 +189,6 @@ func (a *app) writeUploadResponseWithMode(w http.ResponseWriter, r *http.Request
 			Expires:           expires,
 			Password:          password,
 			Manage:            manageURL,
-			Delete:            deleteURL,
 			PasswordProtected: meta.PasswordHash != "",
 		}
 		_ = writePrettyJSON(w, resp)
@@ -205,7 +203,6 @@ func (a *app) writeUploadResponseWithMode(w http.ResponseWriter, r *http.Request
 			"URL":       url,
 			"Expires":   expires,
 			"Password":  password,
-			"DeleteURL": deleteURL,
 			"ManageURL": manageURL,
 		})
 		return
@@ -223,7 +220,6 @@ func (a *app) writeUploadResponseWithMode(w http.ResponseWriter, r *http.Request
 	}
 
 	fmt.Fprintf(w, "manage: %s\n", manageURL)
-	fmt.Fprintf(w, "delete: %s\n", deleteURL)
 }
 
 type uploadResponse struct {
@@ -231,7 +227,6 @@ type uploadResponse struct {
 	Expires           string `json:"expires,omitempty"`
 	Password          string `json:"password,omitempty"`
 	Manage            string `json:"manage,omitempty"`
-	Delete            string `json:"delete,omitempty"`
 	PasswordProtected bool   `json:"password_protected"`
 }
 

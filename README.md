@@ -235,13 +235,13 @@ Both migrations are protected by a completion marker stored in SQLite under `pas
    ```
    url: http://localhost:8080/RANDOM_CODE
    expires: 2026-06-24T14:10:26+09:00
-   delete: http://localhost:8080/RANDOM_CODE?delete=DELETE_TOKEN
+   manage: http://localhost:8080/RANDOM_CODE?manage=MANAGE_TOKEN
    ```
 
-8. **Manual Deletion**: Each upload returns a delete URL. You can use this URL to manually delete the uploaded file. Deletion requests are also recorded in the container logs.
+8. **Manual Deletion**: Open the private manage URL returned by the upload and use its delete button. The manage page sends an authenticated `DELETE` request to the management API. CLI clients can make the same request with the manage token. Deletion requests are also recorded in the container logs.
 
    ```bash
-   curl "http://localhost:8080/RANDOM_CODE?delete=DELETE_TOKEN"
+   curl -X DELETE -H "paste-manage-token: MANAGE_TOKEN" http://localhost:8080/api/v1/pastes/RANDOM_CODE
    ```
 
 9. **Password-Protected Links**: Private upload link creation using the `usepassword: true` header is supported. When this header is used, an 8-character password is issued, generated from a combination of uppercase English letters, lowercase English letters, numbers, and special characters. Files can be viewed directly using the `?password=...` query parameter or the `paste-password: ...` header, or by entering the password manually when accessing the link in a browser.
@@ -271,14 +271,13 @@ Both migrations are protected by a completion marker stored in SQLite under `pas
    curl -H "label: production deploy log" -F "file=@server.log" http://localhost:8080/
    ```
 
-11. **Upload Response Format**: When an upload succeeds, Pastebox returns the URL, expiration time, and delete link. If the upload is password-protected, the `password` field is also included.
+11. **Upload Response Format**: When an upload succeeds, Pastebox returns the URL, expiration time, and private manage link. If the upload is password-protected with a generated password, the `password` field is also included.
 
    ```
    url: http://localhost:8080/RANDOM_CODE
    expires: 2026-06-24T14:10:26+09:00
    password: RANDOM_PASSWORD
    manage: http://localhost:8080/RANDOM_CODE?manage=MANAGE_TOKEN
-   delete: http://localhost:8080/RANDOM_CODE?delete=DELETE_TOKEN
    ```
 
    If you need a JSON response for parsing by scripts or other tools, append `?format=json` to the upload request:
@@ -293,7 +292,7 @@ Both migrations are protected by a completion marker stored in SQLite under `pas
      "expires": "2026-06-24T14:10:26+09:00",
      "password": "RANDOM_PASSWORD",
      "manage": "http://localhost:8080/RANDOM_CODE?manage=MANAGE_TOKEN",
-     "delete": "http://localhost:8080/RANDOM_CODE?delete=DELETE_TOKEN"
+     "password_protected": true
    }
    ```
 
@@ -307,12 +306,12 @@ Both migrations are protected by a completion marker stored in SQLite under `pas
 
    When converting a password-protected paste back to public, Pastebox requires the current generated password for verification first.
 
-   CLI and automation clients can use the versioned JSON API at `/api/v1/pastes/<code>`. Send the private token in `paste-manage-token` or `paste-delete-token`; tokens are never returned by this API. `GET` returns management metadata, `PATCH` accepts the actions `set_label`, `set_policy`, `enable_password`, and `disable_password`, and `DELETE` removes the paste.
+   CLI and automation clients can use the versioned JSON API at `/api/v1/pastes/<code>`. Send the private manage token in the `paste-manage-token` header; tokens are never returned by this API. `GET` returns management metadata, `PATCH` accepts the actions `set_label`, `set_policy`, `enable_password`, and `disable_password`, and `DELETE` removes the paste.
 
    ```bash
    curl -H "paste-manage-token: MANAGE_TOKEN" http://localhost:8080/api/v1/pastes/RANDOM_CODE
    curl -X PATCH -H "Content-Type: application/json" -H "paste-manage-token: MANAGE_TOKEN" --data '{"action":"set_policy","data_policy":"12h"}' http://localhost:8080/api/v1/pastes/RANDOM_CODE
-   curl -X DELETE -H "paste-delete-token: DELETE_TOKEN" http://localhost:8080/api/v1/pastes/RANDOM_CODE
+   curl -X DELETE -H "paste-manage-token: MANAGE_TOKEN" http://localhost:8080/api/v1/pastes/RANDOM_CODE
    ```
 
 13. **Copy Content in Browser**: When opening a text-based upload link in the browser, you can copy the content to your clipboard using the `Copy` button next to the `Raw` button.

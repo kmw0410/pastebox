@@ -15,6 +15,7 @@ type managePageData struct {
 	Label             string
 	PublicURL         string
 	ManageURL         string
+	ManageToken       string
 	CreatedAt         time.Time
 	ExpiresAt         time.Time
 	DataPolicy        string
@@ -22,7 +23,6 @@ type managePageData struct {
 	Notice            string
 	Error             string
 	GeneratedPassword string
-	Deleted           bool
 	PolicyKind        string
 	CustomPolicyValue string
 }
@@ -47,7 +47,7 @@ func (a *app) manageHandler(w http.ResponseWriter, r *http.Request, id string) {
 			return
 		}
 
-		a.renderManagePage(w, r, meta, token, "", "", "", false)
+		a.renderManagePage(w, r, meta, token, "", "", "")
 		return
 	case http.MethodPost:
 		if err := r.ParseForm(); err != nil {
@@ -63,7 +63,7 @@ func (a *app) manageHandler(w http.ResponseWriter, r *http.Request, id string) {
 				a.renderManageError(w, r, id, token, a.manageErrorMessage(err))
 				return
 			}
-			a.renderManagePage(w, r, meta, token, a.i18n.T("manage_password_enabled"), "", password, false)
+			a.renderManagePage(w, r, meta, token, a.i18n.T("manage_password_enabled"), "", password)
 		case "disable_password":
 			password := r.FormValue("password")
 			meta, err := a.store.ClearPasswordProtection(id, token, password)
@@ -71,7 +71,7 @@ func (a *app) manageHandler(w http.ResponseWriter, r *http.Request, id string) {
 				a.renderManageError(w, r, id, token, a.manageErrorMessage(err))
 				return
 			}
-			a.renderManagePage(w, r, meta, token, a.i18n.T("manage_password_disabled"), "", "", false)
+			a.renderManagePage(w, r, meta, token, a.i18n.T("manage_password_disabled"), "", "")
 		case "set_policy":
 			policy, err := parseManagePolicyForm(r)
 			if err != nil {
@@ -83,21 +83,14 @@ func (a *app) manageHandler(w http.ResponseWriter, r *http.Request, id string) {
 				a.renderManageError(w, r, id, token, a.manageErrorMessage(err))
 				return
 			}
-			a.renderManagePage(w, r, meta, token, a.i18n.T("manage_policy_updated"), "", "", false)
+			a.renderManagePage(w, r, meta, token, a.i18n.T("manage_policy_updated"), "", "")
 		case "set_label":
 			meta, err := a.store.SetLabel(id, token, r.FormValue("label"))
 			if err != nil {
 				a.renderManageError(w, r, id, token, a.manageErrorMessage(err))
 				return
 			}
-			a.renderManagePage(w, r, meta, token, a.i18n.T("manage_label_updated"), "", "", false)
-		case "delete":
-			if err := a.store.DeleteManaged(id, token); err != nil {
-				a.renderManageError(w, r, id, token, a.manageErrorMessage(err))
-				return
-			}
-			a.notifyDiscordPasteDeleted(id, "manage page")
-			a.renderManageDeleted(w, r, id, token)
+			a.renderManagePage(w, r, meta, token, a.i18n.T("manage_label_updated"), "", "")
 		default:
 			a.renderManageError(w, r, id, token, a.i18n.T("manage_error_invalid_action"))
 		}
@@ -106,32 +99,16 @@ func (a *app) manageHandler(w http.ResponseWriter, r *http.Request, id string) {
 	}
 }
 
-func (a *app) renderManageDeleted(w http.ResponseWriter, r *http.Request, id string, token string) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-
-	baseURL := requestBaseURL(r)
-	publicURL := strings.TrimRight(baseURL, "/") + "/" + id
-
-	_ = a.managePage.Execute(w, managePageData{
-		ID:        id,
-		PublicURL: publicURL,
-		ManageURL: publicURL + "?manage=" + token,
-		Notice:    a.i18n.T("manage_deleted"),
-		Deleted:   true,
-	})
-}
-
 func (a *app) renderManageError(w http.ResponseWriter, r *http.Request, id string, token string, message string) {
 	meta, err := a.store.ManageMetadata(id, token)
 	if err != nil {
 		a.notFoundHandler(w, r)
 		return
 	}
-	a.renderManagePage(w, r, meta, token, "", message, "", false)
+	a.renderManagePage(w, r, meta, token, "", message, "")
 }
 
-func (a *app) renderManagePage(w http.ResponseWriter, r *http.Request, meta pastebox.Metadata, token string, notice string, errMsg string, generatedPassword string, deleted bool) {
+func (a *app) renderManagePage(w http.ResponseWriter, r *http.Request, meta pastebox.Metadata, token string, notice string, errMsg string, generatedPassword string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	baseURL := requestBaseURL(r)
@@ -145,6 +122,7 @@ func (a *app) renderManagePage(w http.ResponseWriter, r *http.Request, meta past
 		Label:             meta.Label,
 		PublicURL:         publicURL,
 		ManageURL:         manageURL,
+		ManageToken:       token,
 		CreatedAt:         meta.CreatedAt,
 		ExpiresAt:         meta.ExpiresAt,
 		DataPolicy:        meta.DataPolicy,
@@ -152,7 +130,6 @@ func (a *app) renderManagePage(w http.ResponseWriter, r *http.Request, meta past
 		Notice:            notice,
 		Error:             errMsg,
 		GeneratedPassword: generatedPassword,
-		Deleted:           deleted,
 		PolicyKind:        policyKind,
 		CustomPolicyValue: customPolicyValue,
 	})

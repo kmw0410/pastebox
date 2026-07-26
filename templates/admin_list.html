@@ -63,6 +63,33 @@
         </div>
       </div>
 
+      <div class="card mt-lg">
+        <div class="admin-control">
+          <div>
+            <p class="eyebrow cyan">{{ t "admin_update_title" }}</p>
+            <p class="description strong">
+              {{ t "admin_current_version" }} <span class="mono">{{ .Release.Current }}</span>
+              ·
+              {{ t "admin_latest_version" }}
+              {{ if .Release.CheckFailed }}<span class="mono">-</span>{{ else }}<span class="mono">{{ .Release.Latest }}</span>{{ end }}
+            </p>
+            {{ if .Release.CheckFailed }}
+            <p class="notice-text pink">{{ t "admin_update_check_failed" }}</p>
+            {{ else if .Release.Development }}
+            <p class="notice-text">{{ t "admin_update_development" }}</p>
+            {{ else if .Release.UpdateAvailable }}
+            <p class="notice-text cyan">{{ t "admin_update_available" }}</p>
+            {{ else }}
+            <p class="notice-text">{{ t "admin_update_current" }}</p>
+            {{ end }}
+          </div>
+
+          {{ if .Release.ReleaseURL }}
+          <a class="button" href="{{ .Release.ReleaseURL }}" target="_blank" rel="noopener noreferrer">{{ t "admin_view_release" }}</a>
+          {{ end }}
+        </div>
+      </div>
+
       <div class="admin-split mt-lg">
         <div class="card">
           <p class="eyebrow cyan">{{ t "admin_storage_backend" }}</p>

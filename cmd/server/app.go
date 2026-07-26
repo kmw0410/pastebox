@@ -30,6 +30,7 @@ type app struct {
 	adminResetToken string
 	authLimiter     *authAttemptLimiter
 	discordWebhook  *discordWebhookNotifier
+	releaseChecker  *releaseChecker
 }
 
 type adminActor struct {
@@ -72,6 +73,7 @@ func newApp(store *pastebox.Store, i18n *localizer, adminResetToken string) (*ap
 		adminSetupToken: adminSetupToken,
 		adminResetToken: adminResetToken,
 		authLimiter:     newAuthAttemptLimiter(authFailureWindow, authFailureLimit),
+		releaseChecker:  newReleaseChecker(version),
 	}, nil
 }
 

@@ -12,6 +12,8 @@ RUN printf '%s\n' \
 
 WORKDIR /src
 
+ARG VERSION=development
+
 COPY go.mod ./
 COPY cmd ./cmd
 COPY internal ./internal
@@ -20,7 +22,7 @@ COPY internal ./internal
 # This fixes builds where go.sum does not exist on the host.
 RUN go mod tidy
 
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags='-s -w' -o /out/pastebox ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w -X main.version=${VERSION}" -o /out/pastebox ./cmd/server
 
 FROM alpine:3.24.1
 

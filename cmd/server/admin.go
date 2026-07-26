@@ -76,6 +76,7 @@ func (a *app) adminIndexHandler(w http.ResponseWriter, r *http.Request) {
 		"UploadsDisabled": uploadsDisabled,
 		"Notice":          popAdminFlash(w, r),
 		"CSRFToken":       issueAdminCSRFToken(w, r),
+		"Release":         a.releaseChecker.Check(r.Context()),
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

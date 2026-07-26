@@ -64,9 +64,7 @@ manage: {{ .BaseURL }}/AbC12?manage=MANAGE_TOKEN</code></pre>
         <article class="card wide-card">
           <p class="example-label">{{ t "index_manual_deletion" }}</p>
           <p class="description">{{ t "index_manual_deletion_desc" }}</p>
-          <pre class="plain-code mt-sm"><code>curl -X DELETE \
-  -H "paste-manage-token: MANAGE_TOKEN" \
-  {{ .BaseURL }}/api/v1/pastes/AbC12</code></pre>
+          <pre class="plain-code mt-sm"><code>curl -X DELETE -H "paste-manage-token: MANAGE_TOKEN" {{ .BaseURL }}/api/v1/pastes/AbC12</code></pre>
         </article>
       </section>
     </div>

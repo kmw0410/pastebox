@@ -14,23 +14,65 @@ The service targets simple Docker operation, minimal dependencies, and a dark UI
 ## 2. Directory Structure
 ```text
 pastebox/
+├── .github/
+│   └── workflows/
+│       ├── docker-publish.yml
+│       └── release.yml
+├── .gitignore
+├── AGENTS.md
+├── WORK.md
+├── API.md
+├── API_ko.md
+├── DATA_POLICY.md
+├── DATA_POLICY_ko.md
 ├── Dockerfile
 ├── docker-compose.yml
-├── docker-compose-dockerhub.yml
 ├── docker-entrypoint.sh
 ├── go.mod
 ├── go.sum
+├── LICENSE
 ├── README.md
 ├── README_ko.md
-├── API.md
-├── API_ko.md
-├── AGENTS.md
+├── 404.png
+├── admin.png
+├── main.png
+├── password-protected.png
+├── paste.png
 ├── cmd/
 │   └── server/
-│       └── main.go
+│       ├── admin.go
+│       ├── app.go
+│       ├── auth.go
+│       ├── discord_webhook.go
+│       ├── discord_webhook_test.go
+│       ├── handler_api.go
+│       ├── handler_api_test.go
+│       ├── handler_clone.go
+│       ├── handler_health.go
+│       ├── handler_index.go
+│       ├── handler_manage.go
+│       ├── handler_paste.go
+│       ├── handler_upload.go
+│       ├── i18n.go
+│       ├── logging.go
+│       ├── main.go
+│       ├── main_test.go
+│       ├── routes.go
+│       ├── upload_validation.go
+│       ├── util.go
+│       ├── version.go
+│       └── version_test.go
 ├── internal/
+│   ├── admin_mysql_store.go
+│   ├── admin_store.go
+│   ├── data_policy.go
+│   ├── locks.go
 │   ├── metadata.go
-│   └── store.go
+│   ├── mysql_store.go
+│   ├── secrets.go
+│   ├── store.go
+│   ├── store_local.go
+│   └── store_test.go
 ├── locales/
 │   ├── en.json
 │   └── ko.json
@@ -40,11 +82,14 @@ pastebox/
     ├── admin_list.html
     ├── admin_reset.html
     ├── clone.html
+    ├── css/
+    │   ├── common.css
+    │   ├── pages.css
+    │   └── paste.css
     ├── index.html
     ├── manage.html
     ├── password.html
-    ├── paste.html
-    └── (optional design prototypes)
+    └── paste.html
 ```
 
 ## 3. Architecture
@@ -68,7 +113,8 @@ Host mapping is typically `./data:/paste-data`.
 - HTML must remain in external template files under `templates/`; do not inline large templates in Go code.
 - Preserve fine-grained per-paste locking in the store layer; do not replace with a single global lock.
 - When asked which files were modified, respond only with files changed in the most recent edit scope.
-- When committing, exclude `WORK.md` and `AGENTS.md` unless the user explicitly asks to include them.
+- When committing, exclude `WORK.md` unless the user explicitly asks to include it.
+- When `AGENTS.md` is modified, always include it in the relevant commit rather than leaving it uncommitted.
 - When committing, add a `Co-authored-by: Codex <codex@openai.com>` trailer unless the user explicitly asks not to.
 - If a change scope would be split into 2 or more commits, ask before pushing; otherwise commit only unless the user explicitly says to push.
 - When the user requests multiple distinct tasks and authorizes pushing them, finish and commit each task separately, run the final combined validation, and then push all resulting commits together once. Do not push each task immediately after its commit unless the user explicitly requests per-task pushes.

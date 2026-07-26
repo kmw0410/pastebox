@@ -21,6 +21,7 @@
   "admin_expired_desc": "links waiting for cleanup",
   "admin_update_title": "Version Update",
   "admin_current_version": "Current",
+  "admin_commit": "commit",
   "admin_latest_version": "Latest",
   "admin_update_available": "A new Pastebox release is available.",
   "admin_update_current": "Pastebox is up to date.",

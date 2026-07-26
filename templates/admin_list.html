@@ -69,9 +69,11 @@
             <p class="eyebrow cyan">{{ t "admin_update_title" }}</p>
             <p class="description strong">
               {{ t "admin_current_version" }} <span class="mono">{{ .Release.Current }}</span>
+              <span class="mono">({{ t "admin_commit" }} {{ .Release.Commit }})</span>
               ·
               {{ t "admin_latest_version" }}
-              {{ if .Release.CheckFailed }}<span class="mono">-</span>{{ else }}<span class="mono">{{ .Release.Latest }}</span>{{ end }}
+              {{ if .Release.CheckFailed }}<span class="mono">-</span>{{ else }}<span class="mono">{{ .Release.Latest }}</span>
+              <span class="mono">({{ t "admin_commit" }} {{ .Release.LatestCommit }})</span>{{ end }}
             </p>
             {{ if .Release.CheckFailed }}
             <p class="notice-text pink">{{ t "admin_update_check_failed" }}</p>

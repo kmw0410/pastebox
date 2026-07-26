@@ -73,7 +73,7 @@ func newApp(store *pastebox.Store, i18n *localizer, adminResetToken string) (*ap
 		adminSetupToken: adminSetupToken,
 		adminResetToken: adminResetToken,
 		authLimiter:     newAuthAttemptLimiter(authFailureWindow, authFailureLimit),
-		releaseChecker:  newReleaseChecker(version),
+		releaseChecker:  newReleaseChecker(version, commit),
 	}, nil
 }
 

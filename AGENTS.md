@@ -251,9 +251,10 @@ Required admin copy:
 Admin list timestamps should be converted to local time before rendering.
 
 Admin update check:
-- The admin page should show both the running Pastebox version and the latest GitHub Release version.
+- The admin page should show both the running Pastebox version and the latest GitHub Release version with their respective short Git commit IDs.
 - The latest version must come from the public GitHub Releases API for `kmw0410/pastebox`.
-- Docker release builds must inject the workflow-generated release tag into the server binary as the running version.
+- Resolve the latest release commit from the Git ref for the release tag; do not treat `target_commitish` as a commit SHA.
+- Docker release builds must inject both the workflow-generated release tag and the short commit ID into the server binary.
 - A failed release lookup must not block the admin page; show an unavailable state and keep the existing admin functions working.
 - Cache release lookup results to avoid unnecessary GitHub API requests.
 
@@ -337,7 +338,7 @@ Docker publish workflow requirements:
 - Push tags/images:
   - `kmw0410/pastebox:latest`
   - `kmw0410/pastebox:vYY.MM.DD`
-- Pass the generated release tag into the Docker build so the admin page can report the running version.
+- Pass the generated release tag and short commit ID into the Docker build so the admin page can report the running build precisely.
 - If same date tag exists, append incrementing suffix (`-1`, `-2`, ...).
 - Multi-arch support must include:
   - `linux/amd64`

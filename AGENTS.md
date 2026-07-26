@@ -204,6 +204,13 @@ Required admin copy:
 
 Admin list timestamps should be converted to local time before rendering.
 
+Admin update check:
+- The admin page should show both the running Pastebox version and the latest GitHub Release version.
+- The latest version must come from the public GitHub Releases API for `kmw0410/pastebox`.
+- Docker release builds must inject the workflow-generated release tag into the server binary as the running version.
+- A failed release lookup must not block the admin page; show an unavailable state and keep the existing admin functions working.
+- Cache release lookup results to avoid unnecessary GitHub API requests.
+
 ## 10. Language and Localization
 - UI language is selected with `LANGUAGE` env var.
 - Supported values: `en`, `ko`.
@@ -284,6 +291,7 @@ Docker publish workflow requirements:
 - Push tags/images:
   - `kmw0410/pastebox:latest`
   - `kmw0410/pastebox:vYY.MM.DD`
+- Pass the generated release tag into the Docker build so the admin page can report the running version.
 - If same date tag exists, append incrementing suffix (`-1`, `-2`, ...).
 - Multi-arch support must include:
   - `linux/amd64`

@@ -85,7 +85,7 @@
     <div class="paste-scrollbar">
       <div id="viewer" class="paste-viewer">
         <pre id="lineNumbers" aria-hidden="true" class="is-hidden"></pre>
-        <pre class="paste-code"><code id="pasteContent" class="language-{{ .Language }}">{{ .Content }}</code></pre>
+        <pre class="paste-code"><code id="pasteContent" class="language-{{ .Language }}">{{ .Content }}</code>{{ if .Truncated }}<span id="remainingLinesNotice" class="paste-more-lines">... ({{ if eq .RemainingLines 1 }}{{ t "paste_one_more_line" }}{{ else }}{{ printf (t "paste_more_lines") .RemainingLines }}{{ end }})</span>{{ end }}</pre>
       </div>
       {{ if .Truncated }}
       <template id="remainingPasteContent">{{ .Remaining }}</template>
@@ -126,6 +126,10 @@
     }
 
     async function renderFullPaste(content) {
+      const remainingLinesNotice = document.getElementById("remainingLinesNotice");
+      if (remainingLinesNotice) {
+        remainingLinesNotice.remove();
+      }
       rawText = content;
       lines = rawText.split("\n");
       longestLineLength = lines.reduce((max, line) => Math.max(max, line.length), 0);

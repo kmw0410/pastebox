@@ -76,15 +76,19 @@ func (a *app) viewHandler(w http.ResponseWriter, r *http.Request, id string) {
 		if !raw && browser && isTextEntry(entry) && (!oneTime || entry.Meta.Size <= maxHTMLViewSize) {
 			var preview, remaining []byte
 			var truncated bool
+			var remainingLines int
 			if oneTime {
 				content, err := io.ReadAll(entry.File)
 				if err != nil {
 					return err
 				}
 				preview, remaining, truncated = splitPastePreview(content, maxInitialHTMLViewLines)
+				if truncated {
+					remainingLines = pasteLineCount(content) - pasteLineCount(preview)
+				}
 			} else {
 				var err error
-				preview, truncated, err = readPastePreview(entry.File, maxInitialHTMLViewLines, maxInitialHTMLViewBytes)
+				preview, truncated, remainingLines, err = readPastePreview(entry.File, maxInitialHTMLViewLines, maxInitialHTMLViewBytes)
 				if err != nil {
 					return err
 				}
@@ -94,18 +98,19 @@ func (a *app) viewHandler(w http.ResponseWriter, r *http.Request, id string) {
 			w.WriteHeader(http.StatusOK)
 
 			return a.paste.Execute(w, map[string]any{
-				"ID":            entry.Meta.ID,
-				"Filename":      entry.Meta.Filename,
-				"Label":         entry.Meta.Label,
-				"Content":       string(preview),
-				"Remaining":     string(remaining),
-				"Truncated":     truncated,
-				"OneTime":       oneTime,
-				"Language":      syntaxLanguage(entry.Meta.Filename, entry.Meta.ContentType),
-				"Password":      password,
-				"OGTitle":       "Pastebox - " + entry.Meta.ID,
-				"OGDescription": pasteOpenGraphDescription(entry.Meta),
-				"PublicURL":     strings.TrimRight(requestBaseURL(r), "/") + "/" + entry.Meta.ID,
+				"ID":             entry.Meta.ID,
+				"Filename":       entry.Meta.Filename,
+				"Label":          entry.Meta.Label,
+				"Content":        string(preview),
+				"Remaining":      string(remaining),
+				"Truncated":      truncated,
+				"RemainingLines": remainingLines,
+				"OneTime":        oneTime,
+				"Language":       syntaxLanguage(entry.Meta.Filename, entry.Meta.ContentType),
+				"Password":       password,
+				"OGTitle":        "Pastebox - " + entry.Meta.ID,
+				"OGDescription":  pasteOpenGraphDescription(entry.Meta),
+				"PublicURL":      strings.TrimRight(requestBaseURL(r), "/") + "/" + entry.Meta.ID,
 			})
 		}
 
@@ -123,17 +128,41 @@ func (a *app) viewHandler(w http.ResponseWriter, r *http.Request, id string) {
 	}
 }
 
-func readPastePreview(reader io.Reader, maxLines int, maxBytes int64) ([]byte, bool, error) {
+func readPastePreview(reader io.Reader, maxLines int, maxBytes int64) ([]byte, bool, int, error) {
 	if maxLines <= 0 || maxBytes <= 0 {
-		return nil, false, nil
+		return nil, false, 0, nil
 	}
 
-	sample, err := io.ReadAll(io.LimitReader(reader, maxBytes+1))
-	if err != nil {
-		return nil, false, err
+	sampleLimit := maxBytes + 1
+	sample := make([]byte, 0, sampleLimit)
+	buffer := make([]byte, 32*1024)
+	totalBytes := int64(0)
+	totalNewlines := 0
+	var lastByte byte
+	for {
+		n, err := reader.Read(buffer)
+		if n > 0 {
+			chunk := buffer[:n]
+			totalBytes += int64(n)
+			totalNewlines += bytes.Count(chunk, []byte{'\n'})
+			lastByte = chunk[n-1]
+			if int64(len(sample)) < sampleLimit {
+				remaining := int(sampleLimit - int64(len(sample)))
+				if remaining > n {
+					remaining = n
+				}
+				sample = append(sample, chunk[:remaining]...)
+			}
+		}
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return nil, false, 0, err
+		}
 	}
 
-	byteTruncated := int64(len(sample)) > maxBytes
+	byteTruncated := totalBytes > maxBytes
 	if byteTruncated {
 		sample = sample[:maxBytes]
 		for len(sample) > 0 && !utf8.Valid(sample) {
@@ -142,7 +171,28 @@ func readPastePreview(reader io.Reader, maxLines int, maxBytes int64) ([]byte, b
 	}
 
 	preview, _, lineTruncated := splitPastePreview(sample, maxLines)
-	return preview, byteTruncated || lineTruncated, nil
+	truncated := byteTruncated || lineTruncated
+	totalLines := totalNewlines
+	if totalBytes > 0 && lastByte != '\n' {
+		totalLines++
+	}
+	remainingLines := totalLines - pasteLineCount(preview)
+	if truncated && remainingLines < 1 {
+		remainingLines = 1
+	}
+	return preview, truncated, remainingLines, nil
+}
+
+func pasteLineCount(content []byte) int {
+	if len(content) == 0 {
+		return 0
+	}
+
+	count := bytes.Count(content, []byte{'\n'})
+	if content[len(content)-1] != '\n' {
+		count++
+	}
+	return count
 }
 
 func splitPastePreview(content []byte, maxLines int) ([]byte, []byte, bool) {

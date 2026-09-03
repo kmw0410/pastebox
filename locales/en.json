@@ -129,6 +129,8 @@
   "paste_load_full_confirm": "Loading the full paste may slow down your browser. Continue?",
   "paste_loading_full": "Loading...",
   "paste_load_full_error": "The full paste could not be loaded.",
+  "paste_more_lines": "%d more lines",
+  "paste_one_more_line": "1 more line",
   "password_page_title": "Password Required",
   "password_badge": "Protected paste",
   "password_required_title": "Password required",

@@ -239,6 +239,12 @@ body.paste-page {
   white-space: pre;
 }
 
+.paste-more-lines {
+  display: block;
+  color: #71717a;
+  font-style: italic;
+}
+
 #pasteContent {
   padding: 0;
   background: transparent;

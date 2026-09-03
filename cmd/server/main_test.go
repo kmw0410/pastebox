@@ -234,24 +234,20 @@ func TestSplitPastePreview(t *testing.T) {
 }
 
 func TestReadPastePreviewLimitsLinesAndBytes(t *testing.T) {
-	linePreview, truncated, err := readPastePreview(strings.NewReader("one\ntwo\nthree"), 2, 1024)
+	linePreview, truncated, remainingLines, err := readPastePreview(strings.NewReader("one\ntwo\nthree"), 2, 1024)
 	if err != nil {
 		t.Fatalf("readPastePreview line limit failed: %v", err)
 	}
-	if string(linePreview) != "one\ntwo" || !truncated {
-		t.Fatalf("line preview = %q, truncated = %v", linePreview, truncated)
+	if string(linePreview) != "one\ntwo" || !truncated || remainingLines != 1 {
+		t.Fatalf("line preview = %q, truncated = %v, remaining lines = %d", linePreview, truncated, remainingLines)
 	}
 
-	source := strings.NewReader(strings.Repeat("가", 100))
-	bytePreview, truncated, err := readPastePreview(source, 400, 10)
+	bytePreview, truncated, remainingLines, err := readPastePreview(strings.NewReader(strings.Repeat("가", 100)), 400, 10)
 	if err != nil {
 		t.Fatalf("readPastePreview byte limit failed: %v", err)
 	}
-	if !utf8.Valid(bytePreview) || len(bytePreview) > 10 || !truncated {
-		t.Fatalf("byte preview length = %d, valid UTF-8 = %v, truncated = %v", len(bytePreview), utf8.Valid(bytePreview), truncated)
-	}
-	if source.Len() == 0 {
-		t.Fatal("readPastePreview consumed the full source past its byte limit")
+	if !utf8.Valid(bytePreview) || len(bytePreview) > 10 || !truncated || remainingLines != 1 {
+		t.Fatalf("byte preview length = %d, valid UTF-8 = %v, truncated = %v, remaining lines = %d", len(bytePreview), utf8.Valid(bytePreview), truncated, remainingLines)
 	}
 }
 
@@ -264,6 +260,12 @@ func TestPasteTemplateShowsFullLoadConfirmationForTruncatedContent(t *testing.T)
 			if key == "paste_load_full_confirm" {
 				return "Load everything?"
 			}
+			if key == "paste_more_lines" {
+				return "%d more lines"
+			}
+			if key == "paste_one_more_line" {
+				return "1 more line"
+			}
 			return key
 		},
 	}).ParseFiles("../../templates/paste.html")
@@ -273,18 +275,19 @@ func TestPasteTemplateShowsFullLoadConfirmationForTruncatedContent(t *testing.T)
 
 	var output bytes.Buffer
 	err = tpl.ExecuteTemplate(&output, "paste.html", map[string]any{
-		"ID":        "preview1",
-		"Content":   "first",
-		"Remaining": "\nsecond",
-		"Truncated": true,
-		"Language":  "plaintext",
+		"ID":             "preview1",
+		"Content":        "first",
+		"Remaining":      "\nsecond",
+		"RemainingLines": 125,
+		"Truncated":      true,
+		"Language":       "plaintext",
 	})
 	if err != nil {
 		t.Fatalf("ExecuteTemplate failed: %v", err)
 	}
 
 	body := output.String()
-	for _, want := range []string{`id="loadFullButton"`, "Load full paste", `window.confirm("Load everything?")`, `id="remainingPasteContent"`} {
+	for _, want := range []string{`id="loadFullButton"`, "Load full paste", `window.confirm("Load everything?")`, `id="remainingPasteContent"`, `id="remainingLinesNotice"`, "... (125 more lines)", "remainingLinesNotice.remove()"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("rendered template does not contain %q", want)
 		}

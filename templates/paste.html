@@ -11,17 +11,10 @@
   <meta property="og:url" content="{{ .PublicURL }}">
   <link rel="stylesheet" href="/css/common.css">
   <link rel="stylesheet" href="/css/paste.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/bash.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/dockerfile.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/gitignore.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/ini.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/lua.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/makefile.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/nginx.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/sql.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/toml.min.js"></script>
+  <script defer src="/js/highlight.min.js?v=11.11.1"></script>
+  <script defer src="/js/dockerfile.min.js?v=11.11.1"></script>
+  <script defer src="/js/nginx.min.js?v=11.11.1"></script>
+  <script defer src="/js/kdl.min.js?v=1"></script>
 </head>
 <body class="paste-page">
   <header class="paste-header">
@@ -41,6 +34,16 @@
       </div>
 
       <div class="paste-actions">
+        {{ if .Truncated }}
+        <button
+          id="loadFullButton"
+          type="button"
+          class="paste-button cyan"
+          onclick="loadFullPaste()"
+        >
+          {{ t "paste_load_full" }}
+        </button>
+        {{ end }}
         <button
           id="copyButton"
           type="button"
@@ -84,6 +87,9 @@
         <pre id="lineNumbers" aria-hidden="true" class="is-hidden"></pre>
         <pre class="paste-code"><code id="pasteContent" class="language-{{ .Language }}">{{ .Content }}</code></pre>
       </div>
+      {{ if .Truncated }}
+      <template id="remainingPasteContent">{{ .Remaining }}</template>
+      {{ end }}
     </div>
   </main>
 
@@ -95,11 +101,96 @@
     const longLineHint = document.getElementById("longLineHint");
     const pasteCode = document.querySelector(".paste-code");
     const pasteContent = document.getElementById("pasteContent");
-    const rawText = pasteContent.textContent || "";
-    const lines = rawText.split("\n");
-    const longestLineLength = lines.reduce((max, line) => Math.max(max, line.length), 0);
+    const pasteLanguage = "{{ .Language }}";
+    const pastePassword = {{ .Password }};
+    let rawText = pasteContent.textContent || "";
+    let lines = rawText.split("\n");
+    let longestLineLength = lines.reduce((max, line) => Math.max(max, line.length), 0);
     const longLineThreshold = 200;
+    const maxHighlightedLineLength = 10000;
+    const renderBatchLines = 400;
     let wrapEnabled = false;
+
+    function canHighlight() {
+      return window.hljs && pasteLanguage !== "logs" && longestLineLength <= maxHighlightedLineLength && hljs.getLanguage(pasteLanguage);
+    }
+
+    function updateLongLineState() {
+      if (longestLineLength < longLineThreshold) {
+        return;
+      }
+
+      longLineHint.classList.remove("is-hidden");
+      wrapToggle.classList.add("long-line");
+      wrapToggle.setAttribute("title", "Wrap very long lines for easier reading");
+    }
+
+    async function renderFullPaste(content) {
+      rawText = content;
+      lines = rawText.split("\n");
+      longestLineLength = lines.reduce((max, line) => Math.max(max, line.length), 0);
+      pasteContent.textContent = "";
+
+      for (let start = 0; start < lines.length; start += renderBatchLines) {
+        const end = Math.min(start + renderBatchLines, lines.length);
+        let chunk = lines.slice(start, end).join("\n");
+        if (end < lines.length) {
+          chunk += "\n";
+        }
+
+        if (canHighlight()) {
+          const highlighted = hljs.highlight(chunk, { language: pasteLanguage, ignoreIllegals: true });
+          pasteContent.insertAdjacentHTML("beforeend", highlighted.value);
+        } else {
+          pasteContent.appendChild(document.createTextNode(chunk));
+        }
+
+        await new Promise(window.requestAnimationFrame);
+      }
+
+      if (!lineNumbers.classList.contains("is-hidden")) {
+        renderLineNumbers();
+      } else {
+        lineNumbers.textContent = "";
+      }
+      updateLongLineState();
+    }
+
+    async function loadFullPaste() {
+      if (!window.confirm({{ t "paste_load_full_confirm" }})) {
+        return;
+      }
+
+      const remaining = document.getElementById("remainingPasteContent");
+      const button = document.getElementById("loadFullButton");
+      button.disabled = true;
+      button.innerText = {{ t "paste_loading_full" }};
+
+      try {
+        let fullContent;
+        if (remaining) {
+          fullContent = rawText + (remaining.content.textContent || "");
+          remaining.remove();
+        } else {
+          const rawURL = new URL(window.location.href);
+          rawURL.searchParams.set("format", "raw");
+          rawURL.searchParams.delete("raw");
+          const headers = pastePassword ? { "paste-password": pastePassword } : {};
+          const response = await fetch(rawURL, { headers, credentials: "same-origin" });
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          fullContent = await response.text();
+        }
+
+        await renderFullPaste(fullContent);
+        button.remove();
+      } catch (error) {
+        button.disabled = false;
+        button.innerText = {{ t "paste_load_full" }};
+        window.alert({{ t "paste_load_full_error" }});
+      }
+    }
 
     function renderLineNumbers() {
       const lineCount = Math.max(1, lines.length);
@@ -119,6 +210,9 @@
       }
 
       const enabled = lineNumbers.classList.contains("is-hidden");
+      if (enabled) {
+        renderLineNumbers();
+      }
       setLineNumbersEnabled(enabled);
     }
 
@@ -143,16 +237,12 @@
     }
 
     renderLineNumbers();
-
-    if (longestLineLength >= longLineThreshold) {
-      longLineHint.classList.remove("is-hidden");
-      wrapToggle.classList.add("long-line");
-      wrapToggle.setAttribute("title", "Wrap very long lines for easier reading");
-    }
-
-    if (window.hljs && "{{ .Language }}" !== "logs") {
-      hljs.highlightElement(pasteContent);
-    }
+    updateLongLineState();
+    window.addEventListener("DOMContentLoaded", () => {
+      if (canHighlight()) {
+        hljs.highlightElement(pasteContent);
+      }
+    });
 
     async function copyPasteContent() {
       const button = document.getElementById("copyButton");

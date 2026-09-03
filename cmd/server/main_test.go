@@ -14,6 +14,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	pastebox "pastebox/internal"
 )
@@ -142,23 +143,33 @@ func TestViewHandlerGetConsumesOncePaste(t *testing.T) {
 	}
 }
 
-func TestViewHandlerLimitsHTMLRenderingByPasteSize(t *testing.T) {
+func TestViewHandlerLimitsLargeOneTimeHTMLRendering(t *testing.T) {
 	tests := []struct {
 		name        string
 		size        int64
+		policy      string
 		contentType string
 		wantBody    string
 	}{
 		{
-			name:        "renders paste at HTML view limit",
+			name:        "renders one-time paste at HTML view limit",
 			size:        maxHTMLViewSize,
+			policy:      "once",
 			contentType: "text/html; charset=utf-8",
 			wantBody:    "html-view",
 		},
 		{
-			name:        "streams paste above HTML view limit",
+			name:        "streams one-time paste above HTML view limit",
 			size:        maxHTMLViewSize + 1,
+			policy:      "once",
 			contentType: "text/plain; charset=utf-8",
+		},
+		{
+			name:        "renders reusable paste above old HTML view limit",
+			size:        maxHTMLViewSize + 1,
+			policy:      "temporary",
+			contentType: "text/html; charset=utf-8",
+			wantBody:    "html-view",
 		},
 	}
 
@@ -167,7 +178,7 @@ func TestViewHandlerLimitsHTMLRenderingByPasteSize(t *testing.T) {
 			app := newTestApp(t)
 			app.paste = template.Must(template.New("paste").Parse("html-view"))
 			content := bytes.Repeat([]byte("a"), int(tt.size))
-			meta, _, _, _, err := app.store.Create(bytes.NewReader(content), "large.txt", "text/plain; charset=utf-8", false, mustParsePolicy(t, "temporary"), "large1")
+			meta, _, _, _, err := app.store.Create(bytes.NewReader(content), "large.txt", "text/plain; charset=utf-8", false, mustParsePolicy(t, tt.policy), "large1")
 			if err != nil {
 				t.Fatalf("Create failed: %v", err)
 			}
@@ -194,6 +205,106 @@ func TestViewHandlerLimitsHTMLRenderingByPasteSize(t *testing.T) {
 				t.Fatalf("streamed body size = %d, want %d", got, tt.size)
 			}
 		})
+	}
+}
+
+func TestSplitPastePreview(t *testing.T) {
+	tests := []struct {
+		name          string
+		content       string
+		maxLines      int
+		wantPreview   string
+		wantRemaining string
+		wantTruncated bool
+	}{
+		{name: "below limit", content: "one\ntwo", maxLines: 3, wantPreview: "one\ntwo"},
+		{name: "at limit", content: "one\ntwo\n", maxLines: 2, wantPreview: "one\ntwo\n"},
+		{name: "above limit", content: "one\ntwo\nthree", maxLines: 2, wantPreview: "one\ntwo", wantRemaining: "\nthree", wantTruncated: true},
+		{name: "empty", content: "", maxLines: 2, wantPreview: ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			preview, remaining, truncated := splitPastePreview([]byte(tt.content), tt.maxLines)
+			if string(preview) != tt.wantPreview || string(remaining) != tt.wantRemaining || truncated != tt.wantTruncated {
+				t.Fatalf("splitPastePreview() = (%q, %q, %v), want (%q, %q, %v)", preview, remaining, truncated, tt.wantPreview, tt.wantRemaining, tt.wantTruncated)
+			}
+		})
+	}
+}
+
+func TestReadPastePreviewLimitsLinesAndBytes(t *testing.T) {
+	linePreview, truncated, err := readPastePreview(strings.NewReader("one\ntwo\nthree"), 2, 1024)
+	if err != nil {
+		t.Fatalf("readPastePreview line limit failed: %v", err)
+	}
+	if string(linePreview) != "one\ntwo" || !truncated {
+		t.Fatalf("line preview = %q, truncated = %v", linePreview, truncated)
+	}
+
+	source := strings.NewReader(strings.Repeat("가", 100))
+	bytePreview, truncated, err := readPastePreview(source, 400, 10)
+	if err != nil {
+		t.Fatalf("readPastePreview byte limit failed: %v", err)
+	}
+	if !utf8.Valid(bytePreview) || len(bytePreview) > 10 || !truncated {
+		t.Fatalf("byte preview length = %d, valid UTF-8 = %v, truncated = %v", len(bytePreview), utf8.Valid(bytePreview), truncated)
+	}
+	if source.Len() == 0 {
+		t.Fatal("readPastePreview consumed the full source past its byte limit")
+	}
+}
+
+func TestPasteTemplateShowsFullLoadConfirmationForTruncatedContent(t *testing.T) {
+	tpl, err := template.New("paste.html").Funcs(template.FuncMap{
+		"t": func(key string) string {
+			if key == "paste_load_full" {
+				return "Load full paste"
+			}
+			if key == "paste_load_full_confirm" {
+				return "Load everything?"
+			}
+			return key
+		},
+	}).ParseFiles("../../templates/paste.html")
+	if err != nil {
+		t.Fatalf("ParseFiles failed: %v", err)
+	}
+
+	var output bytes.Buffer
+	err = tpl.ExecuteTemplate(&output, "paste.html", map[string]any{
+		"ID":        "preview1",
+		"Content":   "first",
+		"Remaining": "\nsecond",
+		"Truncated": true,
+		"Language":  "plaintext",
+	})
+	if err != nil {
+		t.Fatalf("ExecuteTemplate failed: %v", err)
+	}
+
+	body := output.String()
+	for _, want := range []string{`id="loadFullButton"`, "Load full paste", `window.confirm("Load everything?")`, `id="remainingPasteContent"`} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("rendered template does not contain %q", want)
+		}
+	}
+}
+
+func TestStaticFileHandlerSetsCacheAndSecurityHeaders(t *testing.T) {
+	handler := staticFileHandler("/js/", "../../templates/js", "public, max-age=31536000, immutable")
+	req := httptest.NewRequest(http.MethodGet, "/js/kdl.min.js", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rr.Code, http.StatusOK)
+	}
+	if got := rr.Header().Get("Cache-Control"); got != "public, max-age=31536000, immutable" {
+		t.Fatalf("Cache-Control = %q", got)
+	}
+	if got := rr.Header().Get("X-Content-Type-Options"); got != "nosniff" {
+		t.Fatalf("X-Content-Type-Options = %q", got)
 	}
 }
 
@@ -713,6 +824,9 @@ func TestNormalizeTextContentType(t *testing.T) {
 		{name: "nginx by name", filename: "nginx.conf", want: "text/x-nginx-conf; charset=utf-8"},
 		{name: "lua by ext", filename: "init.lua", want: "text/x-lua; charset=utf-8"},
 		{name: "toml by ext", filename: "pyproject.toml", want: "application/toml; charset=utf-8"},
+		{name: "kdl by ext", filename: "config.kdl", want: "text/x-kdl; charset=utf-8"},
+		{name: "rotated numeric log", filename: "access.log.1", want: "text/x-log; charset=utf-8"},
+		{name: "rotated named log", filename: "access.log.old", want: "text/x-log; charset=utf-8"},
 		{name: "bash by ext", filename: "deploy.sh", want: "text/x-shellscript; charset=utf-8"},
 	}
 
@@ -741,6 +855,9 @@ func TestSyntaxLanguage(t *testing.T) {
 		{name: "nginx by name", filename: "nginx.conf", contentType: "text/plain; charset=utf-8", want: "nginx"},
 		{name: "lua by content type", filename: "init.lua", contentType: "text/x-lua; charset=utf-8", want: "lua"},
 		{name: "toml by content type", filename: "Cargo.toml", contentType: "application/toml; charset=utf-8", want: "toml"},
+		{name: "kdl by content type", filename: "config.kdl", contentType: "text/x-kdl; charset=utf-8", want: "kdl"},
+		{name: "rotated numeric log", filename: "access.log.1", contentType: "text/plain; charset=utf-8", want: "logs"},
+		{name: "rotated named log", filename: "access.log.old", contentType: "text/plain; charset=utf-8", want: "logs"},
 		{name: "bash by content type", filename: "entrypoint.sh", contentType: "text/x-shellscript; charset=utf-8", want: "bash"},
 	}
 

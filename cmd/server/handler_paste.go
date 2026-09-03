@@ -1,16 +1,20 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
+	"unicode/utf8"
 
 	pastebox "pastebox/internal"
 )
 
 const maxHTMLViewSize int64 = 10 << 20 // 10 MiB
+const maxInitialHTMLViewLines = 400
+const maxInitialHTMLViewBytes = 512 << 10 // 512 KiB
 
 func (a *app) deleteHandler(w http.ResponseWriter, r *http.Request, id string, token string) {
 	if r.Method == http.MethodHead {
@@ -68,10 +72,22 @@ func (a *app) viewHandler(w http.ResponseWriter, r *http.Request, id string) {
 		raw := responseFormat(r) == "raw"
 		browser := isBrowserRequest(r)
 
-		if !raw && browser && entry.Meta.Size <= maxHTMLViewSize && isTextEntry(entry) {
-			content, err := io.ReadAll(entry.File)
-			if err != nil {
-				return err
+		oneTime := strings.EqualFold(entry.Meta.DataPolicy, "once")
+		if !raw && browser && isTextEntry(entry) && (!oneTime || entry.Meta.Size <= maxHTMLViewSize) {
+			var preview, remaining []byte
+			var truncated bool
+			if oneTime {
+				content, err := io.ReadAll(entry.File)
+				if err != nil {
+					return err
+				}
+				preview, remaining, truncated = splitPastePreview(content, maxInitialHTMLViewLines)
+			} else {
+				var err error
+				preview, truncated, err = readPastePreview(entry.File, maxInitialHTMLViewLines, maxInitialHTMLViewBytes)
+				if err != nil {
+					return err
+				}
 			}
 
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -81,7 +97,10 @@ func (a *app) viewHandler(w http.ResponseWriter, r *http.Request, id string) {
 				"ID":            entry.Meta.ID,
 				"Filename":      entry.Meta.Filename,
 				"Label":         entry.Meta.Label,
-				"Content":       string(content),
+				"Content":       string(preview),
+				"Remaining":     string(remaining),
+				"Truncated":     truncated,
+				"OneTime":       oneTime,
 				"Language":      syntaxLanguage(entry.Meta.Filename, entry.Meta.ContentType),
 				"Password":      password,
 				"OGTitle":       "Pastebox - " + entry.Meta.ID,
@@ -102,6 +121,53 @@ func (a *app) viewHandler(w http.ResponseWriter, r *http.Request, id string) {
 		a.notFoundHandler(w, r)
 		return
 	}
+}
+
+func readPastePreview(reader io.Reader, maxLines int, maxBytes int64) ([]byte, bool, error) {
+	if maxLines <= 0 || maxBytes <= 0 {
+		return nil, false, nil
+	}
+
+	sample, err := io.ReadAll(io.LimitReader(reader, maxBytes+1))
+	if err != nil {
+		return nil, false, err
+	}
+
+	byteTruncated := int64(len(sample)) > maxBytes
+	if byteTruncated {
+		sample = sample[:maxBytes]
+		for len(sample) > 0 && !utf8.Valid(sample) {
+			sample = sample[:len(sample)-1]
+		}
+	}
+
+	preview, _, lineTruncated := splitPastePreview(sample, maxLines)
+	return preview, byteTruncated || lineTruncated, nil
+}
+
+func splitPastePreview(content []byte, maxLines int) ([]byte, []byte, bool) {
+	if maxLines <= 0 || len(content) == 0 {
+		return content, nil, false
+	}
+
+	lineCount := bytes.Count(content, []byte{'\n'})
+	if content[len(content)-1] != '\n' {
+		lineCount++
+	}
+	if lineCount <= maxLines {
+		return content, nil, false
+	}
+
+	separator := 0
+	for line := 0; line < maxLines; line++ {
+		next := bytes.IndexByte(content[separator:], '\n')
+		if next < 0 {
+			return content, nil, false
+		}
+		separator += next + 1
+	}
+
+	return content[:separator-1], content[separator-1:], true
 }
 
 func (a *app) writeViewHeaders(w http.ResponseWriter, entry *pastebox.Entry) {

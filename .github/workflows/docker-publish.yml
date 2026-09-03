@@ -14,7 +14,37 @@ on:
   workflow_dispatch:
 
 jobs:
+  test:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.message, '[skip actions]') == false
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Run Go tests
+        run: go test ./...
+
+      - name: Run Go vet
+        run: go vet ./...
+
+      - name: Check KDL syntax definition
+        run: node --check templates/js/kdl.min.js
+
   docker:
+    needs: test
     if: >
       github.event_name == 'workflow_dispatch' ||
       contains(github.event.head_commit.message, '[skip actions]') == false

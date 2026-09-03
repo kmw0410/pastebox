@@ -162,6 +162,8 @@ func normalizeTextContentType(filename string, contentType string) string {
 		return "text/x-lua; charset=utf-8"
 	case ".toml":
 		return "application/toml; charset=utf-8"
+	case ".kdl":
+		return "text/x-kdl; charset=utf-8"
 	case ".sh", ".bash", ".zsh":
 		return "text/x-shellscript; charset=utf-8"
 	}
@@ -217,18 +219,8 @@ func normalizedUploadExt(filename string) string {
 	}
 
 	base := filepath.Base(name)
-	baseExt := filepath.Ext(base)
-	if len(baseExt) > 1 {
-		numericOnly := true
-		for _, ch := range baseExt[1:] {
-			if ch < '0' || ch > '9' {
-				numericOnly = false
-				break
-			}
-		}
-		if numericOnly && strings.HasSuffix(strings.TrimSuffix(base, baseExt), ".log") {
-			return ".log"
-		}
+	if logIndex := strings.LastIndex(base, ".log."); logIndex >= 0 && logIndex+len(".log.") < len(base) {
+		return ".log"
 	}
 
 	return filepath.Ext(name)
@@ -274,6 +266,8 @@ func syntaxLanguage(filename string, contentType string) string {
 		return "lua"
 	case strings.Contains(contentType, "toml"):
 		return "toml"
+	case strings.Contains(contentType, "kdl"):
+		return "kdl"
 	case strings.Contains(contentType, "php"):
 		return "php"
 	case contentType == "text/html":
@@ -288,6 +282,8 @@ func syntaxLanguage(filename string, contentType string) string {
 func specialFilenameLanguage(filename string) string {
 	base := strings.ToLower(strings.TrimSpace(filepath.Base(filename)))
 	switch {
+	case normalizedUploadExt(base) == ".log":
+		return "logs"
 	case base == "dockerfile" || strings.HasSuffix(base, ".dockerfile"):
 		return "dockerfile"
 	case base == "makefile":

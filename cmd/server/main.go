@@ -65,7 +65,8 @@ func main() {
 	go monitorStoreHealth(store, 30*time.Second)
 
 	mux := http.NewServeMux()
-	mux.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("templates/css"))))
+	mux.Handle("/css/", staticFileHandler("/css/", "templates/css", "public, max-age=3600"))
+	mux.Handle("/js/", staticFileHandler("/js/", "templates/js", "public, max-age=31536000, immutable"))
 	mux.HandleFunc("/", a.handle)
 
 	logEvent("server.started", map[string]any{
@@ -89,6 +90,15 @@ func main() {
 			"listen_addr": listenAddr,
 		})
 	}
+}
+
+func staticFileHandler(prefix string, directory string, cacheControl string) http.Handler {
+	files := http.StripPrefix(prefix, http.FileServer(http.Dir(directory)))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", cacheControl)
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		files.ServeHTTP(w, r)
+	})
 }
 
 func monitorStoreHealth(store *pastebox.Store, interval time.Duration) {

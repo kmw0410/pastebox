@@ -64,11 +64,6 @@ func main() {
 
 	go monitorStoreHealth(store, 30*time.Second)
 
-	mux := http.NewServeMux()
-	mux.Handle("/css/", staticFileHandler("/css/", "templates/css", "public, max-age=3600"))
-	mux.Handle("/js/", staticFileHandler("/js/", "templates/js", "public, max-age=31536000, immutable"))
-	mux.HandleFunc("/", a.handle)
-
 	logEvent("server.started", map[string]any{
 		"data_dir":        dataDir,
 		"listen_addr":     listenAddr,
@@ -84,7 +79,7 @@ func main() {
 		})
 	}
 
-	if err := http.ListenAndServe(listenAddr, mux); err != nil {
+	if err := http.ListenAndServe(listenAddr, a.httpHandler()); err != nil {
 		logFatalEvent("server.listen_failed", map[string]any{
 			"error":       err,
 			"listen_addr": listenAddr,

@@ -477,6 +477,16 @@ Use this section to record recurring lessons from error-driven code fixes. Each 
   ```
   Prevention: When a client depends on a newly introduced security header, add an explicit response field that proves the server applied it, and test older responses that omit the field.
 
+- Problematic code area: `cmd/server/handler_paste.go` / `readPastePreview`.
+  Cause: Repeated `utf8.Valid` scans while removing one trailing byte made malformed input beyond the 64 KiB upload sample take quadratic time.
+  Fix: Decode the bounded preview once, replace malformed bytes with ASCII `?`, and omit an incomplete trailing rune at the byte limit. Preserve raw bytes and streaming line counting.
+  Prevention: Treat content after the upload sample as untrusted UTF-8; test internal invalid bytes and truncated runes, and benchmark increasing preview sizes without timing assertions.
+
+- Problematic code area: HTTP routing in `cmd/server/main.go` and `cmd/server/routes.go`.
+  Cause: Cache and Referrer protections existed only in API/health response writers, leaving sensitive browser and text responses unprotected.
+  Fix: Apply `Cache-Control: no-store` and `Referrer-Policy: no-referrer` before ServeMux routing, including errors, redirects, and HEAD; retain static CSS/JS cache policies.
+  Prevention: Test response headers through the production HTTP handler, including authenticated content and token-bearing results, and check canonical-path redirects and static caching.
+
 ## 18. Commit Message Examples
 Use short, conventional commit messages:
 ```text

@@ -165,9 +165,21 @@ func readPastePreview(reader io.Reader, maxLines int, maxBytes int64) ([]byte, b
 	byteTruncated := totalBytes > maxBytes
 	if byteTruncated {
 		sample = sample[:maxBytes]
-		for len(sample) > 0 && !utf8.Valid(sample) {
-			sample = sample[:len(sample)-1]
+	}
+
+	// Decode each byte at most once. Upload validation only checks the leading
+	// sample, so malformed UTF-8 can occur anywhere in this bounded preview.
+	// ASCII replacements preserve the byte budget and newline counts.
+	for offset := 0; offset < len(sample); {
+		if byteTruncated && !utf8.FullRune(sample[offset:]) {
+			sample = sample[:offset] // A rune cut by the preview byte limit.
+			break
 		}
+		r, size := utf8.DecodeRune(sample[offset:])
+		if r == utf8.RuneError && size == 1 {
+			sample[offset] = '?'
+		}
+		offset += size
 	}
 
 	preview, _, lineTruncated := splitPastePreview(sample, maxLines)

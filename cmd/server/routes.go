@@ -5,6 +5,20 @@ import (
 	"strings"
 )
 
+// Apply privacy headers before ServeMux can emit redirects or errors. Static
+// asset handlers override Cache-Control with their existing public policies.
+func (a *app) httpHandler() http.Handler {
+	mux := http.NewServeMux()
+	mux.Handle("/css/", staticFileHandler("/css/", "templates/css", "public, max-age=3600"))
+	mux.Handle("/js/", staticFileHandler("/js/", "templates/js", "public, max-age=31536000, immutable"))
+	mux.HandleFunc("/", a.handle)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Referrer-Policy", "no-referrer")
+		mux.ServeHTTP(w, r)
+	})
+}
+
 func (a *app) handle(w http.ResponseWriter, r *http.Request) {
 	if strings.HasPrefix(r.URL.Path, "/api/v1/pastes/") {
 		a.pasteAPIHandler(w, r)

@@ -13,20 +13,23 @@ import (
 
 const latestReleaseAPI = "https://api.github.com/repos/kmw0410/pastebox/releases/latest"
 
+const releaseRequestTimeout = 10 * time.Second
+
 var (
 	version = "development"
 	commit  = "unknown"
 )
 
 type releaseStatus struct {
-	Current         string
-	Commit          string
-	Latest          string
-	LatestCommit    string
-	ReleaseURL      string
-	UpdateAvailable bool
-	Development     bool
-	CheckFailed     bool
+	Current           string
+	Commit            string
+	Latest            string
+	LatestCommit      string
+	ReleaseURL        string
+	UpdateAvailable   bool
+	Development       bool
+	CheckFailed       bool
+	CommitUnavailable bool
 }
 
 type releaseChecker struct {
@@ -51,7 +54,7 @@ func newReleaseChecker(current, currentCommit string) *releaseChecker {
 	}
 
 	return &releaseChecker{
-		client:   &http.Client{Timeout: 3 * time.Second},
+		client:   &http.Client{Timeout: releaseRequestTimeout},
 		endpoint: latestReleaseAPI,
 		current:  current,
 		commit:   currentCommit,
@@ -73,7 +76,7 @@ func (c *releaseChecker) Check(ctx context.Context) releaseStatus {
 		Development: c.current == "development",
 	}
 
-	latest, latestCommit, releaseURL, err := fetchLatestRelease(ctx, c.client, c.endpoint)
+	latest, latestCommit, releaseURL, commitUnavailable, err := fetchLatestRelease(ctx, c.client, c.endpoint)
 	if err != nil {
 		status.CheckFailed = true
 		c.expiresAt = now.Add(time.Minute)
@@ -81,6 +84,7 @@ func (c *releaseChecker) Check(ctx context.Context) releaseStatus {
 		status.Latest = latest
 		status.LatestCommit = latestCommit
 		status.ReleaseURL = releaseURL
+		status.CommitUnavailable = commitUnavailable
 		status.UpdateAvailable = !status.Development && releaseVersionLess(status.Current, status.Latest)
 		c.expiresAt = now.Add(15 * time.Minute)
 	}
@@ -132,10 +136,10 @@ func parseReleaseVersion(value string) ([4]int, bool) {
 	return parsed, true
 }
 
-func fetchLatestRelease(ctx context.Context, client *http.Client, endpoint string) (string, string, string, error) {
+func fetchLatestRelease(ctx context.Context, client *http.Client, endpoint string) (string, string, string, bool, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
-		return "", "", "", err
+		return "", "", "", false, err
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
@@ -143,12 +147,12 @@ func fetchLatestRelease(ctx context.Context, client *http.Client, endpoint strin
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", "", "", err
+		return "", "", "", false, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", "", "", errors.New("latest release request failed")
+		return "", "", "", false, errors.New("latest release request failed")
 	}
 
 	var release struct {
@@ -156,21 +160,21 @@ func fetchLatestRelease(ctx context.Context, client *http.Client, endpoint strin
 		HTMLURL string `json:"html_url"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
-		return "", "", "", err
+		return "", "", "", false, err
 	}
 
 	release.TagName = strings.TrimSpace(release.TagName)
 	release.HTMLURL = strings.TrimSpace(release.HTMLURL)
 	if release.TagName == "" || release.HTMLURL == "" {
-		return "", "", "", errors.New("latest release response is incomplete")
+		return "", "", "", false, errors.New("latest release response is incomplete")
 	}
 
 	latestCommit, err := fetchReleaseCommit(ctx, client, endpoint, release.TagName)
 	if err != nil {
-		return "", "", "", err
+		return release.TagName, "", release.HTMLURL, true, nil
 	}
 
-	return release.TagName, latestCommit, release.HTMLURL, nil
+	return release.TagName, latestCommit, release.HTMLURL, false, nil
 }
 
 func fetchReleaseCommit(ctx context.Context, client *http.Client, releaseEndpoint, tag string) (string, error) {

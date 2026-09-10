@@ -487,6 +487,14 @@ Use this section to record recurring lessons from error-driven code fixes. Each 
   Fix: Apply `Cache-Control: no-store` and `Referrer-Policy: no-referrer` before ServeMux routing, including errors, redirects, and HEAD; retain static CSS/JS cache policies.
   Prevention: Test response headers through the production HTTP handler, including authenticated content and token-bearing results, and check canonical-path redirects and static caching.
 
+- Problematic code area: `cmd/server/version.go` release lookup.
+  Cause: The admin page required both the GitHub Releases response and a second tag-ref request to succeed within a three-second timeout; a slow or failed tag lookup hid an otherwise valid latest release.
+  Fix: Use a ten-second request timeout and retain the latest release version and URL when only its commit lookup fails:
+  ```go
+  return release.TagName, "", release.HTMLURL, true, nil
+  ```
+  Prevention: Test partial GitHub API failures separately from a failed latest-release request, so version availability does not depend on optional commit metadata.
+
 ## 18. Commit Message Examples
 Use short, conventional commit messages:
 ```text

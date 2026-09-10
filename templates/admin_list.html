@@ -73,10 +73,12 @@
               ·
               {{ t "admin_latest_version" }}
               {{ if .Release.CheckFailed }}<span class="mono">-</span>{{ else }}<span class="mono">{{ .Release.Latest }}</span>
-              <span class="mono">({{ t "admin_commit" }} {{ .Release.LatestCommit }})</span>{{ end }}
+              <span class="mono">({{ t "admin_commit" }} {{ if .Release.CommitUnavailable }}-{{ else }}{{ .Release.LatestCommit }}{{ end }})</span>{{ end }}
             </p>
             {{ if .Release.CheckFailed }}
             <p class="notice-text pink">{{ t "admin_update_check_failed" }}</p>
+            {{ else if .Release.CommitUnavailable }}
+            <p class="notice-text">{{ t "admin_release_commit_unavailable" }}</p>
             {{ else if .Release.Development }}
             <p class="notice-text">{{ t "admin_update_development" }}</p>
             {{ else if .Release.UpdateAvailable }}

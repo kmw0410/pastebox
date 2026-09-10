@@ -27,6 +27,7 @@
   "admin_update_current": "Pastebox is up to date.",
   "admin_update_development": "This development build cannot be compared with a released version.",
   "admin_update_check_failed": "Could not check the latest GitHub Release. Try again later.",
+  "admin_release_commit_unavailable": "Latest release found, but its Git commit could not be resolved.",
   "admin_view_release": "View release",
   "admin_storage_backend": "Storage Backend",
   "admin_storage_backend_local_title": "Local file storage",

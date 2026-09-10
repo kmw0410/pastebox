@@ -40,11 +40,38 @@ func TestReleaseCheckerReturnsAndCachesLatestRelease(t *testing.T) {
 	if !first.UpdateAvailable || first.CheckFailed || first.Development {
 		t.Fatalf("unexpected release flags: %#v", first)
 	}
+	if first.CommitUnavailable {
+		t.Fatalf("commit should be available: %#v", first)
+	}
 	if second != first {
 		t.Fatalf("cached status = %#v, want %#v", second, first)
 	}
 	if got := requests.Load(); got != 2 {
 		t.Fatalf("requests = %d, want 2", got)
+	}
+}
+
+func TestReleaseCheckerKeepsLatestVersionWhenCommitLookupFails(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/repos/test/releases/latest":
+			_, _ = w.Write([]byte(`{"tag_name":"v26.07.26","html_url":"https://github.com/kmw0410/pastebox/releases/tag/v26.07.26"}`))
+		default:
+			http.Error(w, "temporarily unavailable", http.StatusServiceUnavailable)
+		}
+	}))
+	defer server.Close()
+
+	checker := newReleaseChecker("v26.07.25", "abc1234")
+	checker.client = server.Client()
+	checker.endpoint = server.URL + "/repos/test/releases/latest"
+
+	status := checker.Check(context.Background())
+	if status.CheckFailed || !status.CommitUnavailable || status.Latest != "v26.07.26" || status.LatestCommit != "" {
+		t.Fatalf("unexpected partial release status: %#v", status)
+	}
+	if status.ReleaseURL == "" || !status.UpdateAvailable {
+		t.Fatalf("latest release should remain usable: %#v", status)
 	}
 }
 

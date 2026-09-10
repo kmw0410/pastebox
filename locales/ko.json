@@ -27,6 +27,7 @@
   "admin_update_current": "최신 버전을 사용 중입니다.",
   "admin_update_development": "개발 빌드는 릴리즈 버전과 비교할 수 없습니다.",
   "admin_update_check_failed": "최신 GitHub Release를 확인하지 못했습니다. 잠시 후 다시 시도하세요.",
+  "admin_release_commit_unavailable": "최신 릴리스는 확인했지만 Git 커밋을 확인하지 못했습니다.",
   "admin_view_release": "릴리즈 보기",
   "admin_storage_backend": "스토리지 백엔드",
   "admin_storage_backend_local_title": "로컬 파일 저장소",

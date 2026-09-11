@@ -286,6 +286,20 @@
   justify-content: flex-end;
 }
 
+@media (max-width: 767px) {
+  .stat-value {
+    font-size: 1.5rem;
+  }
+
+  .stat-value.medium {
+    font-size: 1.25rem;
+  }
+
+  .stat-desc {
+    font-size: 0.8125rem;
+  }
+}
+
 .table-wrap {
   overflow-x: auto;
   border: 1px solid var(--line);

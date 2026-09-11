@@ -23,6 +23,8 @@
 
 html {
   background: var(--bg);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -344,6 +346,40 @@ a {
 .is-fading {
   opacity: 0;
   transform: translateY(-0.25rem);
+}
+
+@media (max-width: 767px) {
+  .page-shell.centered {
+    padding: 2.25rem 1rem;
+  }
+
+  .title {
+    font-size: 1.25rem;
+    line-height: 1.25;
+  }
+
+  .title.small {
+    font-size: 1.125rem;
+  }
+
+  .subtitle-gradient {
+    font-size: 0.8125rem;
+    letter-spacing: 0.025em;
+  }
+
+  .description {
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+
+  .notice-text {
+    font-size: 0.8125rem;
+  }
+
+  .eyebrow {
+    font-size: 0.65rem;
+    letter-spacing: 0.14em;
+  }
 }
 
 @media (min-width: 1024px) {

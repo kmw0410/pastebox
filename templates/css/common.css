@@ -209,6 +209,12 @@ a {
   opacity: 0.42;
 }
 
+.button.is-current {
+  cursor: default;
+  border-color: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .card {
   padding: 1.25rem;
   border: 1px solid var(--line);

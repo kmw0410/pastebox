@@ -715,6 +715,44 @@ func TestAdminPagination(t *testing.T) {
 	}
 }
 
+func TestAdminPaginationPages(t *testing.T) {
+	tests := []struct {
+		name    string
+		current int
+		total   int
+		want    string
+	}{
+		{name: "shows every short page range", current: 2, total: 3, want: "1,2*,3"},
+		{name: "compresses middle pages near the start", current: 2, total: 10, want: "1,2*,3,…,10"},
+		{name: "shows pages around the current page", current: 5, total: 10, want: "1,…,4,5*,6,…,10"},
+		{name: "compresses middle pages near the end", current: 9, total: 10, want: "1,…,8,9*,10"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/admin?q=log&sort=size-desc", nil)
+			pages := adminPaginationPages(req, "50", tt.current, tt.total)
+			got := make([]string, 0, len(pages))
+			for _, page := range pages {
+				if page.Ellipsis {
+					got = append(got, "…")
+					continue
+				}
+				value := strconv.Itoa(page.Number)
+				if page.Current {
+					value += "*"
+				} else if !strings.Contains(page.URL, "q=log") || !strings.Contains(page.URL, "sort=size-desc") {
+					t.Fatalf("page URL did not preserve list state: %q", page.URL)
+				}
+				got = append(got, value)
+			}
+			if actual := strings.Join(got, ","); actual != tt.want {
+				t.Fatalf("pages = %q, want %q", actual, tt.want)
+			}
+		})
+	}
+}
+
 func TestSortAdminPasteItems(t *testing.T) {
 	created := time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC)
 	items := []pastebox.AdminPasteItem{

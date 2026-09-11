@@ -191,6 +191,14 @@ type adminPagination struct {
 	TotalPages  int
 	PreviousURL string
 	NextURL     string
+	Pages       []adminPaginationPage
+}
+
+type adminPaginationPage struct {
+	Number   int
+	URL      string
+	Current  bool
+	Ellipsis bool
 }
 
 func adminPaginationFromRequest(r *http.Request, totalItems int) adminPagination {
@@ -229,8 +237,45 @@ func adminPaginationFromRequest(r *http.Request, totalItems int) adminPagination
 	if page < totalPages {
 		pagination.NextURL = adminPaginationURL(r, limit, page+1)
 	}
+	pagination.Pages = adminPaginationPages(r, limit, page, totalPages)
 
 	return pagination
+}
+
+func adminPaginationPages(r *http.Request, limit string, current, total int) []adminPaginationPage {
+	pages := make([]adminPaginationPage, 0, 7)
+	addPage := func(number int) {
+		page := adminPaginationPage{Number: number, Current: number == current}
+		if !page.Current {
+			page.URL = adminPaginationURL(r, limit, number)
+		}
+		pages = append(pages, page)
+	}
+	addEllipsis := func() {
+		pages = append(pages, adminPaginationPage{Ellipsis: true})
+	}
+
+	if total <= 7 {
+		for number := 1; number <= total; number++ {
+			addPage(number)
+		}
+		return pages
+	}
+
+	addPage(1)
+	if current > 3 {
+		addEllipsis()
+	}
+	start := max(2, current-1)
+	end := min(total-1, current+1)
+	for number := start; number <= end; number++ {
+		addPage(number)
+	}
+	if current < total-2 {
+		addEllipsis()
+	}
+	addPage(total)
+	return pages
 }
 
 func paginateAdminPasteItems(items []pastebox.AdminPasteItem, pagination adminPagination) []pastebox.AdminPasteItem {

@@ -282,11 +282,20 @@
       {{ if ne .Pagination.Limit "all" }}
       <nav class="admin-pagination" aria-label="{{ t "admin_pagination_label" }}">
         <p class="notice-text">{{ printf (t "admin_pagination_page") .Pagination.Page .Pagination.TotalPages }}</p>
-        <div class="button-row">
+        <div class="button-row admin-pagination-pages">
           {{ if .Pagination.PreviousURL }}
           <a class="button" href="{{ .Pagination.PreviousURL }}">{{ t "admin_pagination_previous" }}</a>
           {{ else }}
           <span class="button is-disabled" aria-disabled="true">{{ t "admin_pagination_previous" }}</span>
+          {{ end }}
+          {{ range .Pagination.Pages }}
+            {{ if .Ellipsis }}
+            <span class="pagination-ellipsis" aria-hidden="true">…</span>
+            {{ else if .Current }}
+            <span class="button is-current" aria-current="page">{{ .Number }}</span>
+            {{ else }}
+            <a class="button" href="{{ .URL }}">{{ .Number }}</a>
+            {{ end }}
           {{ end }}
           {{ if .Pagination.NextURL }}
           <a class="button" href="{{ .Pagination.NextURL }}">{{ t "admin_pagination_next" }}</a>

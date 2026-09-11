@@ -124,6 +124,8 @@ func (a *app) viewHandler(w http.ResponseWriter, r *http.Request, id string) {
 				"ID":             entry.Meta.ID,
 				"Filename":       entry.Meta.Filename,
 				"Label":          entry.Meta.Label,
+				"DataPolicy":     entry.Meta.DataPolicy,
+				"Expires":        formatExpiresForResponse(entry.Meta),
 				"Content":        string(preview),
 				"Remaining":      string(remaining),
 				"Truncated":      truncated,

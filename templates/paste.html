@@ -30,6 +30,10 @@
         <span class="paste-filename">{{ .Label }}</span>
         {{ end }}
         <span class="paste-badge">{{ .Language }}</span>
+        <span class="paste-badge">{{ t "paste_policy" }}: {{ if eq .DataPolicy "temporary" }}{{ t "manage_policy_temporary" }}{{ else if eq .DataPolicy "permanent" }}{{ t "manage_policy_permanent" }}{{ else if eq .DataPolicy "once" }}{{ t "manage_policy_once" }}{{ else }}{{ .DataPolicy }}{{ end }}</span>
+        {{ if .Expires }}
+        <span class="paste-badge">{{ t "paste_expires" }}: {{ .Expires }}</span>
+        {{ end }}
         <span id="longLineHint" class="paste-badge warning is-hidden">Long line detected</span>
       </div>
 

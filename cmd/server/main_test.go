@@ -320,13 +320,15 @@ func TestPasteTemplateShowsFullLoadConfirmationForTruncatedContent(t *testing.T)
 		"RemainingLines": 125,
 		"Truncated":      true,
 		"Language":       "plaintext",
+		"DataPolicy":     "temporary",
+		"Expires":        "2026-09-12T12:00:00+09:00",
 	})
 	if err != nil {
 		t.Fatalf("ExecuteTemplate failed: %v", err)
 	}
 
 	body := output.String()
-	for _, want := range []string{`id="loadFullButton"`, "Load full paste", `window.confirm("Load everything?")`, `id="remainingPasteContent"`, `id="remainingLinesNotice"`, "... (125 more lines)", "remainingLinesNotice.remove()", `id="qrButton"`, `data-src="?format=qr"`} {
+	for _, want := range []string{`id="loadFullButton"`, "Load full paste", `window.confirm("Load everything?")`, `id="remainingPasteContent"`, `id="remainingLinesNotice"`, "... (125 more lines)", "remainingLinesNotice.remove()", `id="qrButton"`, `data-src="?format=qr"`, "paste_policy: manage_policy_temporary", "paste_expires:", "2026-09-12T12:00:00"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("rendered template does not contain %q", want)
 		}

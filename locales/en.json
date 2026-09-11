@@ -248,5 +248,10 @@
   "index_manual_deletion": "Manual deletion",
   "index_manual_deletion_desc": "Delete a paste from its private manage page, or send an authenticated DELETE request to the management API.",
   "index_permanent": "Save permanently",
-  "index_copy_curl": "Copy curl example"
+  "index_copy_curl": "Copy curl example",
+  "index_cli": "Pastebox CLI",
+  "index_copy_command": "Copy",
+  "index_copied": "Copied",
+  "paste_policy": "Policy",
+  "paste_expires": "Expires"
 }

@@ -495,6 +495,14 @@ Use this section to record recurring lessons from error-driven code fixes. Each 
   ```
   Prevention: Test partial GitHub API failures separately from a failed latest-release request, so version availability does not depend on optional commit metadata.
 
+- Problematic code area: `cmd/server/main_test.go` / `TestPasteTemplateShowsFullLoadConfirmationForTruncatedContent` expiration assertion.
+  Cause: HTML template rendering escapes the `+` in an RFC 3339 timezone offset, so an assertion for the unescaped rendered timestamp failed.
+  Fix: Assert the translated expiration label and timestamp prefix instead of the HTML-escaped offset:
+  ```go
+  "paste_expires:", "2026-09-12T12:00:00"
+  ```
+  Prevention: When checking text emitted into HTML, assert semantic output or account for contextual escaping instead of comparing raw source strings.
+
 ## 18. Commit Message Examples
 Use short, conventional commit messages:
 ```text

@@ -199,6 +199,20 @@
           </label>
 
           <label class="form-field">
+            <span>{{ t "admin_sort" }}</span>
+            <select class="input" name="sort">
+              <option value="created-desc"{{ if eq .Sorting.Value "created-desc" }} selected{{ end }}>{{ t "admin_sort_created_desc" }}</option>
+              <option value="created-asc"{{ if eq .Sorting.Value "created-asc" }} selected{{ end }}>{{ t "admin_sort_created_asc" }}</option>
+              <option value="expires-asc"{{ if eq .Sorting.Value "expires-asc" }} selected{{ end }}>{{ t "admin_sort_expires_asc" }}</option>
+              <option value="expires-desc"{{ if eq .Sorting.Value "expires-desc" }} selected{{ end }}>{{ t "admin_sort_expires_desc" }}</option>
+              <option value="size-desc"{{ if eq .Sorting.Value "size-desc" }} selected{{ end }}>{{ t "admin_sort_size_desc" }}</option>
+              <option value="size-asc"{{ if eq .Sorting.Value "size-asc" }} selected{{ end }}>{{ t "admin_sort_size_asc" }}</option>
+              <option value="filename-asc"{{ if eq .Sorting.Value "filename-asc" }} selected{{ end }}>{{ t "admin_sort_filename_asc" }}</option>
+              <option value="filename-desc"{{ if eq .Sorting.Value "filename-desc" }} selected{{ end }}>{{ t "admin_sort_filename_desc" }}</option>
+            </select>
+          </label>
+
+          <label class="form-field">
             <span>{{ t "admin_pagination_per_page" }}</span>
             <select class="input" name="limit">
               <option value="50"{{ if eq .Pagination.Limit "50" }} selected{{ end }}>50</option>

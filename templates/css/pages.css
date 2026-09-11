@@ -534,9 +534,22 @@
 
 @media (min-width: 1024px) {
   .admin-filter-form {
-    grid-template-columns: minmax(13rem, 1.3fr) repeat(4, minmax(10rem, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .admin-filter-form > div:first-child,
+  .admin-filter-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1280px) {
+  .admin-filter-form {
+    grid-template-columns: minmax(13rem, 1.3fr) repeat(5, minmax(8rem, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
   .home-grid {
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
   }

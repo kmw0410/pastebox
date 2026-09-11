@@ -673,7 +673,7 @@ func TestAdminPagination(t *testing.T) {
 		},
 		{
 			name:      "keeps filters while navigating the second 100 item page",
-			url:       "/admin?q=log&limit=100&page=2",
+			url:       "/admin?q=log&sort=size-desc&limit=100&page=2",
 			wantLimit: "100", wantPage: 2, wantPages: 2, wantItems: 20, wantFirst: "101", wantPrev: true,
 		},
 		{
@@ -707,6 +707,45 @@ func TestAdminPagination(t *testing.T) {
 			}
 			if strings.Contains(tt.url, "q=log") && !strings.Contains(got.PreviousURL, "q=log") {
 				t.Fatalf("previous URL did not preserve filters: %q", got.PreviousURL)
+			}
+			if strings.Contains(tt.url, "sort=size-desc") && !strings.Contains(got.PreviousURL, "sort=size-desc") {
+				t.Fatalf("previous URL did not preserve sorting: %q", got.PreviousURL)
+			}
+		})
+	}
+}
+
+func TestSortAdminPasteItems(t *testing.T) {
+	created := time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC)
+	items := []pastebox.AdminPasteItem{
+		{ID: "old", Filename: "zeta.log", CreatedAt: created, ExpiresAt: created.Add(72 * time.Hour), Size: 20},
+		{ID: "permanent", Filename: "", CreatedAt: created.Add(2 * time.Hour), Size: 10},
+		{ID: "new", Filename: "alpha.log", CreatedAt: created.Add(time.Hour), ExpiresAt: created.Add(24 * time.Hour), Size: 30},
+	}
+
+	tests := []struct {
+		sort string
+		want string
+	}{
+		{sort: "created-desc", want: "permanent,new,old"},
+		{sort: "created-asc", want: "old,new,permanent"},
+		{sort: "expires-asc", want: "new,old,permanent"},
+		{sort: "expires-desc", want: "old,new,permanent"},
+		{sort: "size-desc", want: "new,old,permanent"},
+		{sort: "filename-asc", want: "new,old,permanent"},
+		{sort: "filename-desc", want: "old,new,permanent"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.sort, func(t *testing.T) {
+			got := append([]pastebox.AdminPasteItem(nil), items...)
+			sortAdminPasteItems(got, adminPasteSort{Value: tt.sort})
+			ids := make([]string, 0, len(got))
+			for _, item := range got {
+				ids = append(ids, item.ID)
+			}
+			if actual := strings.Join(ids, ","); actual != tt.want {
+				t.Fatalf("sort %q = %q, want %q", tt.sort, actual, tt.want)
 			}
 		})
 	}

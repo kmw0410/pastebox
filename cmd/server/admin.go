@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -59,6 +60,8 @@ func (a *app) adminIndexHandler(w http.ResponseWriter, r *http.Request) {
 	items = localizeAdminPasteItems(items, time.Local)
 	filters := adminPasteFiltersFromRequest(r)
 	filteredItems := filterAdminPasteItems(items, filters, time.Now().UTC())
+	sorting := adminPasteSortFromRequest(r)
+	sortAdminPasteItems(filteredItems, sorting)
 	pagination := adminPaginationFromRequest(r, len(filteredItems))
 	pagedItems := paginateAdminPasteItems(filteredItems, pagination)
 
@@ -72,6 +75,7 @@ func (a *app) adminIndexHandler(w http.ResponseWriter, r *http.Request) {
 		"Items":           pagedItems,
 		"Stats":           buildAdminStats(items),
 		"Filters":         filters,
+		"Sorting":         sorting,
 		"FilteredCount":   len(filteredItems),
 		"Pagination":      pagination,
 		"BaseURL":         requestBaseURL(r),
@@ -93,6 +97,90 @@ type adminPasteFilters struct {
 	Policy    string
 	Protected string
 	Status    string
+}
+
+const defaultAdminPasteSort = "created-desc"
+
+type adminPasteSort struct {
+	Value string
+}
+
+func adminPasteSortFromRequest(r *http.Request) adminPasteSort {
+	value := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("sort")))
+	switch value {
+	case "created-asc", "expires-asc", "expires-desc", "size-asc", "size-desc", "filename-asc", "filename-desc":
+		return adminPasteSort{Value: value}
+	default:
+		return adminPasteSort{Value: defaultAdminPasteSort}
+	}
+}
+
+func sortAdminPasteItems(items []pastebox.AdminPasteItem, sorting adminPasteSort) {
+	sort.SliceStable(items, func(i, j int) bool {
+		left, right := items[i], items[j]
+		switch sorting.Value {
+		case "created-asc":
+			return left.CreatedAt.Before(right.CreatedAt)
+		case "expires-asc":
+			return adminPasteExpiryBefore(left.ExpiresAt, right.ExpiresAt)
+		case "expires-desc":
+			return adminPasteExpiryAfter(left.ExpiresAt, right.ExpiresAt)
+		case "size-asc":
+			return left.Size < right.Size
+		case "size-desc":
+			return left.Size > right.Size
+		case "filename-asc":
+			return adminPasteFilenameBefore(left.Filename, right.Filename)
+		case "filename-desc":
+			return adminPasteFilenameAfter(left.Filename, right.Filename)
+		default:
+			return left.CreatedAt.After(right.CreatedAt)
+		}
+	})
+}
+
+func adminPasteExpiryBefore(left, right time.Time) bool {
+	if left.IsZero() {
+		return false
+	}
+	if right.IsZero() {
+		return true
+	}
+	return left.Before(right)
+}
+
+func adminPasteExpiryAfter(left, right time.Time) bool {
+	if left.IsZero() {
+		return false
+	}
+	if right.IsZero() {
+		return true
+	}
+	return left.After(right)
+}
+
+func adminPasteFilenameBefore(left, right string) bool {
+	left = strings.ToLower(strings.TrimSpace(left))
+	right = strings.ToLower(strings.TrimSpace(right))
+	if left == "" {
+		return false
+	}
+	if right == "" {
+		return true
+	}
+	return left < right
+}
+
+func adminPasteFilenameAfter(left, right string) bool {
+	left = strings.ToLower(strings.TrimSpace(left))
+	right = strings.ToLower(strings.TrimSpace(right))
+	if left == "" {
+		return false
+	}
+	if right == "" {
+		return true
+	}
+	return left > right
 }
 
 const defaultAdminPageSize = 50

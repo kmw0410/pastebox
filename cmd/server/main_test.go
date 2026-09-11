@@ -649,6 +649,69 @@ func TestFilterAdminPasteItems(t *testing.T) {
 	}
 }
 
+func TestAdminPagination(t *testing.T) {
+	items := make([]pastebox.AdminPasteItem, 120)
+	for i := range items {
+		items[i].ID = strconv.Itoa(i + 1)
+	}
+
+	tests := []struct {
+		name      string
+		url       string
+		wantLimit string
+		wantPage  int
+		wantPages int
+		wantItems int
+		wantFirst string
+		wantPrev  bool
+		wantNext  bool
+	}{
+		{
+			name:      "defaults to the first 50 items",
+			url:       "/admin",
+			wantLimit: "50", wantPage: 1, wantPages: 3, wantItems: 50, wantFirst: "1", wantNext: true,
+		},
+		{
+			name:      "keeps filters while navigating the second 100 item page",
+			url:       "/admin?q=log&limit=100&page=2",
+			wantLimit: "100", wantPage: 2, wantPages: 2, wantItems: 20, wantFirst: "101", wantPrev: true,
+		},
+		{
+			name:      "all disables pagination",
+			url:       "/admin?limit=all&page=8",
+			wantLimit: "all", wantPage: 1, wantPages: 1, wantItems: 120, wantFirst: "1",
+		},
+		{
+			name:      "invalid values fall back and out of range pages clamp",
+			url:       "/admin?limit=200&page=99",
+			wantLimit: "50", wantPage: 3, wantPages: 3, wantItems: 20, wantFirst: "101", wantPrev: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tt.url, nil)
+			got := adminPaginationFromRequest(req, len(items))
+			if got.Limit != tt.wantLimit || got.Page != tt.wantPage || got.TotalPages != tt.wantPages {
+				t.Fatalf("adminPaginationFromRequest() = %#v", got)
+			}
+			gotItems := paginateAdminPasteItems(items, got)
+			if len(gotItems) != tt.wantItems {
+				t.Fatalf("paginateAdminPasteItems() returned %d items, want %d", len(gotItems), tt.wantItems)
+			}
+			if len(gotItems) > 0 && gotItems[0].ID != tt.wantFirst {
+				t.Fatalf("first item = %q, want %q", gotItems[0].ID, tt.wantFirst)
+			}
+			if (got.PreviousURL != "") != tt.wantPrev || (got.NextURL != "") != tt.wantNext {
+				t.Fatalf("pagination URLs = previous %q, next %q", got.PreviousURL, got.NextURL)
+			}
+			if strings.Contains(tt.url, "q=log") && !strings.Contains(got.PreviousURL, "q=log") {
+				t.Fatalf("previous URL did not preserve filters: %q", got.PreviousURL)
+			}
+		})
+	}
+}
+
 func TestNewAppGeneratesSetupTokenOnlyWithoutAdmin(t *testing.T) {
 	originalWD, err := os.Getwd()
 	if err != nil {

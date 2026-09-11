@@ -59,6 +59,8 @@ func (a *app) adminIndexHandler(w http.ResponseWriter, r *http.Request) {
 	items = localizeAdminPasteItems(items, time.Local)
 	filters := adminPasteFiltersFromRequest(r)
 	filteredItems := filterAdminPasteItems(items, filters, time.Now().UTC())
+	pagination := adminPaginationFromRequest(r, len(filteredItems))
+	pagedItems := paginateAdminPasteItems(filteredItems, pagination)
 
 	uploadsDisabled, err := a.store.UploadsDisabled()
 	if err != nil {
@@ -67,10 +69,11 @@ func (a *app) adminIndexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := map[string]any{
-		"Items":           filteredItems,
+		"Items":           pagedItems,
 		"Stats":           buildAdminStats(items),
 		"Filters":         filters,
 		"FilteredCount":   len(filteredItems),
+		"Pagination":      pagination,
 		"BaseURL":         requestBaseURL(r),
 		"StorageBackend":  a.store.StorageBackend,
 		"UploadsDisabled": uploadsDisabled,
@@ -90,6 +93,80 @@ type adminPasteFilters struct {
 	Policy    string
 	Protected string
 	Status    string
+}
+
+const defaultAdminPageSize = 50
+
+type adminPagination struct {
+	Limit       string
+	Page        int
+	TotalPages  int
+	PreviousURL string
+	NextURL     string
+}
+
+func adminPaginationFromRequest(r *http.Request, totalItems int) adminPagination {
+	limit := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("limit")))
+	pageSize := defaultAdminPageSize
+	switch limit {
+	case "100":
+		pageSize = 100
+	case "all":
+		return adminPagination{Limit: "all", Page: 1, TotalPages: 1}
+	default:
+		limit = strconv.Itoa(defaultAdminPageSize)
+	}
+
+	totalPages := (totalItems + pageSize - 1) / pageSize
+	if totalPages == 0 {
+		totalPages = 1
+	}
+
+	page, err := strconv.Atoi(r.URL.Query().Get("page"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+	if page > totalPages {
+		page = totalPages
+	}
+
+	pagination := adminPagination{
+		Limit:      limit,
+		Page:       page,
+		TotalPages: totalPages,
+	}
+	if page > 1 {
+		pagination.PreviousURL = adminPaginationURL(r, limit, page-1)
+	}
+	if page < totalPages {
+		pagination.NextURL = adminPaginationURL(r, limit, page+1)
+	}
+
+	return pagination
+}
+
+func paginateAdminPasteItems(items []pastebox.AdminPasteItem, pagination adminPagination) []pastebox.AdminPasteItem {
+	if pagination.Limit == "all" {
+		return items
+	}
+
+	pageSize, _ := strconv.Atoi(pagination.Limit)
+	start := (pagination.Page - 1) * pageSize
+	if start >= len(items) {
+		return nil
+	}
+	end := start + pageSize
+	if end > len(items) {
+		end = len(items)
+	}
+	return items[start:end]
+}
+
+func adminPaginationURL(r *http.Request, limit string, page int) string {
+	query := r.URL.Query()
+	query.Set("limit", limit)
+	query.Set("page", strconv.Itoa(page))
+	return r.URL.Path + "?" + query.Encode()
 }
 
 func adminPasteFiltersFromRequest(r *http.Request) adminPasteFilters {

@@ -198,6 +198,15 @@
             </select>
           </label>
 
+          <label class="form-field">
+            <span>{{ t "admin_pagination_per_page" }}</span>
+            <select class="input" name="limit">
+              <option value="50"{{ if eq .Pagination.Limit "50" }} selected{{ end }}>50</option>
+              <option value="100"{{ if eq .Pagination.Limit "100" }} selected{{ end }}>100</option>
+              <option value="all"{{ if eq .Pagination.Limit "all" }} selected{{ end }}>{{ t "admin_pagination_all" }}</option>
+            </select>
+          </label>
+
           <div class="admin-filter-actions">
             <p class="notice-text">{{ .FilteredCount }} {{ t "admin_filter_results" }}</p>
             <div class="button-row">
@@ -255,6 +264,24 @@
           </tbody>
         </table>
       </div>
+
+      {{ if ne .Pagination.Limit "all" }}
+      <nav class="admin-pagination" aria-label="{{ t "admin_pagination_label" }}">
+        <p class="notice-text">{{ printf (t "admin_pagination_page") .Pagination.Page .Pagination.TotalPages }}</p>
+        <div class="button-row">
+          {{ if .Pagination.PreviousURL }}
+          <a class="button" href="{{ .Pagination.PreviousURL }}">{{ t "admin_pagination_previous" }}</a>
+          {{ else }}
+          <span class="button is-disabled" aria-disabled="true">{{ t "admin_pagination_previous" }}</span>
+          {{ end }}
+          {{ if .Pagination.NextURL }}
+          <a class="button" href="{{ .Pagination.NextURL }}">{{ t "admin_pagination_next" }}</a>
+          {{ else }}
+          <span class="button is-disabled" aria-disabled="true">{{ t "admin_pagination_next" }}</span>
+          {{ end }}
+        </div>
+      </nav>
+      {{ end }}
     </div>
   </main>
   <script>

@@ -243,6 +243,7 @@
   "index_data_policy_desc": "Use 'data-policy: permanent' to keep a paste permanently, 'data-policy: once' to delete it after the first successful view, or durations like '12h' and '7d' for custom expiration up to 30 days.",
   "index_permanent_paste": "Permanent paste",
   "index_one_time_paste": "One-time paste",
+  "index_custom_duration_paste": "12-hour paste",
   "index_expiration_info": "Expiration information",
   "index_expiration_desc": "Temporary and custom-duration uploads include an expiration date in the upload response. Permanent uploads do not include an expiration date, and one-time uploads are deleted after the first successful view.",
   "index_manual_deletion": "Manual deletion",
@@ -250,8 +251,6 @@
   "index_permanent": "Save permanently",
   "index_copy_curl": "Copy curl example",
   "index_cli": "Pastebox CLI",
-  "index_copy_command": "Copy",
-  "index_copied": "Copied",
   "paste_policy": "Policy",
   "paste_expires": "Expires"
 }

@@ -241,8 +241,9 @@
   "index_password_links": "비밀번호 보호 링크",
   "index_data_policy": "데이터 정책",
   "index_data_policy_desc": "'data-policy: permanent'는 Paste를 영구 저장하고, 'data-policy: once'는 첫 번째 조회 후 삭제하며, '12h', '7d' 같은 값으로 최대 30일 이내 사용자 지정 만료를 설정할 수 있습니다.",
-  "index_permanent_paste": "영구 붙여넣기",
-  "index_one_time_paste": "일회용 붙여넣기",
+  "index_permanent_paste": "영구 Paste",
+  "index_one_time_paste": "일회용 Paste",
+  "index_custom_duration_paste": "12시간 Paste",
   "index_expiration_info": "만료 정보",
   "index_expiration_desc": "임시 및 사용자 지정 만료 업로드는 업로드 응답에 만료일이 포함됩니다. 영구 업로드는 만료일이 없으며, 일회용 업로드는 첫 번째 조회 후 삭제됩니다.",
   "index_manual_deletion": "수동 삭제",
@@ -250,8 +251,6 @@
   "index_permanent": "영구 저장",
   "index_copy_curl": "curl 예시 복사",
   "index_cli": "Pastebox CLI",
-  "index_copy_command": "복사",
-  "index_copied": "복사됨",
   "paste_policy": "정책",
   "paste_expires": "만료일"
 }

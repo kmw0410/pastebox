@@ -503,6 +503,11 @@ Use this section to record recurring lessons from error-driven code fixes. Each 
   ```
   Prevention: When checking text emitted into HTML, assert semantic output or account for contextual escaping instead of comparing raw source strings.
 
+- Problematic code area: `templates/index.html` homepage command examples.
+  Cause: Adding a Copy button to every command made the compact curl reference visually noisy, beyond the intended single top-level copy action.
+  Fix: Keep only the required `Copy curl example` button and render each data-policy command as its own labeled code block.
+  Prevention: Preserve the established visual density of the homepage; add controls per example only when the request explicitly calls for them.
+
 ## 18. Commit Message Examples
 Use short, conventional commit messages:
 ```text

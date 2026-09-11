@@ -22,50 +22,44 @@
           <div class="button-row home-actions">
             <a class="button" href="https://github.com/kmw0410/pastebox" target="_blank" rel="noopener noreferrer">GitHub</a>
             <a class="button" href="https://github.com/kmw0410/pastebox-cli" target="_blank" rel="noopener noreferrer">{{ t "index_cli" }}</a>
-            <button class="button" type="button" data-copy-target="file-upload-command" data-copy-label="{{ t "index_copy_curl" }}">{{ t "index_copy_curl" }}</button>
+            <button class="button" type="button" onclick="navigator.clipboard.writeText('curl -F &quot;file=@test.txt&quot; {{ .BaseURL }}/')">{{ t "index_copy_curl" }}</button>
           </div>
         </div>
 
         <div class="card stack">
-          <div class="home-example">
-            <div class="example-heading">
-              <p class="example-label">{{ t "index_text_upload" }}</p>
-              <button class="button code-copy-button" type="button" data-copy-target="text-upload-command" data-copy-label="{{ t "index_copy_command" }}">{{ t "index_copy_command" }}</button>
-            </div>
-            <pre id="text-upload-command" class="code-block"><code>echo "hello" | curl -X POST --data-binary @- {{ .BaseURL }}/</code></pre>
+          <div>
+            <p class="example-label">{{ t "index_text_upload" }}</p>
+            <pre class="code-block"><code>echo "hello" | curl -X POST --data-binary @- {{ .BaseURL }}/</code></pre>
           </div>
-          <div class="home-example">
-            <div class="example-heading">
-              <p class="example-label">{{ t "index_file_upload" }}</p>
-              <button class="button code-copy-button" type="button" data-copy-target="file-upload-command" data-copy-label="{{ t "index_copy_command" }}">{{ t "index_copy_command" }}</button>
-            </div>
-            <pre id="file-upload-command" class="code-block"><code>curl -F "file=@test.txt" {{ .BaseURL }}/</code></pre>
+          <div>
+            <p class="example-label">{{ t "index_file_upload" }}</p>
+            <pre class="code-block"><code>curl -F "file=@test.txt" {{ .BaseURL }}/</code></pre>
           </div>
-          <div class="home-example">
-            <div class="example-heading">
-              <p class="example-label pink">{{ t "index_password_links" }}</p>
-              <button class="button code-copy-button" type="button" data-copy-target="password-upload-command" data-copy-label="{{ t "index_copy_command" }}">{{ t "index_copy_command" }}</button>
-            </div>
-            <pre id="password-upload-command" class="code-block"><code>curl -H "usepassword: true" -F "file=@secret.txt" {{ .BaseURL }}/</code></pre>
+          <div>
+            <p class="example-label pink">{{ t "index_password_links" }}</p>
+            <pre class="code-block"><code>curl -H "usepassword: true" -F "file=@secret.txt" {{ .BaseURL }}/</code></pre>
           </div>
         </div>
       </section>
 
       <section class="grid-two home-detail-grid mt-lg">
         <article class="card home-detail-card home-detail-card-wide">
-          <div class="example-heading">
-            <p class="example-label">{{ t "index_data_policy" }}</p>
-            <button class="button code-copy-button" type="button" data-copy-target="data-policy-command" data-copy-label="{{ t "index_copy_command" }}">{{ t "index_copy_command" }}</button>
-          </div>
+          <p class="example-label">{{ t "index_data_policy" }}</p>
           <p class="description">{{ t "index_data_policy_desc" }}</p>
-          <pre id="data-policy-command" class="code-block mt-sm"><code># {{ t "index_permanent_paste" }}
-curl -H "data-policy: permanent" -F "file=@server-logs.log" {{ .BaseURL }}/
-
-# {{ t "index_one_time_paste" }}
-curl -H "data-policy: once" -F "file=@secret.txt" {{ .BaseURL }}/
-
-# 12-hour paste
-curl -H "data-policy: 12h" -F "file=@debug.log" {{ .BaseURL }}/</code></pre>
+          <div class="stack mt-sm">
+            <div>
+              <p class="example-label">{{ t "index_permanent_paste" }}</p>
+              <pre class="code-block"><code>curl -H "data-policy: permanent" -F "file=@server-logs.log" {{ .BaseURL }}/</code></pre>
+            </div>
+            <div>
+              <p class="example-label">{{ t "index_one_time_paste" }}</p>
+              <pre class="code-block"><code>curl -H "data-policy: once" -F "file=@secret.txt" {{ .BaseURL }}/</code></pre>
+            </div>
+            <div>
+              <p class="example-label">{{ t "index_custom_duration_paste" }}</p>
+              <pre class="code-block"><code>curl -H "data-policy: 12h" -F "file=@debug.log" {{ .BaseURL }}/</code></pre>
+            </div>
+          </div>
         </article>
         <article class="card home-detail-card">
           <p class="example-label pink">{{ t "index_expiration_info" }}</p>
@@ -75,38 +69,12 @@ expires: 2026-06-24T14:10:26+09:00
 manage: {{ .BaseURL }}/AbC12?manage=MANAGE_TOKEN</code></pre>
         </article>
         <article class="card wide-card">
-          <div class="example-heading">
-            <p class="example-label">{{ t "index_manual_deletion" }}</p>
-            <button class="button code-copy-button" type="button" data-copy-target="manual-delete-command" data-copy-label="{{ t "index_copy_command" }}">{{ t "index_copy_command" }}</button>
-          </div>
+          <p class="example-label">{{ t "index_manual_deletion" }}</p>
           <p class="description">{{ t "index_manual_deletion_desc" }}</p>
-          <pre id="manual-delete-command" class="code-block mt-sm"><code>curl -X DELETE -H "paste-manage-token: MANAGE_TOKEN" {{ .BaseURL }}/api/v1/pastes/AbC12</code></pre>
+          <pre class="code-block mt-sm"><code>curl -X DELETE -H "paste-manage-token: MANAGE_TOKEN" {{ .BaseURL }}/api/v1/pastes/AbC12</code></pre>
         </article>
       </section>
     </div>
   </main>
-  <script>
-    (function () {
-      const copiedText = {{ printf "%q" (t "index_copied") }};
-
-      document.querySelectorAll("[data-copy-target]").forEach(function (button) {
-        button.addEventListener("click", async function () {
-          const source = document.getElementById(button.dataset.copyTarget);
-          if (!source || !navigator.clipboard) return;
-
-          try {
-            await navigator.clipboard.writeText(source.textContent);
-            const label = button.dataset.copyLabel;
-            button.textContent = copiedText;
-            window.setTimeout(function () {
-              button.textContent = label;
-            }, 1600);
-          } catch (_) {
-            // Keep the original label when the browser denies clipboard access.
-          }
-        });
-      });
-    })();
-  </script>
 </body>
 </html>

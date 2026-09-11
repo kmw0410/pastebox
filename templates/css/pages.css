@@ -34,23 +34,6 @@
   color: #d4d4d8;
 }
 
-.example-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.example-heading .example-label {
-  margin-bottom: 0.75rem;
-}
-
-.code-copy-button {
-  min-height: 2rem;
-  padding: 0.35rem 0.65rem;
-  font-size: 0.7rem;
-}
-
 .wide-card {
   grid-column: 1 / -1;
 }

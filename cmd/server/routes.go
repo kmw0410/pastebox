@@ -76,6 +76,10 @@ func (a *app) handle(w http.ResponseWriter, r *http.Request) {
 		a.manageHandler(w, r, id)
 		return
 	}
+	if r.URL.Query().Get("format") == "qr" {
+		a.qrHandler(w, r, id)
+		return
+	}
 
 	a.viewHandler(w, r, id)
 }

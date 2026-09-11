@@ -52,6 +52,14 @@
         >
           Copy
         </button>
+        <button
+          id="qrButton"
+          type="button"
+          class="paste-button"
+          onclick="openQRCode()"
+        >
+          {{ t "paste_qr" }}
+        </button>
         <form method="post" action="/{{ .ID }}?clone=1">
           {{ if .Password }}
           <input type="hidden" name="password" value="{{ .Password }}">
@@ -93,6 +101,20 @@
     </div>
   </main>
 
+  <div id="qrModal" class="paste-qr-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle">
+    <div class="paste-qr-backdrop" data-qr-dismiss="true"></div>
+    <div class="paste-qr-card" tabindex="-1">
+      <h2 id="qrModalTitle" class="paste-qr-title">{{ t "paste_qr_title" }}</h2>
+      <p class="paste-qr-description">{{ t "paste_qr_desc" }}</p>
+      <img id="qrImage" class="paste-qr-image" data-src="?format=qr" alt="{{ t "paste_qr_alt" }}">
+      <p class="paste-qr-url">{{ .PublicURL }}</p>
+      <div class="paste-qr-actions">
+        <a class="paste-button" href="?format=qr" download="pastebox-{{ .ID }}.png">{{ t "paste_qr_download" }}</a>
+        <button id="qrCloseButton" type="button" class="paste-button" onclick="closeQRCode()">{{ t "paste_qr_close" }}</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const viewer = document.getElementById("viewer");
     const lineNumbers = document.getElementById("lineNumbers");
@@ -110,6 +132,31 @@
     const maxHighlightedLineLength = 10000;
     const renderBatchLines = 400;
     let wrapEnabled = false;
+
+    const qrModal = document.getElementById("qrModal");
+    const qrImage = document.getElementById("qrImage");
+    const qrCloseButton = document.getElementById("qrCloseButton");
+
+    function openQRCode() {
+      if (!qrImage.getAttribute("src")) qrImage.src = qrImage.dataset.src;
+      qrModal.classList.remove("is-hidden");
+      document.body.classList.add("modal-open");
+      qrCloseButton.focus();
+    }
+
+    function closeQRCode() {
+      qrModal.classList.add("is-hidden");
+      document.body.classList.remove("modal-open");
+      document.getElementById("qrButton").focus();
+    }
+
+    qrModal.addEventListener("click", function (event) {
+      if (event.target.dataset.qrDismiss === "true") closeQRCode();
+    });
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && !qrModal.classList.contains("is-hidden")) closeQRCode();
+    });
 
     function canHighlight() {
       return window.hljs && pasteLanguage !== "logs" && longestLineLength <= maxHighlightedLineLength && hljs.getLanguage(pasteLanguage);

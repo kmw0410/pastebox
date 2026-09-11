@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"html/template"
+	"image/png"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -109,6 +110,44 @@ func TestViewHandlerHeadDoesNotConsumeOncePaste(t *testing.T) {
 	entry, err := app.store.Open(meta.ID, "")
 	if err != nil {
 		t.Fatalf("Open failed after HEAD: %v", err)
+	}
+	_ = entry.File.Close()
+}
+
+func TestQRHandlerUsesPublicBaseURLWithoutConsumingOncePaste(t *testing.T) {
+	app := newTestApp(t)
+	meta, _, _, _, err := app.store.Create(strings.NewReader("QR request"), "qr.txt", "text/plain; charset=utf-8", false, mustParsePolicy(t, "once"), "qr1")
+	if err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/"+meta.ID+"?format=qr", nil)
+	req.Header.Set("X-Forwarded-Proto", "https")
+	req.Header.Set("X-Forwarded-Host", "paste.example.com")
+	rr := httptest.NewRecorder()
+
+	app.handle(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rr.Code, http.StatusOK)
+	}
+	if contentType := rr.Header().Get("Content-Type"); contentType != "image/png" {
+		t.Fatalf("Content-Type = %q, want image/png", contentType)
+	}
+	image, err := png.Decode(bytes.NewReader(rr.Body.Bytes()))
+	if err != nil {
+		t.Fatalf("QR response was not a PNG: %v", err)
+	}
+	if image.Bounds().Dx() != 256 || image.Bounds().Dy() != 256 {
+		t.Fatalf("QR dimensions = %v, want 256x256", image.Bounds())
+	}
+	if publicURL := pastePublicURL(req, meta.ID); publicURL != "https://paste.example.com/"+meta.ID {
+		t.Fatalf("public URL = %q", publicURL)
+	}
+
+	entry, err := app.store.Open(meta.ID, "")
+	if err != nil {
+		t.Fatalf("Open failed after QR request: %v", err)
 	}
 	_ = entry.File.Close()
 }
@@ -287,7 +326,7 @@ func TestPasteTemplateShowsFullLoadConfirmationForTruncatedContent(t *testing.T)
 	}
 
 	body := output.String()
-	for _, want := range []string{`id="loadFullButton"`, "Load full paste", `window.confirm("Load everything?")`, `id="remainingPasteContent"`, `id="remainingLinesNotice"`, "... (125 more lines)", "remainingLinesNotice.remove()"} {
+	for _, want := range []string{`id="loadFullButton"`, "Load full paste", `window.confirm("Load everything?")`, `id="remainingPasteContent"`, `id="remainingLinesNotice"`, "... (125 more lines)", "remainingLinesNotice.remove()", `id="qrButton"`, `data-src="?format=qr"`} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("rendered template does not contain %q", want)
 		}

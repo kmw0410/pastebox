@@ -9,12 +9,35 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	qrcode "github.com/skip2/go-qrcode"
+
 	pastebox "pastebox/internal"
 )
 
 const maxHTMLViewSize int64 = 10 << 20 // 10 MiB
 const maxInitialHTMLViewLines = 400
 const maxInitialHTMLViewBytes = 512 << 10 // 512 KiB
+
+func (a *app) qrHandler(w http.ResponseWriter, r *http.Request, id string) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	png, err := qrcode.Encode(pastePublicURL(r, id), qrcode.Medium, 256)
+	if err != nil {
+		http.Error(w, "failed to generate QR code", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "image/png")
+	w.Header().Set("Content-Disposition", "inline")
+	_, _ = w.Write(png)
+}
+
+func pastePublicURL(r *http.Request, id string) string {
+	return strings.TrimRight(requestBaseURL(r), "/") + "/" + id
+}
 
 func (a *app) deleteHandler(w http.ResponseWriter, r *http.Request, id string, token string) {
 	if r.Method == http.MethodHead {
@@ -110,7 +133,7 @@ func (a *app) viewHandler(w http.ResponseWriter, r *http.Request, id string) {
 				"Password":       password,
 				"OGTitle":        "Pastebox - " + entry.Meta.ID,
 				"OGDescription":  pasteOpenGraphDescription(entry.Meta),
-				"PublicURL":      strings.TrimRight(requestBaseURL(r), "/") + "/" + entry.Meta.ID,
+				"PublicURL":      pastePublicURL(r, entry.Meta.ID),
 			})
 		}
 

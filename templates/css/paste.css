@@ -145,6 +145,62 @@ body.paste-page {
   padding: 1.5rem 1rem;
 }
 
+.paste-qr-modal {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.paste-qr-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.paste-qr-card {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 24rem);
+  padding: 1.5rem;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+}
+
+.paste-qr-title {
+  margin: 0;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.paste-qr-description,
+.paste-qr-url {
+  margin: 0.75rem 0 0;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.paste-qr-image {
+  display: block;
+  width: min(100%, 16rem);
+  height: auto;
+  margin: 1rem auto 0;
+  padding: 0.5rem;
+  background: #ffffff;
+  image-rendering: pixelated;
+}
+
+.paste-qr-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
 .paste-scrollbar {
   width: 100%;
   overflow-x: auto;

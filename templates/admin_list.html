@@ -249,10 +249,10 @@
               <td class="muted-cell">{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
               <td class="muted-cell">{{ if .ExpiresAt.IsZero }}-{{ else }}{{ .ExpiresAt.Format "2006-01-02 15:04:05" }}{{ end }}</td>
               <td>
-                <form method="post" action="/admin/delete">
+                <form class="single-delete-form" method="post" action="/admin/delete">
                   <input type="hidden" name="csrf_token" value="{{ $.CSRFToken }}">
                   <input type="hidden" name="id" value="{{ .ID }}">
-                  <button class="button pink" type="submit">{{ t "admin_delete_button" }}</button>
+                  <button class="button pink single-delete-button" type="button" data-paste-id="{{ .ID }}" data-paste-filename="{{ .Filename }}">{{ t "admin_delete_button" }}</button>
                 </form>
               </td>
             </tr>
@@ -282,6 +282,24 @@
         </div>
       </nav>
       {{ end }}
+
+      <div id="single-delete-modal" class="modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="single-delete-modal-title" aria-describedby="single-delete-modal-description">
+        <div class="modal-backdrop" data-modal-dismiss="true"></div>
+        <div class="modal-card" tabindex="-1">
+          <p class="eyebrow pink">{{ t "admin_danger_zone" }}</p>
+          <h2 id="single-delete-modal-title" class="title small mt-sm">{{ t "admin_single_delete_modal_title" }}</h2>
+          <p id="single-delete-modal-description" class="description pink">{{ t "admin_single_delete_modal_desc" }}</p>
+          <p id="single-delete-target" class="modal-target" aria-live="polite"></p>
+          <label class="modal-checkbox">
+            <input id="single-delete-skip-confirm" type="checkbox">
+            <span>{{ t "admin_single_delete_skip_confirm" }}</span>
+          </label>
+          <div class="button-row modal-actions">
+            <button id="single-delete-cancel" class="button" type="button">{{ t "admin_single_delete_cancel" }}</button>
+            <button id="single-delete-confirm" class="button pink" type="button">{{ t "admin_delete_button" }}</button>
+          </div>
+        </div>
+      </div>
     </div>
   </main>
   <script>
@@ -300,24 +318,96 @@
 
       const checkboxes = Array.from(document.querySelectorAll(".bulk-delete-checkbox"));
       const bulkDeleteBtn = document.getElementById("bulk-delete-btn");
-      if (!bulkDeleteBtn || checkboxes.length === 0) return;
+      if (bulkDeleteBtn && checkboxes.length > 0) {
+        const isKo = document.documentElement.lang === "ko";
+        const updateBulkButton = function () {
+          const count = checkboxes.filter(function (el) { return el.checked; }).length;
+          if (count > 0) {
+            bulkDeleteBtn.classList.remove("is-hidden");
+            bulkDeleteBtn.textContent = isKo ? (count + "{{ t "admin_delete_selected_suffix" }}") : ("{{ t "admin_delete_selected_prefix" }} " + count);
+            return;
+          }
+          bulkDeleteBtn.classList.add("is-hidden");
+          bulkDeleteBtn.textContent = "";
+        };
 
-      const isKo = document.documentElement.lang === "ko";
-      const updateBulkButton = function () {
-        const count = checkboxes.filter(function (el) { return el.checked; }).length;
-        if (count > 0) {
-          bulkDeleteBtn.classList.remove("is-hidden");
-          bulkDeleteBtn.textContent = isKo ? (count + "{{ t "admin_delete_selected_suffix" }}") : ("{{ t "admin_delete_selected_prefix" }} " + count);
-          return;
-        }
-        bulkDeleteBtn.classList.add("is-hidden");
-        bulkDeleteBtn.textContent = "";
+        checkboxes.forEach(function (el) {
+          el.addEventListener("change", updateBulkButton);
+        });
+        updateBulkButton();
+      }
+
+      const modal = document.getElementById("single-delete-modal");
+      const modalTarget = document.getElementById("single-delete-target");
+      const skipConfirm = document.getElementById("single-delete-skip-confirm");
+      const cancelDelete = document.getElementById("single-delete-cancel");
+      const confirmDelete = document.getElementById("single-delete-confirm");
+      let activeDeleteForm = null;
+      let deleteOpener = null;
+      const skipCookie = "pastebox_admin_skip_single_delete_confirm";
+
+      const hasSkipConfirmation = function () {
+        return document.cookie.split("; ").some(function (entry) {
+          return entry === skipCookie + "=1";
+        });
       };
 
-      checkboxes.forEach(function (el) {
-        el.addEventListener("change", updateBulkButton);
+      const closeDeleteModal = function () {
+        modal.classList.add("is-hidden");
+        document.body.classList.remove("modal-open");
+        if (deleteOpener) deleteOpener.focus();
+        activeDeleteForm = null;
+        deleteOpener = null;
+      };
+
+      const openDeleteModal = function (button) {
+        activeDeleteForm = button.closest("form");
+        deleteOpener = button;
+        const filename = button.dataset.pasteFilename;
+        modalTarget.textContent = filename ? (button.dataset.pasteId + " · " + filename) : button.dataset.pasteId;
+        skipConfirm.checked = false;
+        modal.classList.remove("is-hidden");
+        document.body.classList.add("modal-open");
+        cancelDelete.focus();
+      };
+
+      document.querySelectorAll(".single-delete-button").forEach(function (button) {
+        button.addEventListener("click", function () {
+          if (hasSkipConfirmation()) {
+            button.closest("form").requestSubmit();
+            return;
+          }
+          openDeleteModal(button);
+        });
       });
-      updateBulkButton();
+
+      cancelDelete.addEventListener("click", closeDeleteModal);
+      confirmDelete.addEventListener("click", function () {
+        if (!activeDeleteForm) return;
+        if (skipConfirm.checked) {
+          document.cookie = skipCookie + "=1; Max-Age=604800; Path=/admin; SameSite=Lax";
+        }
+        activeDeleteForm.requestSubmit();
+      });
+      modal.addEventListener("click", function (event) {
+        if (event.target.dataset.modalDismiss === "true") closeDeleteModal();
+      });
+      modal.addEventListener("keydown", function (event) {
+        if (event.key !== "Tab") return;
+        const focusable = Array.from(modal.querySelectorAll("button, input"));
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      });
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && !modal.classList.contains("is-hidden")) closeDeleteModal();
+      });
     })();
   </script>
 </body>

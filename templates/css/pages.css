@@ -219,6 +219,63 @@
   gap: 0.75rem;
 }
 
+.modal {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.modal-card {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 30rem);
+  padding: 1.5rem;
+  border: 1px solid rgba(244, 180, 180, 0.36);
+  background: var(--panel);
+}
+
+.modal-target {
+  margin: 1rem 0 0;
+  padding: 0.75rem;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+  color: var(--text);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.875rem;
+}
+
+.modal-checkbox {
+  margin-top: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.modal-checkbox input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0.2rem 0 0;
+  accent-color: #d4d4d8;
+}
+
+.modal-actions {
+  margin-top: 1.5rem;
+  justify-content: flex-end;
+}
+
 .table-wrap {
   overflow-x: auto;
   border: 1px solid var(--line);

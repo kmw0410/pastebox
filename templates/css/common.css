@@ -33,6 +33,10 @@ body {
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
 button,
 input,
 select {

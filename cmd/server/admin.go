@@ -246,7 +246,10 @@ func adminPasteMatchesStatus(item pastebox.AdminPasteItem, status string, now ti
 	return status == "active"
 }
 
-const adminFlashCookieName = "pastebox_admin_flash"
+const (
+	adminFlashCookieName                   = "pastebox_admin_flash"
+	adminSkipSingleDeleteConfirmCookieName = "pastebox_admin_skip_single_delete_confirm"
+)
 
 func setAdminFlash(w http.ResponseWriter, message string) {
 	http.SetCookie(w, &http.Cookie{
@@ -560,6 +563,13 @@ func (a *app) adminLogoutHandler(w http.ResponseWriter, r *http.Request) {
 		Path:     "/admin",
 		MaxAge:   -1,
 		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     adminSkipSingleDeleteConfirmCookieName,
+		Value:    "",
+		Path:     "/admin",
+		MaxAge:   -1,
 		SameSite: http.SameSiteLaxMode,
 	})
 

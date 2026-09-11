@@ -712,6 +712,32 @@ func TestAdminPagination(t *testing.T) {
 	}
 }
 
+func TestAdminLogoutClearsSingleDeleteConfirmationPreference(t *testing.T) {
+	app := newTestApp(t)
+	req := httptest.NewRequest(http.MethodGet, "/admin/logout", nil)
+	req.AddCookie(&http.Cookie{Name: "pastebox_admin", Value: "session-token"})
+	rr := httptest.NewRecorder()
+
+	app.adminLogoutHandler(rr, req)
+
+	if rr.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want %d", rr.Code, http.StatusSeeOther)
+	}
+	if location := rr.Header().Get("Location"); location != "/admin/login" {
+		t.Fatalf("Location = %q, want /admin/login", location)
+	}
+
+	for _, cookie := range rr.Result().Cookies() {
+		if cookie.Name == adminSkipSingleDeleteConfirmCookieName {
+			if cookie.MaxAge != -1 || cookie.Path != "/admin" {
+				t.Fatalf("preference cookie = %#v, want an expired /admin cookie", cookie)
+			}
+			return
+		}
+	}
+	t.Fatalf("logout did not clear %q", adminSkipSingleDeleteConfirmCookieName)
+}
+
 func TestNewAppGeneratesSetupTokenOnlyWithoutAdmin(t *testing.T) {
 	originalWD, err := os.Getwd()
 	if err != nil {

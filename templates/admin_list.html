@@ -149,7 +149,7 @@
             </form>
             <form method="post" action="/admin/delete-all" onsubmit="return confirm('{{ t "admin_delete_all_confirm" }}')">
               <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-              <button class="button pink" type="submit">{{ t "admin_delete_all_button" }}</button>
+              <button class="button pink{{ if or (eq .Stats.Total 0) (eq .FilteredCount 0) }} is-disabled{{ end }}" type="submit"{{ if or (eq .Stats.Total 0) (eq .FilteredCount 0) }} disabled aria-disabled="true"{{ end }}>{{ t "admin_delete_all_button" }}</button>
             </form>
           </div>
         </div>
@@ -169,7 +169,7 @@
 
           <label class="form-field">
             <span>{{ t "admin_filter_policy" }}</span>
-            <select class="input" name="policy">
+            <select class="input select-input" name="policy">
               <option value="">{{ t "admin_filter_all" }}</option>
               <option value="temporary"{{ if eq .Filters.Policy "temporary" }} selected{{ end }}>{{ t "manage_policy_temporary" }}</option>
               <option value="permanent"{{ if eq .Filters.Policy "permanent" }} selected{{ end }}>{{ t "manage_policy_permanent" }}</option>
@@ -180,7 +180,7 @@
 
           <label class="form-field">
             <span>{{ t "admin_filter_protected" }}</span>
-            <select class="input" name="protected">
+            <select class="input select-input" name="protected">
               <option value="">{{ t "admin_filter_all" }}</option>
               <option value="yes"{{ if eq .Filters.Protected "yes" }} selected{{ end }}>{{ t "admin_filter_protected_yes" }}</option>
               <option value="no"{{ if eq .Filters.Protected "no" }} selected{{ end }}>{{ t "admin_filter_protected_no" }}</option>
@@ -189,7 +189,7 @@
 
           <label class="form-field">
             <span>{{ t "admin_filter_status" }}</span>
-            <select class="input" name="status">
+            <select class="input select-input" name="status">
               <option value="">{{ t "admin_filter_all" }}</option>
               <option value="active"{{ if eq .Filters.Status "active" }} selected{{ end }}>{{ t "admin_filter_status_active" }}</option>
               <option value="expiring"{{ if eq .Filters.Status "expiring" }} selected{{ end }}>{{ t "admin_filter_status_expiring" }}</option>
@@ -200,7 +200,7 @@
 
           <label class="form-field">
             <span>{{ t "admin_sort" }}</span>
-            <select class="input" name="sort">
+            <select class="input select-input" name="sort">
               <option value="created-desc"{{ if eq .Sorting.Value "created-desc" }} selected{{ end }}>{{ t "admin_sort_created_desc" }}</option>
               <option value="created-asc"{{ if eq .Sorting.Value "created-asc" }} selected{{ end }}>{{ t "admin_sort_created_asc" }}</option>
               <option value="expires-asc"{{ if eq .Sorting.Value "expires-asc" }} selected{{ end }}>{{ t "admin_sort_expires_asc" }}</option>
@@ -214,7 +214,7 @@
 
           <label class="form-field">
             <span>{{ t "admin_pagination_per_page" }}</span>
-            <select class="input" name="limit">
+            <select class="input select-input" name="limit">
               <option value="50"{{ if eq .Pagination.Limit "50" }} selected{{ end }}>50</option>
               <option value="100"{{ if eq .Pagination.Limit "100" }} selected{{ end }}>100</option>
               <option value="all"{{ if eq .Pagination.Limit "all" }} selected{{ end }}>{{ t "admin_pagination_all" }}</option>

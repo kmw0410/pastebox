@@ -206,6 +206,20 @@
   gap: 1rem;
 }
 
+.select-input {
+  padding-right: 3rem;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='m1 1 5 5 5-5' stroke='%23a1a1aa' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position: right 1rem center;
+  background-repeat: no-repeat;
+  background-size: 0.75rem 0.5rem;
+}
+
+.select-input::-ms-expand {
+  display: none;
+}
+
 .admin-filter-actions {
   display: flex;
   flex-direction: column;

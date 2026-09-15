@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/css/pages.css">
 </head>
 <body>
-  <main class="page-shell">
+  <main class="page-shell manage-page-shell">
     <div class="panel">
       <div class="manage-header">
         <div>
@@ -106,11 +106,6 @@
             {{ end }}
           </article>
 
-          <article class="card">
-            <p class="eyebrow">{{ t "manage_danger_title" }}</p>
-            <p class="description">{{ t "manage_delete_desc" }}</p>
-            <button class="button mt-md" type="button" data-delete-url="/api/v1/pastes/{{ .ID }}" data-manage-token="{{ .ManageToken }}" onclick="deleteManagedPaste(this)">{{ t "manage_delete_button" }}</button>
-          </article>
         </div>
 
         <article class="card manage-policy-card">
@@ -140,6 +135,12 @@
             <button class="button policy-submit" type="submit">{{ t "manage_policy_save" }}</button>
             <p class="notice-text policy-form-help">{{ t "manage_policy_custom_desc" }}</p>
           </form>
+        </article>
+
+        <article class="card manage-danger-card">
+          <p class="eyebrow">{{ t "manage_danger_title" }}</p>
+          <p class="description">{{ t "manage_delete_desc" }}</p>
+          <button class="button mt-md" type="button" data-delete-url="/api/v1/pastes/{{ .ID }}" data-manage-token="{{ .ManageToken }}" onclick="deleteManagedPaste(this)">{{ t "manage_delete_button" }}</button>
         </article>
       </div>
 

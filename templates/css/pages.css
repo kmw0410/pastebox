@@ -582,6 +582,10 @@
 }
 
 @media (min-width: 1280px) {
+  .manage-page-shell {
+    width: 80%;
+  }
+
   .admin-filter-form {
     grid-template-columns: minmax(13rem, 1.3fr) repeat(5, minmax(8rem, 1fr));
   }
@@ -623,5 +627,10 @@
   .manage-policy-card {
     grid-column: 1 / -1;
     grid-row: 2;
+  }
+
+  .manage-danger-card {
+    grid-column: 1 / -1;
+    grid-row: 3;
   }
 }

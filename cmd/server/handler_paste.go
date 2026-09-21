@@ -24,7 +24,14 @@ func (a *app) qrHandler(w http.ResponseWriter, r *http.Request, id string) {
 		return
 	}
 
-	png, err := qrcode.Encode(pastePublicURL(r, id), qrcode.Medium, 256)
+	qr, err := qrcode.New(pastePublicURL(r, id), qrcode.Medium)
+	if err != nil {
+		http.Error(w, "failed to generate QR code", http.StatusInternalServerError)
+		return
+	}
+	qr.DisableBorder = true
+
+	png, err := qr.PNG(256)
 	if err != nil {
 		http.Error(w, "failed to generate QR code", http.StatusInternalServerError)
 		return

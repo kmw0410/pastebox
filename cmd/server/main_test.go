@@ -1141,6 +1141,7 @@ func TestSyntaxLanguage(t *testing.T) {
 		{name: "rotated numeric log", filename: "access.log.1", contentType: "text/plain; charset=utf-8", want: "logs"},
 		{name: "rotated named log", filename: "access.log.old", contentType: "text/plain; charset=utf-8", want: "logs"},
 		{name: "bash by content type", filename: "entrypoint.sh", contentType: "text/x-shellscript; charset=utf-8", want: "bash"},
+		{name: "html by content type", filename: "index.html", contentType: "text/html; charset=utf-8", want: "html"},
 	}
 
 	for _, tt := range tests {

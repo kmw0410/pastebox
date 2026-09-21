@@ -271,7 +271,7 @@ func syntaxLanguage(filename string, contentType string) string {
 	case strings.Contains(contentType, "php"):
 		return "php"
 	case contentType == "text/html":
-		return "xml"
+		return "html"
 	case contentType == "text/css":
 		return "css"
 	default:

@@ -17,7 +17,7 @@ jobs:
   test:
     if: >
       github.event_name == 'workflow_dispatch' ||
-      contains(github.event.head_commit.message, '[skip actions]') == false
+      contains(github.event.head_commit.message, '[skip ci]') == false
     runs-on: [self-hosted, Linux, X64]
 
     permissions:
@@ -47,7 +47,7 @@ jobs:
     needs: test
     if: >
       github.event_name == 'workflow_dispatch' ||
-      contains(github.event.head_commit.message, '[skip actions]') == false
+      contains(github.event.head_commit.message, '[skip ci]') == false
     runs-on: [self-hosted, Linux, X64]
 
     permissions:

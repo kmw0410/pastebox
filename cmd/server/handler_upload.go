@@ -74,6 +74,7 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize+1)
 		reader = r.Body
+		filename = uploadFilename(r)
 		if strings.TrimSpace(contentType) == "" {
 			contentType = "text/plain; charset=utf-8"
 		}
@@ -160,6 +161,26 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	a.notifyDiscordPasteCreated(r, meta, password != "" || newPassword != "", "")
 
 	a.writeUploadResponse(w, r, meta, password, manageToken)
+}
+
+// uploadFilename obtains the optional original filename sent with a raw upload.
+// Multipart uploads carry this in their file part; streaming clients can use the
+// filename header or the standard Content-Disposition filename parameter.
+func uploadFilename(r *http.Request) string {
+	filename := strings.TrimSpace(r.Header.Get("filename"))
+	if filename == "" {
+		if _, params, err := mime.ParseMediaType(r.Header.Get("Content-Disposition")); err == nil {
+			filename = strings.TrimSpace(params["filename"])
+		}
+	}
+
+	// Keep metadata to a filename, not a client path. Backslashes are path
+	// separators for clients on Windows even when Pastebox runs on Linux.
+	filename = strings.ReplaceAll(filename, "\\", "/")
+	if filename == "" {
+		return ""
+	}
+	return filepath.Base(filename)
 }
 
 func (a *app) writeUploadResponse(w http.ResponseWriter, r *http.Request, meta pastebox.Metadata, password string, manageToken string) {

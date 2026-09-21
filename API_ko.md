@@ -19,13 +19,16 @@ Paste 본문은 텍스트만 허용되며 업로드 한도는 1 GiB입니다. �
 
 ## 업로드
 
-stdin은 스트리밍 raw body로 전송하고, 원본 파일명을 보존해야 하는 파일은 multipart `file` 필드로 전송합니다.
+stdin은 스트리밍 raw body로 전송합니다. 파일을 직접 업로드할 때는 `filename` 헤더(또는 표준 `Content-Disposition`의 filename 파라미터)에 파일명을 넣으면 Pastebox가 확장자를 보존하고 문법 강조를 선택합니다. multipart `file` 업로드는 원본 파일명을 자동으로 보존합니다.
 
 ```bash
 # Raw 텍스트
 printf 'hello\n' | curl -X POST --data-binary @- https://paste.example.com/
 
-# 원본 파일명을 보존하는 파일 업로드
+# 원본 파일명과 문법 강조를 보존하는 직접 파일 업로드
+curl -X POST --data-binary @server.go -H "filename: server.go" https://paste.example.com/
+
+# 원본 파일명을 보존하는 multipart 파일 업로드
 curl -F "file=@server.log" https://paste.example.com/
 ```
 
@@ -38,6 +41,7 @@ curl -F "file=@server.log" https://paste.example.com/
 | `password` | 제어 문자가 없는 8–128자의 사용자 지정 비밀번호 |
 | `code` | `A-Z`, `a-z`, `0-9`, `_`, `-`만 사용하는 1–10자 사용자 지정 코드 |
 | `label` | 제어 문자가 없는 최대 100자의 선택적 라벨 |
+| `filename` | raw request body의 선택적 파일명이며, 저장 파일명과 문법 강조에 사용 |
 
 `usepassword: true`와 `password` 헤더는 함께 사용할 수 없습니다.
 

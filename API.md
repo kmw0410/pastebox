@@ -19,13 +19,16 @@ Paste content is text-only and uploads are limited to 1 GiB. API clients should 
 
 ## Upload
 
-Use a streaming raw request body for stdin or a multipart `file` field when the original filename must be preserved.
+Use a streaming raw request body for stdin. For a direct file upload, send its basename in the `filename` header (or the standard `Content-Disposition` filename parameter) so Pastebox preserves the extension and selects syntax highlighting. Multipart `file` uploads preserve the original filename automatically.
 
 ```bash
 # Raw text
 printf 'hello\n' | curl -X POST --data-binary @- https://paste.example.com/
 
-# File upload with original filename
+# Direct file upload with original filename and syntax highlighting
+curl -X POST --data-binary @server.go -H "filename: server.go" https://paste.example.com/
+
+# Multipart file upload with original filename
 curl -F "file=@server.log" https://paste.example.com/
 ```
 
@@ -38,6 +41,7 @@ curl -F "file=@server.log" https://paste.example.com/
 | `password` | A custom password containing 8–128 characters and no control characters |
 | `code` | A custom code of 1–10 characters using only `A-Z`, `a-z`, `0-9`, `_`, and `-` |
 | `label` | An optional label of up to 100 characters without control characters |
+| `filename` | Optional basename for a raw request body; used for stored filename and syntax highlighting |
 
 `usepassword: true` and the `password` header are mutually exclusive.
 

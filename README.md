@@ -191,6 +191,12 @@ Both migrations are protected by a completion marker stored in SQLite under `pas
    curl -F "file=@test.txt" http://localhost:8080/
    ```
 
+   For a streaming direct upload, send the filename explicitly so its extension selects syntax highlighting.
+
+   ```bash
+   curl -X POST --data-binary @server.go -H "filename: server.go" http://localhost:8080/
+   ```
+
 4. **Permanent Storage**: Use the `data-policy: permanent` header to exclude an uploaded file from automatic deletion and store it permanently.
 
    ```bash

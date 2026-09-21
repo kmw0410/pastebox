@@ -193,6 +193,12 @@ environment:
    curl -F "file=@test.txt" http://localhost:8080/
    ```
 
+   스트리밍 직접 업로드에서는 파일명을 명시하면 확장자에 따라 문법 강조가 적용됩니다.
+
+   ```bash
+   curl -X POST --data-binary @server.go -H "filename: server.go" http://localhost:8080/
+   ```
+
 4. **영구 저장**: `data-policy: permanent` 헤더를 사용하면 자동 삭제 대상에서 제외되어 영구 저장됩니다.
 
    ```bash

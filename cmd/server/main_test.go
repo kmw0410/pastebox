@@ -1079,3 +1079,71 @@ func TestSyntaxLanguage(t *testing.T) {
 		})
 	}
 }
+func TestUploadHandlerRawBodyPreservesFilenameForSyntaxHighlighting(t *testing.T) {
+	tests := []struct {
+		name               string
+		header             string
+		contentDisposition string
+		wantFilename       string
+		wantContentType    string
+		wantLanguage       string
+	}{
+		{
+			name:            "stdin without filename",
+			wantFilename:    "",
+			wantContentType: "text/plain; charset=utf-8",
+			wantLanguage:    "plaintext",
+		},
+		{
+			name:            "filename header",
+			header:          `scripts/deploy.sh`,
+			wantFilename:    "deploy.sh",
+			wantContentType: "text/x-shellscript; charset=utf-8",
+			wantLanguage:    "bash",
+		},
+		{
+			name:               "content disposition",
+			contentDisposition: `attachment; filename="service.go"`,
+			wantFilename:       "service.go",
+			wantContentType:    "text/x-go; charset=utf-8",
+			wantLanguage:       "go",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := newTestApp(t)
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("package main\n"))
+			req.Header.Set("Content-Type", "text/plain")
+			if tt.header != "" {
+				req.Header.Set("filename", tt.header)
+			}
+			if tt.contentDisposition != "" {
+				req.Header.Set("Content-Disposition", tt.contentDisposition)
+			}
+			rr := httptest.NewRecorder()
+
+			app.uploadHandler(rr, req)
+			if rr.Code != http.StatusOK {
+				t.Fatalf("status = %d, body=%q", rr.Code, rr.Body.String())
+			}
+
+			id := strings.TrimPrefix(responseLineValue(rr.Body.String(), "url"), "http://example.com/")
+			entry, err := app.store.Open(id, "")
+			if err != nil {
+				t.Fatalf("Open failed: %v", err)
+			}
+			defer entry.File.Close()
+			if entry.Meta.Filename != tt.wantFilename {
+				t.Fatalf("filename = %q, want %q", entry.Meta.Filename, tt.wantFilename)
+			}
+			if entry.Meta.ContentType != tt.wantContentType {
+				t.Fatalf("content type = %q, want %q", entry.Meta.ContentType, tt.wantContentType)
+			}
+			if got := syntaxLanguage(entry.Meta.Filename, entry.Meta.ContentType); got != tt.wantLanguage {
+				t.Fatalf("syntax language = %q, want %q", got, tt.wantLanguage)
+			}
+		})
+	}
+}
+

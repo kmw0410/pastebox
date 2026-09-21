@@ -339,6 +339,62 @@ body.paste-page {
   white-space: inherit;
 }
 
+@media (max-width: 1023px) {
+  .paste-header-inner {
+    gap: 0.35rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .paste-meta {
+    flex-wrap: nowrap;
+    gap: 0.35rem;
+    overflow: hidden;
+  }
+
+  .paste-brand,
+  .paste-dot,
+  .paste-policy,
+  .paste-expires,
+  .paste-long-line-hint {
+    display: none;
+  }
+
+  .paste-title,
+  .paste-filename {
+    min-width: 0;
+    flex: 0 1 auto;
+  }
+
+  .paste-filename {
+    max-width: 8rem;
+  }
+
+  .paste-language {
+    flex: 0 0 auto;
+  }
+
+  .paste-actions {
+    flex-wrap: nowrap;
+    gap: 0.35rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .paste-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .paste-actions form,
+  .paste-button {
+    flex: 0 0 auto;
+  }
+
+  .paste-button {
+    padding: 0.35rem 0.55rem;
+  }
+}
+
 @media (min-width: 1024px) {
   .paste-header-inner {
     padding-right: 1.5rem;

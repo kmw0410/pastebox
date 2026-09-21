@@ -18,7 +18,7 @@ jobs:
     if: >
       github.event_name == 'workflow_dispatch' ||
       contains(github.event.head_commit.message, '[skip actions]') == false
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [runner2]
 
     permissions:
       contents: read

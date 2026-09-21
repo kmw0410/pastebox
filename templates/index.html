@@ -22,7 +22,7 @@
           <div class="button-row home-actions">
             <a class="button" href="https://github.com/kmw0410/pastebox" target="_blank" rel="noopener noreferrer">GitHub</a>
             <a class="button" href="https://github.com/kmw0410/pastebox-cli" target="_blank" rel="noopener noreferrer">{{ t "index_cli" }}</a>
-            <button class="button" type="button" onclick="navigator.clipboard.writeText('curl -F &quot;file=@test.txt&quot; {{ .BaseURL }}/')">{{ t "index_copy_curl" }}</button>
+            <button id="copyCurlButton" class="button" type="button" onclick="copyCurlExample()">{{ t "index_copy_curl" }}</button>
           </div>
         </div>
 
@@ -76,5 +76,33 @@ manage: {{ .BaseURL }}/AbC12?manage=MANAGE_TOKEN</code></pre>
       </section>
     </div>
   </main>
+
+  <script>
+    async function copyCurlExample() {
+      const button = document.getElementById("copyCurlButton");
+      const command = 'curl -F "file=@test.txt" {{ .BaseURL }}/';
+      const original = button.innerText;
+
+      try {
+        await navigator.clipboard.writeText(command);
+      } catch (error) {
+        const textarea = document.createElement("textarea");
+        textarea.value = command;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.select();
+        const copied = document.execCommand("copy");
+        document.body.removeChild(textarea);
+        if (!copied) return;
+      }
+
+      button.innerText = "{{ t "paste_copied" }}";
+      setTimeout(() => {
+        button.innerText = original;
+      }, 1500);
+    }
+  </script>
 </body>
 </html>

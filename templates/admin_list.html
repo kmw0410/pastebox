@@ -8,12 +8,18 @@
   <link rel="stylesheet" href="/css/pages.css">
 </head>
 <body>
-  <main class="page-shell">
-    <div class="panel">
+  <main class="page-shell admin-page-shell">
+    <div class="panel admin-page-panel">
       <div class="admin-header">
         <div>
           <h1 class="title">{{ t "admin_page_title" }}</h1>
-          <p class="description">{{ t "admin_page_description" }}</p>
+          <p class="admin-summary">
+            <strong>{{ .Stats.Total }} {{ t "admin_stored_pastes" }}</strong>
+            <span aria-hidden="true">·</span>
+            <strong>{{ .Stats.TotalSize }}</strong>
+            <span aria-hidden="true">·</span>
+            {{ if .UploadsDisabled }}<span class="admin-status-negative">{{ t "admin_uploads_disabled_short" }}</span>{{ else }}<span class="admin-status-positive">{{ t "admin_uploads_enabled_short" }}</span>{{ end }}
+          </p>
         </div>
         <div class="admin-actions">
           <a class="button" href="/">{{ t "home" }}</a>
@@ -29,22 +35,22 @@
 
       <div class="grid-four mt-lg">
         <div class="card">
-          <p class="eyebrow">{{ t "admin_total_links" }}</p>
+          <p class="eyebrow">{{ t "admin_pastes" }}</p>
           <p class="stat-value">{{ .Stats.Total }}</p>
-          <p class="stat-desc">{{ t "admin_stored_pastes" }}</p>
+          <p class="stat-desc">{{ t "admin_active_records" }}</p>
         </div>
         <div class="card">
           <p class="eyebrow">{{ t "admin_storage" }}</p>
           <p class="stat-value">{{ .Stats.TotalSize }}</p>
-          <p class="stat-desc">{{ t "admin_total_size" }}</p>
+          <p class="stat-desc">{{ t "admin_content_in_use" }}</p>
         </div>
         <div class="card">
-          <p class="eyebrow">{{ t "admin_policy" }}</p>
+          <p class="eyebrow">{{ t "admin_retention" }}</p>
           <p class="stat-value">{{ .Stats.Temporary }} / {{ .Stats.Permanent }}</p>
           <p class="stat-desc">{{ t "admin_temp_permanent" }}</p>
         </div>
         <div class="card">
-          <p class="eyebrow">{{ t "admin_security" }}</p>
+          <p class="eyebrow">{{ t "admin_protection" }}</p>
           <p class="stat-value">{{ .Stats.Protected }}</p>
           <p class="stat-desc">{{ t "admin_password_protected" }}</p>
         </div>
@@ -63,11 +69,22 @@
         </div>
       </div>
 
-      <div class="card mt-lg">
+      <div class="card mt-lg admin-update-card">
         <div class="admin-control">
           <div>
-            <p class="eyebrow cyan">{{ t "admin_update_title" }}</p>
-            <p class="description strong">
+            <p class="eyebrow">{{ t "admin_update_status" }}</p>
+            {{ if .Release.CheckFailed }}
+            <p class="admin-update-state">{{ t "admin_update_check_failed_short" }}</p>
+            {{ else if .Release.CommitUnavailable }}
+            <p class="admin-update-state">{{ t "admin_release_commit_unavailable_short" }}</p>
+            {{ else if .Release.Development }}
+            <p class="admin-update-state">{{ t "admin_update_development_short" }}</p>
+            {{ else if .Release.UpdateAvailable }}
+            <p class="admin-update-state admin-status-positive">{{ t "admin_update_available_short" }}</p>
+            {{ else }}
+            <p class="admin-update-state admin-status-positive">{{ t "admin_update_current_short" }}</p>
+            {{ end }}
+            <p class="notice-text">
               {{ t "admin_current_version" }} <span class="mono">{{ .Release.Current }}</span>
               <span class="mono">({{ t "admin_commit" }} {{ .Release.Commit }})</span>
               ·
@@ -75,83 +92,11 @@
               {{ if .Release.CheckFailed }}<span class="mono">-</span>{{ else }}<span class="mono">{{ .Release.Latest }}</span>
               <span class="mono">({{ t "admin_commit" }} {{ if .Release.CommitUnavailable }}-{{ else }}{{ .Release.LatestCommit }}{{ end }})</span>{{ end }}
             </p>
-            {{ if .Release.CheckFailed }}
-            <p class="notice-text pink">{{ t "admin_update_check_failed" }}</p>
-            {{ else if .Release.CommitUnavailable }}
-            <p class="notice-text">{{ t "admin_release_commit_unavailable" }}</p>
-            {{ else if .Release.Development }}
-            <p class="notice-text">{{ t "admin_update_development" }}</p>
-            {{ else if .Release.UpdateAvailable }}
-            <p class="notice-text cyan">{{ t "admin_update_available" }}</p>
-            {{ else }}
-            <p class="notice-text">{{ t "admin_update_current" }}</p>
-            {{ end }}
           </div>
 
           {{ if .Release.ReleaseURL }}
           <a class="button" href="{{ .Release.ReleaseURL }}" target="_blank" rel="noopener noreferrer">{{ t "admin_view_release" }}</a>
           {{ end }}
-        </div>
-      </div>
-
-      <div class="admin-split mt-lg">
-        <div class="card">
-          <p class="eyebrow cyan">{{ t "admin_storage_backend" }}</p>
-          <p class="stat-value medium cyan mono">{{ .StorageBackend }}</p>
-          {{ if eq .StorageBackend "mysql" }}
-          <p class="description"><strong>{{ t "admin_storage_backend_mysql_title" }}</strong></p>
-          <p class="notice-text">{{ t "admin_storage_backend_mysql_desc" }}</p>
-          {{ else }}
-          <p class="description"><strong>{{ t "admin_storage_backend_local_title" }}</strong></p>
-          <p class="notice-text">{{ t "admin_storage_backend_local_desc" }}</p>
-          {{ end }}
-        </div>
-
-        <div class="card">
-          <div class="admin-control">
-            <div>
-              <p class="eyebrow">{{ t "admin_upload_control" }}</p>
-              {{ if .UploadsDisabled }}
-              <p class="description pink strong">{{ t "admin_uploads_disabled_title" }}</p>
-              <p class="notice-text">{{ t "admin_uploads_disabled_desc" }}</p>
-              {{ else }}
-              <p class="description strong">{{ t "admin_uploads_enabled_title" }}</p>
-              <p class="notice-text">{{ t "admin_uploads_enabled_desc" }}</p>
-              {{ end }}
-            </div>
-
-            <form method="post" action="/admin/uploads">
-              <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-              {{ if .UploadsDisabled }}
-              <input type="hidden" name="disabled" value="false">
-              <button class="button" type="submit">{{ t "admin_enable_uploads" }}</button>
-              {{ else }}
-              <input type="hidden" name="disabled" value="true">
-              <button class="button pink" type="submit">{{ t "admin_disable_uploads" }}</button>
-              {{ end }}
-            </form>
-          </div>
-        </div>
-      </div>
-
-      <div class="card mt-lg">
-        <div class="danger-row">
-          <div>
-            <p class="eyebrow pink">{{ t "admin_danger_zone" }}</p>
-            <p class="description pink strong">{{ t "admin_delete_title" }}</p>
-            <p class="notice-text pink">{{ t "admin_delete_desc" }}</p>
-          </div>
-
-          <div class="button-row">
-            <form id="bulk-delete-form" method="post" action="/admin/delete" onsubmit="return confirm('{{ t "admin_delete_selected_confirm" }}')">
-              <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-              <button id="bulk-delete-btn" class="button pink is-hidden" type="submit"></button>
-            </form>
-            <form method="post" action="/admin/delete-all" onsubmit="return confirm('{{ t "admin_delete_all_confirm" }}')">
-              <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-              <button class="button pink{{ if or (eq .Stats.Total 0) (eq .FilteredCount 0) }} is-disabled{{ end }}" type="submit"{{ if or (eq .Stats.Total 0) (eq .FilteredCount 0) }} disabled aria-disabled="true"{{ end }}>{{ t "admin_delete_all_button" }}</button>
-            </form>
-          </div>
         </div>
       </div>
 
@@ -168,37 +113,6 @@
           </label>
 
           <label class="form-field">
-            <span>{{ t "admin_filter_policy" }}</span>
-            <select class="input select-input" name="policy">
-              <option value="">{{ t "admin_filter_all" }}</option>
-              <option value="temporary"{{ if eq .Filters.Policy "temporary" }} selected{{ end }}>{{ t "manage_policy_temporary" }}</option>
-              <option value="permanent"{{ if eq .Filters.Policy "permanent" }} selected{{ end }}>{{ t "manage_policy_permanent" }}</option>
-              <option value="once"{{ if eq .Filters.Policy "once" }} selected{{ end }}>{{ t "manage_policy_once" }}</option>
-              <option value="custom"{{ if eq .Filters.Policy "custom" }} selected{{ end }}>{{ t "manage_policy_custom" }}</option>
-            </select>
-          </label>
-
-          <label class="form-field">
-            <span>{{ t "admin_filter_protected" }}</span>
-            <select class="input select-input" name="protected">
-              <option value="">{{ t "admin_filter_all" }}</option>
-              <option value="yes"{{ if eq .Filters.Protected "yes" }} selected{{ end }}>{{ t "admin_filter_protected_yes" }}</option>
-              <option value="no"{{ if eq .Filters.Protected "no" }} selected{{ end }}>{{ t "admin_filter_protected_no" }}</option>
-            </select>
-          </label>
-
-          <label class="form-field">
-            <span>{{ t "admin_filter_status" }}</span>
-            <select class="input select-input" name="status">
-              <option value="">{{ t "admin_filter_all" }}</option>
-              <option value="active"{{ if eq .Filters.Status "active" }} selected{{ end }}>{{ t "admin_filter_status_active" }}</option>
-              <option value="expiring"{{ if eq .Filters.Status "expiring" }} selected{{ end }}>{{ t "admin_filter_status_expiring" }}</option>
-              <option value="expired"{{ if eq .Filters.Status "expired" }} selected{{ end }}>{{ t "admin_filter_status_expired" }}</option>
-              <option value="no-expiration"{{ if eq .Filters.Status "no-expiration" }} selected{{ end }}>{{ t "admin_filter_status_no_expiration" }}</option>
-            </select>
-          </label>
-
-          <label class="form-field">
             <span>{{ t "admin_sort" }}</span>
             <select class="input select-input" name="sort">
               <option value="created-desc"{{ if eq .Sorting.Value "created-desc" }} selected{{ end }}>{{ t "admin_sort_created_desc" }}</option>
@@ -212,17 +126,49 @@
             </select>
           </label>
 
-          <label class="form-field">
-            <span>{{ t "admin_pagination_per_page" }}</span>
-            <select class="input select-input" name="limit">
-              <option value="50"{{ if eq .Pagination.Limit "50" }} selected{{ end }}>50</option>
-              <option value="100"{{ if eq .Pagination.Limit "100" }} selected{{ end }}>100</option>
-              <option value="all"{{ if eq .Pagination.Limit "all" }} selected{{ end }}>{{ t "admin_pagination_all" }}</option>
-            </select>
-          </label>
+          <details class="admin-more-filters"{{ if or .Filters.Policy .Filters.Protected .Filters.Status }} open{{ end }}>
+            <summary>{{ t "admin_filter_more" }}</summary>
+            <div class="admin-more-filter-options">
+              <label class="form-field">
+                <span>{{ t "admin_filter_policy" }}</span>
+                <select class="input select-input" name="policy">
+                  <option value="">{{ t "admin_filter_all" }}</option>
+                  <option value="temporary"{{ if eq .Filters.Policy "temporary" }} selected{{ end }}>{{ t "manage_policy_temporary" }}</option>
+                  <option value="permanent"{{ if eq .Filters.Policy "permanent" }} selected{{ end }}>{{ t "manage_policy_permanent" }}</option>
+                  <option value="once"{{ if eq .Filters.Policy "once" }} selected{{ end }}>{{ t "manage_policy_once" }}</option>
+                  <option value="custom"{{ if eq .Filters.Policy "custom" }} selected{{ end }}>{{ t "manage_policy_custom" }}</option>
+                </select>
+              </label>
+              <label class="form-field">
+                <span>{{ t "admin_filter_protected" }}</span>
+                <select class="input select-input" name="protected">
+                  <option value="">{{ t "admin_filter_all" }}</option>
+                  <option value="yes"{{ if eq .Filters.Protected "yes" }} selected{{ end }}>{{ t "admin_filter_protected_yes" }}</option>
+                  <option value="no"{{ if eq .Filters.Protected "no" }} selected{{ end }}>{{ t "admin_filter_protected_no" }}</option>
+                </select>
+              </label>
+              <label class="form-field">
+                <span>{{ t "admin_filter_status" }}</span>
+                <select class="input select-input" name="status">
+                  <option value="">{{ t "admin_filter_all" }}</option>
+                  <option value="active"{{ if eq .Filters.Status "active" }} selected{{ end }}>{{ t "admin_filter_status_active" }}</option>
+                  <option value="expiring"{{ if eq .Filters.Status "expiring" }} selected{{ end }}>{{ t "admin_filter_status_expiring" }}</option>
+                  <option value="expired"{{ if eq .Filters.Status "expired" }} selected{{ end }}>{{ t "admin_filter_status_expired" }}</option>
+                  <option value="no-expiration"{{ if eq .Filters.Status "no-expiration" }} selected{{ end }}>{{ t "admin_filter_status_no_expiration" }}</option>
+                </select>
+              </label>
+              <label class="form-field">
+                <span>{{ t "admin_pagination_per_page" }}</span>
+                <select class="input select-input" name="limit">
+                  <option value="50"{{ if eq .Pagination.Limit "50" }} selected{{ end }}>50</option>
+                  <option value="100"{{ if eq .Pagination.Limit "100" }} selected{{ end }}>100</option>
+                  <option value="all"{{ if eq .Pagination.Limit "all" }} selected{{ end }}>{{ t "admin_pagination_all" }}</option>
+                </select>
+              </label>
+            </div>
+          </details>
 
           <div class="admin-filter-actions">
-            <p class="notice-text">{{ .FilteredCount }} {{ t "admin_filter_results" }}</p>
             <div class="button-row">
               <a class="button" href="/admin">{{ t "admin_filter_reset" }}</a>
               <button class="button" type="submit">{{ t "admin_filter_apply" }}</button>
@@ -231,7 +177,11 @@
         </form>
       </div>
 
-      <div class="table-wrap mt-lg">
+      <div class="admin-list-heading mt-lg">
+        <p class="eyebrow">{{ t "admin_stored_pastes" }}</p>
+        <p class="admin-list-result-count"><strong>{{ .FilteredCount }}</strong> {{ t "admin_filter_results" }}</p>
+      </div>
+      <div class="table-wrap">
         <table class="admin-table">
           <thead>
             <tr>
@@ -249,20 +199,20 @@
           <tbody>
             {{ range .Items }}
             <tr>
-              <td>
+              <td data-label="{{ t "admin_table_code" }}">
                 <label class="checkbox-label">
                   <input class="bulk-delete-checkbox" type="checkbox" name="ids" value="{{ .ID }}" form="bulk-delete-form">
                 </label>
                 <a class="table-link" href="{{ $.BaseURL }}/{{ .ID }}" target="_blank">{{ .ID }}</a>
               </td>
-              <td class="truncate-cell">{{ if .Filename }}{{ .Filename }}{{ else }}-{{ end }}</td>
-              <td class="truncate-cell">{{ if .Label }}{{ .Label }}{{ else }}-{{ end }}</td>
-              <td>{{ .DataPolicy }}</td>
-              <td>{{ .Size }}</td>
-              <td>{{ .Protected }}</td>
-              <td class="muted-cell">{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
-              <td class="muted-cell">{{ if .ExpiresAt.IsZero }}-{{ else }}{{ .ExpiresAt.Format "2006-01-02 15:04:05" }}{{ end }}</td>
-              <td>
+              <td data-label="{{ t "admin_table_filename" }}" class="truncate-cell">{{ if .Filename }}{{ .Filename }}{{ else }}-{{ end }}</td>
+              <td data-label="{{ t "admin_table_label" }}" class="truncate-cell">{{ if .Label }}{{ .Label }}{{ else }}-{{ end }}</td>
+              <td data-label="{{ t "admin_table_policy" }}">{{ .DataPolicy }}</td>
+              <td data-label="{{ t "admin_table_size" }}">{{ .Size }}</td>
+              <td data-label="{{ t "admin_table_protected" }}">{{ .Protected }}</td>
+              <td data-label="{{ t "admin_table_created" }}" class="muted-cell">{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
+              <td data-label="{{ t "admin_table_expires" }}" class="muted-cell">{{ if .ExpiresAt.IsZero }}-{{ else }}{{ .ExpiresAt.Format "2006-01-02 15:04:05" }}{{ end }}</td>
+              <td data-label="{{ t "admin_table_action" }}">
                 <form class="single-delete-form" method="post" action="/admin/delete">
                   <input type="hidden" name="csrf_token" value="{{ $.CSRFToken }}">
                   <input type="hidden" name="id" value="{{ .ID }}">
@@ -305,6 +255,67 @@
         </div>
       </nav>
       {{ end }}
+
+      <div class="admin-split mt-lg">
+        <div class="card">
+          <p class="eyebrow">{{ t "admin_storage_backend" }}</p>
+          <p class="stat-value medium mono">{{ .StorageBackend }}</p>
+          {{ if eq .StorageBackend "mysql" }}
+          <p class="description"><strong>{{ t "admin_storage_backend_mysql_title" }}</strong></p>
+          <p class="notice-text">{{ t "admin_storage_backend_mysql_desc" }}</p>
+          {{ else }}
+          <p class="description"><strong>{{ t "admin_storage_backend_local_title" }}</strong></p>
+          <p class="notice-text">{{ t "admin_storage_backend_local_desc" }}</p>
+          {{ end }}
+        </div>
+
+        <div class="card">
+          <div class="admin-control">
+            <div>
+              <p class="eyebrow">{{ t "admin_upload_control" }}</p>
+              {{ if .UploadsDisabled }}
+              <p class="description pink strong">{{ t "admin_disabled" }}</p>
+              <p class="notice-text">{{ t "admin_uploads_disabled_desc" }}</p>
+              {{ else }}
+              <p class="description strong admin-status-positive">{{ t "admin_enabled" }}</p>
+              <p class="notice-text">{{ t "admin_uploads_enabled_desc" }}</p>
+              {{ end }}
+            </div>
+
+            <form method="post" action="/admin/uploads">
+              <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+              {{ if .UploadsDisabled }}
+              <input type="hidden" name="disabled" value="false">
+              <button class="button" type="submit">{{ t "admin_enable_uploads" }}</button>
+              {{ else }}
+              <input type="hidden" name="disabled" value="true">
+              <button class="button pink" type="submit">{{ t "admin_disable_uploads" }}</button>
+              {{ end }}
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt-lg admin-danger-card">
+        <div class="danger-row">
+          <div>
+            <p class="eyebrow pink">{{ t "admin_danger_zone" }}</p>
+            <p class="description pink strong">{{ t "admin_delete_title" }}</p>
+            <p class="notice-text pink">{{ t "admin_delete_desc" }}</p>
+          </div>
+
+          <div class="button-row">
+            <form id="bulk-delete-form" method="post" action="/admin/delete" onsubmit="return confirm('{{ t "admin_delete_selected_confirm" }}')">
+              <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+              <button id="bulk-delete-btn" class="button pink is-hidden" type="submit"></button>
+            </form>
+            <form method="post" action="/admin/delete-all" onsubmit="return confirm('{{ t "admin_delete_all_confirm" }}')">
+              <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+              <button class="button pink{{ if or (eq .Stats.Total 0) (eq .FilteredCount 0) }} is-disabled{{ end }}" type="submit"{{ if or (eq .Stats.Total 0) (eq .FilteredCount 0) }} disabled aria-disabled="true"{{ end }}>{{ t "admin_delete_all_button" }}</button>
+            </form>
+          </div>
+        </div>
+      </div>
 
       <div id="single-delete-modal" class="modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="single-delete-modal-title" aria-describedby="single-delete-modal-description">
         <div class="modal-backdrop" data-modal-dismiss="true"></div>

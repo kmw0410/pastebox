@@ -762,6 +762,61 @@ func TestFilterAdminPasteItems(t *testing.T) {
 	}
 }
 
+func TestBuildAdminPasteViews(t *testing.T) {
+	now := time.Date(2026, 9, 23, 12, 0, 0, 0, time.UTC)
+	i18n := &localizer{messages: map[string]string{
+		"admin_protected":             "Protected",
+		"admin_public":                "Public",
+		"admin_expiring_soon":         "Expiring Soon",
+		"admin_expired":               "Expired",
+		"admin_time_now":              "now",
+		"admin_time_minutes_ago":      "%dm ago",
+		"admin_time_hours_ago":        "%dh ago",
+		"admin_time_days_ago":         "%dd ago",
+		"admin_time_minutes_from_now": "in %dm",
+		"admin_time_hours_from_now":   "in %dh",
+		"admin_time_days_from_now":    "in %dd",
+	}}
+	items := []pastebox.AdminPasteItem{
+		{
+			ID:        "expiring",
+			Size:      1536,
+			Protected: true,
+			CreatedAt: now.Add(-2 * time.Hour),
+			ExpiresAt: now.Add(time.Hour),
+		},
+		{
+			ID:        "expired",
+			Size:      42,
+			CreatedAt: now.Add(-48 * time.Hour),
+			ExpiresAt: now.Add(-time.Minute),
+		},
+	}
+
+	views := buildAdminPasteViews(items, now, i18n)
+	if got, want := views[0].SizeDisplay, "1.5 KiB"; got != want {
+		t.Fatalf("SizeDisplay = %q, want %q", got, want)
+	}
+	if got, want := views[0].ProtectedDisplay, "Protected"; got != want {
+		t.Fatalf("ProtectedDisplay = %q, want %q", got, want)
+	}
+	if got, want := views[0].CreatedRelative, "2h ago"; got != want {
+		t.Fatalf("CreatedRelative = %q, want %q", got, want)
+	}
+	if got, want := views[0].ExpiresRelative, "in 1h"; got != want {
+		t.Fatalf("ExpiresRelative = %q, want %q", got, want)
+	}
+	if got, want := views[0].ExpirationState, "expiring"; got != want {
+		t.Fatalf("ExpirationState = %q, want %q", got, want)
+	}
+	if got, want := views[1].ProtectedDisplay, "Public"; got != want {
+		t.Fatalf("Public display = %q, want %q", got, want)
+	}
+	if got, want := views[1].ExpirationState, "expired"; got != want {
+		t.Fatalf("ExpirationState = %q, want %q", got, want)
+	}
+}
+
 func TestAdminPagination(t *testing.T) {
 	items := make([]pastebox.AdminPasteItem, 120)
 	for i := range items {

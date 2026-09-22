@@ -58,8 +58,9 @@ func (a *app) adminIndexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	items = localizeAdminPasteItems(items, time.Local)
+	now := time.Now()
 	filters := adminPasteFiltersFromRequest(r)
-	filteredItems := filterAdminPasteItems(items, filters, time.Now().UTC())
+	filteredItems := filterAdminPasteItems(items, filters, now.UTC())
 	sorting := adminPasteSortFromRequest(r)
 	sortAdminPasteItems(filteredItems, sorting)
 	pagination := adminPaginationFromRequest(r, len(filteredItems))
@@ -72,7 +73,7 @@ func (a *app) adminIndexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := map[string]any{
-		"Items":           pagedItems,
+		"Items":           buildAdminPasteViews(pagedItems, now, a.i18n),
 		"Stats":           buildAdminStats(items),
 		"Filters":         filters,
 		"Sorting":         sorting,
@@ -103,6 +104,71 @@ const defaultAdminPasteSort = "created-desc"
 
 type adminPasteSort struct {
 	Value string
+}
+
+type adminPasteView struct {
+	pastebox.AdminPasteItem
+	SizeDisplay       string
+	ProtectedDisplay  string
+	CreatedRelative   string
+	ExpiresRelative   string
+	ExpirationState   string
+	ExpirationDisplay string
+}
+
+func buildAdminPasteViews(items []pastebox.AdminPasteItem, now time.Time, i18n *localizer) []adminPasteView {
+	views := make([]adminPasteView, len(items))
+	for i, item := range items {
+		view := adminPasteView{
+			AdminPasteItem:  item,
+			SizeDisplay:     formatBytes(item.Size),
+			CreatedRelative: adminRelativeTime(now, item.CreatedAt, i18n),
+		}
+		if item.Protected {
+			view.ProtectedDisplay = i18n.T("admin_protected")
+		} else {
+			view.ProtectedDisplay = i18n.T("admin_public")
+		}
+		if !item.ExpiresAt.IsZero() {
+			view.ExpiresRelative = adminRelativeTime(now, item.ExpiresAt, i18n)
+			switch {
+			case now.After(item.ExpiresAt):
+				view.ExpirationState = "expired"
+				view.ExpirationDisplay = i18n.T("admin_expired")
+			case item.ExpiresAt.Sub(now) <= 24*time.Hour:
+				view.ExpirationState = "expiring"
+				view.ExpirationDisplay = i18n.T("admin_expiring_soon")
+			}
+		}
+		views[i] = view
+	}
+	return views
+}
+
+func adminRelativeTime(now, value time.Time, i18n *localizer) string {
+	delta := now.Sub(value)
+	future := delta < 0
+	if future {
+		delta = -delta
+	}
+	if delta < time.Minute {
+		return i18n.T("admin_time_now")
+	}
+	count := int(delta / time.Minute)
+	unit := "admin_time_minutes"
+	if delta >= 24*time.Hour {
+		count = int(delta / (24 * time.Hour))
+		unit = "admin_time_days"
+	} else if delta >= time.Hour {
+		count = int(delta / time.Hour)
+		unit = "admin_time_hours"
+	}
+	if future {
+		unit += "_from_now"
+	} else {
+		unit += "_ago"
+	}
+	return fmt.Sprintf(i18n.T(unit), count)
 }
 
 func adminPasteSortFromRequest(r *http.Request) adminPasteSort {

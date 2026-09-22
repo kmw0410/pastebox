@@ -426,6 +426,52 @@
   border-bottom: 0;
 }
 
+.admin-state-badge,
+.admin-expiration-badge {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--line);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.admin-state-badge.is-protected {
+  border-color: rgba(184, 216, 179, 0.35);
+  color: var(--green);
+}
+
+.admin-state-badge.is-public {
+  color: var(--muted);
+}
+
+.admin-time-cell time {
+  display: block;
+}
+
+.admin-relative-time {
+  display: inline-block;
+  margin-top: 0.25rem;
+  color: var(--dim);
+  font-size: 0.75rem;
+}
+
+.admin-expiration-badge {
+  margin: 0.25rem 0 0 0.35rem;
+  color: var(--dim);
+}
+
+.admin-time-cell.is-expiring .admin-relative-time,
+.admin-time-cell.is-expiring .admin-expiration-badge {
+  border-color: rgba(240, 198, 116, 0.35);
+  color: var(--gold);
+}
+
+.admin-time-cell.is-expired .admin-relative-time,
+.admin-time-cell.is-expired .admin-expiration-badge {
+  border-color: rgba(244, 180, 180, 0.35);
+  color: var(--pink);
+}
+
 .table-link {
   color: var(--text);
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;

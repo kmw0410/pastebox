@@ -208,10 +208,22 @@
               <td data-label="{{ t "admin_table_filename" }}" class="truncate-cell">{{ if .Filename }}{{ .Filename }}{{ else }}-{{ end }}</td>
               <td data-label="{{ t "admin_table_label" }}" class="truncate-cell">{{ if .Label }}{{ .Label }}{{ else }}-{{ end }}</td>
               <td data-label="{{ t "admin_table_policy" }}">{{ .DataPolicy }}</td>
-              <td data-label="{{ t "admin_table_size" }}">{{ .Size }}</td>
-              <td data-label="{{ t "admin_table_protected" }}">{{ .Protected }}</td>
-              <td data-label="{{ t "admin_table_created" }}" class="muted-cell">{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
-              <td data-label="{{ t "admin_table_expires" }}" class="muted-cell">{{ if .ExpiresAt.IsZero }}-{{ else }}{{ .ExpiresAt.Format "2006-01-02 15:04:05" }}{{ end }}</td>
+              <td data-label="{{ t "admin_table_size" }}">{{ .SizeDisplay }}</td>
+              <td data-label="{{ t "admin_table_protected" }}">
+                <span class="admin-state-badge{{ if .Protected }} is-protected{{ else }} is-public{{ end }}">{{ .ProtectedDisplay }}</span>
+              </td>
+              <td data-label="{{ t "admin_table_created" }}" class="admin-time-cell">
+                <time datetime="{{ .CreatedAt.Format "2006-01-02T15:04:05Z07:00" }}">{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</time>
+                <span class="admin-relative-time">{{ .CreatedRelative }}</span>
+              </td>
+              <td data-label="{{ t "admin_table_expires" }}" class="admin-time-cell{{ if .ExpirationState }} is-{{ .ExpirationState }}{{ end }}">
+                {{ if .ExpiresAt.IsZero }}-
+                {{ else }}
+                <time datetime="{{ .ExpiresAt.Format "2006-01-02T15:04:05Z07:00" }}">{{ .ExpiresAt.Format "2006-01-02 15:04:05" }}</time>
+                <span class="admin-relative-time">{{ .ExpiresRelative }}</span>
+                {{ if .ExpirationDisplay }}<span class="admin-expiration-badge">{{ .ExpirationDisplay }}</span>{{ end }}
+                {{ end }}
+              </td>
               <td data-label="{{ t "admin_table_action" }}">
                 <form class="single-delete-form" method="post" action="/admin/delete">
                   <input type="hidden" name="csrf_token" value="{{ $.CSRFToken }}">

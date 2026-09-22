@@ -96,7 +96,8 @@
   <main class="paste-main">
     <div class="paste-scrollbar">
       <div id="viewer" class="paste-viewer">
-        <pre id="lineNumbers" aria-hidden="true" class="is-hidden"></pre>
+        <div id="lineHighlight" class="paste-line-highlight" aria-hidden="true"></div>
+        <pre id="lineNumbers" class="is-hidden"></pre>
         <pre class="paste-code"><code id="pasteContent" class="language-{{ .Language }}">{{ .Content }}</code>{{ if .Truncated }}<span id="remainingLinesNotice" class="paste-more-lines">... ({{ if eq .RemainingLines 1 }}{{ t "paste_one_more_line" }}{{ else }}{{ printf (t "paste_more_lines") .RemainingLines }}{{ end }})</span>{{ end }}</pre>
       </div>
       {{ if .Truncated }}
@@ -122,6 +123,7 @@
   <script>
     const viewer = document.getElementById("viewer");
     const lineNumbers = document.getElementById("lineNumbers");
+    const lineHighlight = document.getElementById("lineHighlight");
     const lineToggle = document.getElementById("lineToggle");
     const wrapToggle = document.getElementById("wrapToggle");
     const longLineHint = document.getElementById("longLineHint");
@@ -136,6 +138,7 @@
     const maxHighlightedLineLength = 10000;
     const renderBatchLines = 400;
     let wrapEnabled = false;
+    let activeLine = 0;
 
     const qrModal = document.getElementById("qrModal");
     const qrImage = document.getElementById("qrImage");
@@ -249,7 +252,52 @@
 
     function renderLineNumbers() {
       const lineCount = Math.max(1, lines.length);
-      lineNumbers.textContent = Array.from({ length: lineCount }, (_, index) => index + 1).join("\n");
+      const fragment = document.createDocumentFragment();
+      for (let index = 1; index <= lineCount; index += 1) {
+        const link = document.createElement("a");
+        link.className = "paste-line-link" + (index === activeLine ? " is-active" : "");
+        link.href = "#L" + index;
+        link.dataset.line = index;
+        link.textContent = index;
+        fragment.appendChild(link);
+        if (index < lineCount) {
+          fragment.appendChild(document.createTextNode("\n"));
+        }
+      }
+      lineNumbers.replaceChildren(fragment);
+    }
+
+    function setActiveLine(line, shouldScroll) {
+      if (!Number.isInteger(line) || line < 1 || line > lines.length) {
+        return;
+      }
+      if (wrapEnabled) {
+        toggleWrapMode();
+      }
+      if (lineNumbers.classList.contains("is-hidden")) {
+        renderLineNumbers();
+        setLineNumbersEnabled(true);
+      }
+
+      activeLine = line;
+      lineHighlight.style.setProperty("--paste-line-offset", ((line - 1) * 1.5) + "rem");
+      lineHighlight.classList.add("is-visible");
+      lineNumbers.querySelectorAll(".paste-line-link.is-active").forEach((link) => link.classList.remove("is-active"));
+      const activeLink = lineNumbers.querySelector(`[data-line="${line}"]`);
+      if (activeLink) {
+        activeLink.classList.add("is-active");
+        if (shouldScroll) {
+          activeLink.scrollIntoView({ block: "center", inline: "nearest" });
+        }
+      }
+    }
+
+    function focusLineFromHash() {
+      const match = window.location.hash.match(/^#L([1-9]\d*)$/);
+      if (!match) {
+        return;
+      }
+      setActiveLine(Number(match[1]), true);
     }
 
     function setLineNumbersEnabled(enabled) {
@@ -270,6 +318,17 @@
       }
       setLineNumbersEnabled(enabled);
     }
+
+    lineNumbers.addEventListener("click", function (event) {
+      const link = event.target.closest(".paste-line-link");
+      if (!link) {
+        return;
+      }
+      event.preventDefault();
+      const line = Number(link.dataset.line);
+      window.history.replaceState(null, "", "#L" + line);
+      setActiveLine(line, true);
+    });
 
     function toggleWrapMode() {
       wrapEnabled = !wrapEnabled;
@@ -297,7 +356,9 @@
       if (canHighlight()) {
         hljs.highlightElement(pasteContent);
       }
+      focusLineFromHash();
     });
+    window.addEventListener("hashchange", focusLineFromHash);
 
     async function copyPasteContent() {
       const button = document.getElementById("copyButton");

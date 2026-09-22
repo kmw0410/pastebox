@@ -678,6 +678,34 @@
 }
 
 @media (min-width: 768px) {
+  .admin-page-panel .admin-table th:nth-child(1),
+  .admin-page-panel .admin-table td:nth-child(1) {
+    width: 9rem;
+  }
+
+  .admin-page-panel .admin-table th:nth-child(6),
+  .admin-page-panel .admin-table td:nth-child(6) {
+    width: 8rem;
+  }
+
+  .admin-page-panel .admin-table th:nth-child(7),
+  .admin-page-panel .admin-table td:nth-child(7),
+  .admin-page-panel .admin-table th:nth-child(8),
+  .admin-page-panel .admin-table td:nth-child(8) {
+    width: 12rem;
+  }
+
+  .admin-page-panel .admin-table th:nth-child(9),
+  .admin-page-panel .admin-table td:nth-child(9) {
+    width: 7.25rem;
+    padding-right: 1.25rem;
+    text-align: right;
+  }
+
+  .admin-page-panel .single-delete-form {
+    display: inline-block;
+  }
+
   .admin-header,
   .manage-header {
     flex-direction: row;

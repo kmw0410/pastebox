@@ -42,6 +42,7 @@ curl -F "file=@server.log" https://paste.example.com/
 | `code` | A custom code of 1–10 characters using only `A-Z`, `a-z`, `0-9`, `_`, and `-` |
 | `label` | An optional label of up to 100 characters without control characters |
 | `filename` | Optional basename for a raw request body; used for stored filename and syntax highlighting |
+| `language` | Optional syntax-highlighting override, such as `go`, `javascript`, `json`, `python`, or `yaml` |
 
 `usepassword: true` and the `password` header are mutually exclusive.
 

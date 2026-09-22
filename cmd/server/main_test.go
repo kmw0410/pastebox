@@ -1207,3 +1207,25 @@ func TestSyntaxLanguage(t *testing.T) {
 		})
 	}
 }
+
+func TestManualSyntaxLanguage(t *testing.T) {
+	contentType, err := withSyntaxLanguage("text/plain; charset=utf-8", "go")
+	if err != nil {
+		t.Fatalf("withSyntaxLanguage returned error: %v", err)
+	}
+	if got := syntaxLanguage("notes.txt", contentType); got != "go" {
+		t.Fatalf("syntaxLanguage() = %q, want go", got)
+	}
+
+	contentType, err = withSyntaxLanguage("text/plain; charset=utf-8", "js")
+	if err != nil {
+		t.Fatalf("withSyntaxLanguage alias returned error: %v", err)
+	}
+	if got := syntaxLanguage("notes.txt", contentType); got != "javascript" {
+		t.Fatalf("syntaxLanguage() = %q, want javascript", got)
+	}
+
+	if _, err := withSyntaxLanguage("text/plain", "unknown"); err == nil {
+		t.Fatal("withSyntaxLanguage accepted an unknown language")
+	}
+}

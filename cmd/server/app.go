@@ -6,6 +6,7 @@ import (
 	"errors"
 	"html/template"
 	"io"
+	"mime"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -227,6 +228,10 @@ func normalizedUploadExt(filename string) string {
 }
 
 func syntaxLanguage(filename string, contentType string) string {
+	if language := storedSyntaxLanguage(contentType); language != "" {
+		return language
+	}
+
 	switch detected := specialFilenameLanguage(filename); detected {
 	case "":
 	default:
@@ -277,6 +282,45 @@ func syntaxLanguage(filename string, contentType string) string {
 	default:
 		return "plaintext"
 	}
+}
+
+func withSyntaxLanguage(contentType string, value string) (string, error) {
+	language := strings.ToLower(strings.TrimSpace(value))
+	if language == "" {
+		return contentType, nil
+	}
+
+	if alias, ok := syntaxLanguageAliases[language]; ok {
+		language = alias
+	} else if !supportedSyntaxLanguages[language] {
+		return "", errors.New("unsupported syntax language")
+	}
+
+	return contentType + "; pastebox-language=" + language, nil
+}
+
+func storedSyntaxLanguage(contentType string) string {
+	_, params, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		return ""
+	}
+	language := strings.ToLower(strings.TrimSpace(params["pastebox-language"]))
+	if !supportedSyntaxLanguages[language] {
+		return ""
+	}
+	return language
+}
+
+var supportedSyntaxLanguages = map[string]bool{
+	"bash": true, "css": true, "dockerfile": true, "go": true, "html": true,
+	"ini": true, "javascript": true, "json": true, "kdl": true, "lua": true,
+	"makefile": true, "markdown": true, "nginx": true, "php": true, "plaintext": true,
+	"python": true, "rust": true, "sql": true, "toml": true, "typescript": true,
+	"xml": true, "yaml": true,
+}
+
+var syntaxLanguageAliases = map[string]string{
+	"js": "javascript", "py": "python", "sh": "bash", "text": "plaintext", "yml": "yaml",
 }
 
 func specialFilenameLanguage(filename string) string {

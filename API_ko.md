@@ -42,6 +42,7 @@ curl -F "file=@server.log" https://paste.example.com/
 | `code` | `A-Z`, `a-z`, `0-9`, `_`, `-`만 사용하는 1–10자 사용자 지정 코드 |
 | `label` | 제어 문자가 없는 최대 100자의 선택적 라벨 |
 | `filename` | raw request body의 선택적 파일명이며, 저장 파일명과 문법 강조에 사용 |
+| `language` | `go`, `javascript`, `json`, `python`, `yaml` 등 문법 강조를 직접 지정하는 선택적 값 |
 
 `usepassword: true`와 `password` 헤더는 함께 사용할 수 없습니다.
 

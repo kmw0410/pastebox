@@ -105,6 +105,11 @@ func (a *app) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	contentType = normalizeTextContentType(filename, contentType)
+	contentType, err = withSyntaxLanguage(contentType, r.Header.Get("language"))
+	if err != nil {
+		a.respondRequestError(w, r, http.StatusBadRequest, "invalid language. use a supported highlight language such as go, javascript, json, python, or yaml")
+		return
+	}
 
 	usePassword := strings.EqualFold(strings.TrimSpace(r.Header.Get("usepassword")), "true")
 	newPassword := r.Header.Get("password")

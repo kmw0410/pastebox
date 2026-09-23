@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.26.4-alpine3.24 AS builder
+FROM golang:1.27.1-alpine3.24 AS builder
 
 RUN printf '%s\n' \
   'https://mirror5.krfoss.org/alpine/v3.24/main' \
@@ -25,7 +25,7 @@ RUN go mod tidy
 
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT}" -o /out/pastebox ./cmd/server
 
-FROM alpine:3.24.1
+FROM alpine:3.24.2
 
 RUN printf '%s\n' \
   'https://mirror5.krfoss.org/alpine/v3.24/main' \

@@ -32,8 +32,8 @@ CLI 패키지와 사용법은 [pastebox-cli](https://github.com/kmw0410/pastebox
 ### 기술 스택
 | 레이어 | 스택 |
 |--------|------|
-| OS | Alpine Linux 3.24.1 (미러: https://mirror5.krfoss.org/alpine) |
-| 언어 | Go 1.26.4 |
+| OS | Alpine Linux 3.24.2<br>미러: [mirror5.krfoss.org/alpine](https://mirror5.krfoss.org/alpine) |
+| 언어 | Go 1.27.1 |
 | 프론트엔드 | Go HTML 템플릿 |
 | 백엔드 | Go 표준 라이브러리 기반 HTTP 서버 |
 | 저장소 | 로컬 / MySQL & MariaDB |

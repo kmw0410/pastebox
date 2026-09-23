@@ -57,6 +57,14 @@
           Copy
         </button>
         <button
+          id="searchButton"
+          type="button"
+          class="paste-button"
+          onclick="openPasteSearch()"
+        >
+          {{ t "paste_find" }}
+        </button>
+        <button
           id="qrButton"
           type="button"
           class="paste-button"
@@ -94,8 +102,15 @@
   </header>
 
   <main class="paste-main">
+    <div id="pasteSearch" class="paste-search is-hidden" role="search">
+      <input id="pasteSearchInput" type="search" autocomplete="off" spellcheck="false" placeholder="{{ t "paste_search_placeholder" }}" aria-label="{{ t "paste_search_placeholder" }}">
+      <span id="pasteSearchCount" class="paste-search-count">0 / 0</span>
+      <button id="pasteSearchPrevious" type="button" class="paste-search-action" aria-label="{{ t "paste_search_previous" }}" title="{{ t "paste_search_previous" }}">↑</button>
+      <button id="pasteSearchNext" type="button" class="paste-search-action" aria-label="{{ t "paste_search_next" }}" title="{{ t "paste_search_next" }}">↓</button>
+      <button id="pasteSearchClose" type="button" class="paste-search-action" aria-label="{{ t "paste_qr_close" }}" title="{{ t "paste_qr_close" }}">×</button>
+    </div>
     <div class="paste-scrollbar">
-      <div id="viewer" class="paste-viewer">
+      <div id="viewer" class="paste-viewer" tabindex="0">
         <div id="lineHighlight" class="paste-line-highlight" aria-hidden="true"></div>
         <pre id="lineNumbers" class="is-hidden"></pre>
         <pre class="paste-code"><code id="pasteContent" class="language-{{ .Language }}">{{ .Content }}</code>{{ if .Truncated }}<span id="remainingLinesNotice" class="paste-more-lines">... ({{ if eq .RemainingLines 1 }}{{ t "paste_one_more_line" }}{{ else }}{{ printf (t "paste_more_lines") .RemainingLines }}{{ end }})</span>{{ end }}</pre>
@@ -126,6 +141,13 @@
     const lineHighlight = document.getElementById("lineHighlight");
     const lineToggle = document.getElementById("lineToggle");
     const wrapToggle = document.getElementById("wrapToggle");
+    const searchButton = document.getElementById("searchButton");
+    const pasteSearch = document.getElementById("pasteSearch");
+    const pasteSearchInput = document.getElementById("pasteSearchInput");
+    const pasteSearchCount = document.getElementById("pasteSearchCount");
+    const pasteSearchPrevious = document.getElementById("pasteSearchPrevious");
+    const pasteSearchNext = document.getElementById("pasteSearchNext");
+    const pasteSearchClose = document.getElementById("pasteSearchClose");
     const longLineHint = document.getElementById("longLineHint");
     const pasteCode = document.querySelector(".paste-code");
     const pasteContent = document.getElementById("pasteContent");
@@ -139,6 +161,8 @@
     const renderBatchLines = 400;
     let wrapEnabled = false;
     let activeLine = 0;
+    let searchMatches = [];
+    let activeSearchMatch = -1;
 
     const qrModal = document.getElementById("qrModal");
     const qrImage = document.getElementById("qrImage");
@@ -165,6 +189,137 @@
       if (event.key === "Escape" && !qrModal.classList.contains("is-hidden")) closeQRCode();
     });
 
+    function restorePasteHighlighting() {
+      pasteContent.textContent = rawText;
+      if (canHighlight()) {
+        hljs.highlightElement(pasteContent);
+      }
+    }
+
+    function searchTextNodes() {
+      const walker = document.createTreeWalker(pasteContent, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      let offset = 0;
+      let node;
+      while ((node = walker.nextNode())) {
+        nodes.push({ node, start: offset, end: offset + node.data.length });
+        offset += node.data.length;
+      }
+      return nodes;
+    }
+
+    function searchTextPosition(nodes, offset, end) {
+      for (const item of nodes) {
+        if (offset < item.end || (end && offset === item.end)) {
+          return { node: item.node, offset: offset - item.start };
+        }
+      }
+      const last = nodes[nodes.length - 1];
+      return last ? { node: last.node, offset: last.node.data.length } : null;
+    }
+
+    function highlightSearchMatches(query) {
+      restorePasteHighlighting();
+      if (!query) {
+        return [];
+      }
+
+      const source = rawText.toLocaleLowerCase();
+      const needle = query.toLocaleLowerCase();
+      const ranges = [];
+      let offset = 0;
+      while (offset <= source.length - needle.length) {
+        const index = source.indexOf(needle, offset);
+        if (index < 0) {
+          break;
+        }
+        ranges.push({ start: index, end: index + needle.length });
+        offset = index + Math.max(needle.length, 1);
+      }
+
+      const nodes = searchTextNodes();
+      for (let index = ranges.length - 1; index >= 0; index -= 1) {
+        const match = ranges[index];
+        const start = searchTextPosition(nodes, match.start, false);
+        const end = searchTextPosition(nodes, match.end, true);
+        if (!start || !end) {
+          continue;
+        }
+        const range = document.createRange();
+        range.setStart(start.node, start.offset);
+        range.setEnd(end.node, end.offset);
+        const marker = document.createElement("mark");
+        marker.className = "paste-search-match";
+        marker.appendChild(range.extractContents());
+        range.insertNode(marker);
+      }
+      return Array.from(pasteContent.querySelectorAll(".paste-search-match"));
+    }
+
+    function updatePasteSearch(scrollToMatch) {
+      searchMatches = highlightSearchMatches(pasteSearchInput.value);
+      activeSearchMatch = searchMatches.length ? 0 : -1;
+      updateActiveSearchMatch(scrollToMatch);
+    }
+
+    function updateActiveSearchMatch(scrollToMatch) {
+      searchMatches.forEach((match, index) => match.classList.toggle("is-active", index === activeSearchMatch));
+      pasteSearchCount.textContent = searchMatches.length ? (activeSearchMatch + 1) + " / " + searchMatches.length : "0 / 0";
+      if (scrollToMatch && activeSearchMatch >= 0) {
+        searchMatches[activeSearchMatch].scrollIntoView({ block: "center", inline: "nearest" });
+      }
+    }
+
+    function movePasteSearch(direction) {
+      if (!searchMatches.length) {
+        return;
+      }
+      activeSearchMatch = (activeSearchMatch + direction + searchMatches.length) % searchMatches.length;
+      updateActiveSearchMatch(true);
+    }
+
+    function openPasteSearch() {
+      pasteSearch.classList.remove("is-hidden");
+      searchButton.classList.add("is-active");
+      pasteSearchInput.focus();
+      pasteSearchInput.select();
+    }
+
+    function closePasteSearch() {
+      pasteSearch.classList.add("is-hidden");
+      searchButton.classList.remove("is-active");
+      pasteSearchInput.value = "";
+      searchMatches = [];
+      activeSearchMatch = -1;
+      pasteSearchCount.textContent = "0 / 0";
+      restorePasteHighlighting();
+      viewer.focus({ preventScroll: true });
+    }
+
+    pasteSearchInput.addEventListener("input", () => updatePasteSearch(false));
+    pasteSearchInput.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        movePasteSearch(event.shiftKey ? -1 : 1);
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closePasteSearch();
+      }
+    });
+    pasteSearchPrevious.addEventListener("click", () => movePasteSearch(-1));
+    pasteSearchNext.addEventListener("click", () => movePasteSearch(1));
+    pasteSearchClose.addEventListener("click", closePasteSearch);
+
+    document.addEventListener("keydown", function (event) {
+      const viewerFocused = document.activeElement === viewer || viewer.contains(document.activeElement);
+      const searchFocused = document.activeElement === pasteSearchInput;
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "f" && (viewerFocused || searchFocused)) {
+        event.preventDefault();
+        openPasteSearch();
+      }
+    });
+
     function canHighlight() {
       return window.hljs && pasteLanguage !== "logs" && longestLineLength <= maxHighlightedLineLength && hljs.getLanguage(pasteLanguage);
     }
@@ -180,6 +335,9 @@
     }
 
     async function renderFullPaste(content) {
+      if (!pasteSearch.classList.contains("is-hidden")) {
+        closePasteSearch();
+      }
       const remainingLinesNotice = document.getElementById("remainingLinesNotice");
       if (remainingLinesNotice) {
         remainingLinesNotice.remove();

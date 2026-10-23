@@ -33,7 +33,7 @@ For upload, retrieval, clone, and management endpoints, see the [English HTTP AP
 | Layer | Stack |
 |--------|------|
 | OS | Alpine Linux 3.24.2<br>Mirror: [mirror5.krfoss.org/alpine](https://mirror5.krfoss.org/alpine) |
-| Language | Go 1.27.1 |
+| Language | Go 1.27.3 |
 | Frontend | Go HTML Template |
 | Backend | Go Standard Library HTTP Server |
 | Storage | Local / MySQL & MariaDB |

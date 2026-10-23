@@ -449,6 +449,14 @@ Use this section to record recurring lessons from error-driven code fixes. Each 
 - Fix: how it was corrected, with a small code snippet when helpful.
 - Prevention: what to check before making similar changes again.
 
+- Problematic code area: `Dockerfile` Go builder and the standard library embedded in the server binary.
+  Cause: The builder remained pinned to Go 1.27.1 after security fixes were released for multipart header parsing, HTTP Range processing, and certificate verification. Runtime Alpine package upgrades do not replace the statically linked Go standard library.
+  Fix: Build the server with the patched Go toolchain:
+  ```dockerfile
+  FROM golang:1.27.3-alpine3.24 AS builder
+  ```
+  Prevention: Audit the Docker builder's Go version rather than the host Go version, run vulnerability checks with the builder toolchain for both supported architectures, and rebuild and redeploy the image after a Go security update.
+
 - Problematic code area: `cmd/server/main_test.go` / `TestUploadHandlerCustomDataPolicyDuration`.
   Cause: The upload response formats `expires` with `time.RFC3339`, which has second precision, while the first test bounds compared against nanosecond-precision `time.Now()` values.
   Fix: Compare against second-aligned bounds with a small upper allowance:

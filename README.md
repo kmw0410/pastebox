@@ -43,67 +43,18 @@ For upload, retrieval, clone, and management endpoints, see the [English HTTP AP
 ### Directory structure
 ```text
 pastebox/
-├── .github/
-│   └── workflows/
-│       ├── docker-publish.yml
-│       └── release.yml
-├── AGENTS.md
-├── API.md
-├── API_ko.md
-├── DATA_POLICY.md
-├── DATA_POLICY_ko.md
+├── .github/workflows/       # validate.yml, docker-publish.yml, release.yml
+├── cmd/server/              # HTTP handlers, lifecycle, admin features and tests
+├── internal/                # Local/MySQL storage, admin persistence and tests
+├── locales/                 # en.json, ko.json
+├── templates/               # HTML, css/, js/
+├── tests/browser/           # Chromium regression tests
 ├── Dockerfile
-├── LICENSE
-├── README.md
-├── README_ko.md
-├── 404.png
-├── admin.png
 ├── docker-compose.yml
 ├── docker-entrypoint.sh
 ├── go.mod
 ├── go.sum
-├── main.png
-├── paste.png
-├── password-protected.png
-├── cmd/
-│   └── server/
-│       ├── admin.go
-│       ├── app.go
-│       ├── auth.go
-│       ├── handler_clone.go
-│       ├── handler_index.go
-│       ├── handler_manage.go
-│       ├── handler_paste.go
-│       ├── handler_upload.go
-│       ├── i18n.go
-│       ├── logging.go
-│       ├── main.go
-│       ├── main_test.go
-│       ├── routes.go
-│       ├── upload_validation.go
-│       └── util.go
-├── internal/
-│   ├── admin_store.go
-│   ├── locks.go
-│   ├── metadata.go
-│   ├── mysql_store.go
-│   ├── secrets.go
-│   ├── store.go
-│   ├── store_local.go
-│   └── store_test.go
-├── locales/
-│   ├── en.json
-│   └── ko.json
-└── templates/
-    ├── 404.html
-    ├── admin_form.html
-    ├── admin_list.html
-    ├── admin_reset.html
-    ├── clone.html
-    ├── index.html
-    ├── manage.html
-    ├── password.html
-    └── paste.html
+└── README*, API*, DATA_POLICY*, AGENTS.md
 ```
 
 ### How to use?
@@ -111,8 +62,10 @@ pastebox/
 > The default time zone is set to Asia/Seoul. Please set it to match the country where you currently reside.
 
 1. Clone the repository or download it as a .zip file.
-2. Run the service using Docker Compose. You can build and run it locally with `docker compose up -d --build`, or use the prebuilt image from GHCR. To use the prebuilt image, run it with `docker-compose.yml`.
-3. Open `http://localhost:3000` in your browser, or access the service through a reverse proxy configured with Nginx, Traefik, or Caddy. Once the service is running properly, you can use it with `curl`.
+2. Run `docker compose up -d` to use the GHCR image configured in `docker-compose.yml`. For a local image build, run `docker build -t pastebox:local .` and set the Compose image to `pastebox:local`.
+3. Open `http://localhost:8080` in your browser, or access the service through a reverse proxy configured with Nginx, Traefik, or Caddy. Once the service is running properly, you can use it with `curl`.
+
+HTTP connections have a 10-second header timeout and a 60-second idle timeout. Request bodies and responses have no overall timeout so large streaming transfers can complete. On SIGINT/SIGTERM, the server waits up to 30 seconds for active requests; Compose allows 40 seconds before forced termination.
 
 ### Healthcheck
 Pastebox exposes `GET /healthz` and `HEAD /healthz` for container and load balancer health checks.

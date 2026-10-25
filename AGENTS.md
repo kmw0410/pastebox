@@ -4,9 +4,9 @@
 Pastebox is a lightweight self-hosted Go service for curl-friendly text sharing.
 
 Core storage model:
-- Paste content is stored as local files.
-- Metadata is stored as JSON sidecar files.
-- SQLite is used only for admin accounts, admin sessions, service settings, and upload-disable state.
+- The default `local` backend stores paste content as files and metadata as JSON sidecars.
+- The optional `mysql` backend stores compressed paste chunks, metadata, admin accounts, sessions, and settings in MySQL/MariaDB.
+- SQLite stores admin/session/settings data in local mode and migration completion markers in MySQL mode.
 - Do not move paste content into SQLite unless explicitly requested.
 
 The service targets simple Docker operation, minimal dependencies, and a dark UI optimized for text-based workflows.
@@ -14,89 +14,32 @@ The service targets simple Docker operation, minimal dependencies, and a dark UI
 ## 2. Directory Structure
 ```text
 pastebox/
-├── .github/
-│   └── workflows/
-│       ├── docker-publish.yml
-│       └── release.yml
-├── .gitignore
-├── AGENTS.md
-├── WORK.md
-├── API.md
-├── API_ko.md
-├── DATA_POLICY.md
-├── DATA_POLICY_ko.md
+├── .github/                 # Dependabot, validation, image publish, release
+├── cmd/server/              # HTTP startup, lifecycle, feature handlers and tests
+│   ├── admin.go             # Admin routing, actions, flash and audit helpers
+│   ├── admin_auth.go        # Setup, login, logout and reset
+│   ├── admin_list.go        # List presentation, filtering, sorting, pagination
+│   ├── main.go
+│   ├── server.go
+│   ├── routes.go
+│   └── handler_*.go
+├── internal/                # Local/MySQL storage, auth persistence and tests
+├── locales/                 # en.json and ko.json
+├── templates/               # External HTML, css/ and self-hosted js/
+├── tests/browser/           # Playwright regression tests and isolated server harness
 ├── Dockerfile
 ├── docker-compose.yml
 ├── docker-entrypoint.sh
-├── go.mod
-├── go.sum
-├── LICENSE
-├── README.md
-├── README_ko.md
-├── 404.png
-├── admin.png
-├── main.png
-├── password-protected.png
-├── paste.png
-├── cmd/
-│   └── server/
-│       ├── admin.go
-│       ├── app.go
-│       ├── auth.go
-│       ├── discord_webhook.go
-│       ├── discord_webhook_test.go
-│       ├── handler_api.go
-│       ├── handler_api_test.go
-│       ├── handler_clone.go
-│       ├── handler_health.go
-│       ├── handler_index.go
-│       ├── handler_manage.go
-│       ├── handler_paste.go
-│       ├── handler_upload.go
-│       ├── i18n.go
-│       ├── logging.go
-│       ├── main.go
-│       ├── main_test.go
-│       ├── routes.go
-│       ├── upload_validation.go
-│       ├── util.go
-│       ├── version.go
-│       └── version_test.go
-├── internal/
-│   ├── admin_mysql_store.go
-│   ├── admin_store.go
-│   ├── data_policy.go
-│   ├── locks.go
-│   ├── metadata.go
-│   ├── mysql_store.go
-│   ├── secrets.go
-│   ├── store.go
-│   ├── store_local.go
-│   └── store_test.go
-├── locales/
-│   ├── en.json
-│   └── ko.json
-└── templates/
-    ├── 404.html
-    ├── admin_form.html
-    ├── admin_list.html
-    ├── admin_reset.html
-    ├── clone.html
-    ├── css/
-    │   ├── common.css
-    │   ├── pages.css
-    │   └── paste.css
-    ├── index.html
-    ├── manage.html
-    ├── password.html
-    └── paste.html
+├── go.mod / go.sum
+├── AGENTS.md / WORK.md
+└── README*, API*, DATA_POLICY* # English/Korean documentation
 ```
 
 ## 3. Architecture
-- HTTP server: `cmd/server/main.go`
-  - Routing, upload handling, paste view/raw view, password checks, clone flow, manage flow, admin auth/reset/controls, template rendering, i18n loading.
-- Storage layer: `internal/store.go`, `internal/metadata.go`
-  - File persistence, metadata persistence, admin/session/settings persistence in SQLite, cleanup, locking.
+- HTTP startup and lifecycle: `cmd/server/main.go`, `cmd/server/server.go`; routing: `cmd/server/routes.go`.
+- HTTP features: `handler_*.go`; administrator actions: `admin.go`, authentication: `admin_auth.go`, list/filter/pagination: `admin_list.go`.
+- Storage dispatch: `internal/store.go`; local persistence: `store_local.go`; MySQL chunks: `mysql_store.go`; admin/session/settings persistence: `admin_store.go`, `admin_mysql_store.go`.
+- HTTP header timeout is 10 seconds and idle timeout is 60 seconds. Keep body/response deadlines unset for large streaming transfers. SIGINT/SIGTERM drains requests for up to 30 seconds; Compose allows 40 seconds before forced termination.
 
 Typical runtime layout:
 ```text
@@ -148,7 +91,7 @@ Limits and metadata:
 - Upload size limit is 1 GiB.
 - Exceeding limit must return `413 Payload Too Large`.
 - Multipart uploads must store original filename in metadata.
-- Raw-body uploads should keep filename empty.
+- Raw-body uploads preserve an explicit `filename` header or `Content-Disposition` filename; otherwise the filename stays empty.
 - Admin list and paste view should display filename when present (fallback `-` in admin list).
 
 ## 6. Upload Options and Responses
@@ -224,12 +167,12 @@ Admin account rules:
 - If no admin exists, the first created account becomes the only administrator account.
 - Additional admin registration must remain disabled afterward.
 - Admin passwords must never be stored in plain text.
-- Admin sessions are stored in SQLite, issued as HttpOnly cookies, and expire after 24 hours.
+- Admin sessions use the selected backend (SQLite locally, MySQL in DB mode), are issued as HttpOnly cookies, and expire after 24 hours.
 - Setup, login, and reset forms are CSRF-protected.
 - Admin login and reset attempts are rate limited.
 
 Upload disable behavior:
-- State must be stored in SQLite.
+- State must be persisted in the selected admin backend.
 - When uploads are disabled:
   - New uploads are rejected.
   - Clone is rejected.
@@ -237,7 +180,7 @@ Upload disable behavior:
   - Admin page still works.
 
 Delete controls:
-- Individual delete must not show browser confirm popup.
+- Individual delete uses the current confirmation UX, including the administrator preference to skip subsequent single-delete confirmations.
 - Bulk delete must keep a confirmation popup and clear irreversible warning.
 - Delete result messages must not use query params like `/admin?deleted=...`.
 - Use internal flash messages (for example short-lived HttpOnly cookie) for delete results.
@@ -285,16 +228,18 @@ Korean wording rule:
 Dockerfile/runtime expectations:
 - Dockerfile should copy `templates/`, `locales/`, and `docker-entrypoint.sh`.
 - Image must include `locales/`.
-- `docker-compose.yml` is for local build usage.
-- `docker-compose-dockerhub.yml` is for Docker Hub image usage.
+- `docker-compose.yml` runs the published `ghcr.io/kmw0410/pastebox:latest` image.
+- For local builds, use `docker build`; no separate Docker Hub Compose file is maintained.
+- Copy both `go.mod` and `go.sum`, download and verify modules, and build with `-mod=readonly`. Do not regenerate dependencies with `go mod tidy` inside the image build.
+- CI reads the exact Go version from the Docker builder; update the Dockerfile to change the deployment and validation toolchain together.
 
 Compose rule:
 - `LANGUAGE` must be under `environment`, not at service root.
 
 `MIRROR_URL` rules:
-- Intended for Docker Hub runtime usage.
+- Intended for published-container runtime usage, currently GHCR.
 - It only changes `/etc/apk/repositories` inside the running container.
-- It does not affect Docker Hub pull behavior.
+- It does not affect registry image pulls.
 - It does not affect apk commands already executed during build.
 - If empty, entrypoint must not modify repositories.
 
@@ -336,8 +281,8 @@ UI consistency rules:
 ## 12. GitHub Actions
 Docker publish workflow requirements:
 - Push tags/images:
-  - `kmw0410/pastebox:latest`
-  - `kmw0410/pastebox:vYY.MM.DD`
+  - `ghcr.io/kmw0410/pastebox:latest`
+  - `ghcr.io/kmw0410/pastebox:vYY.MM.DD`
 - Pass the generated release tag and short commit ID into the Docker build so the admin page can report the running build precisely.
 - If same date tag exists, append incrementing suffix (`-1`, `-2`, ...).
 - Multi-arch support must include:
@@ -351,10 +296,10 @@ Never log secrets:
 - Delete tokens
 - Manage tokens
 - Admin passwords
-- Admin setup/reset tokens
+- Admin reset tokens
 - Admin session tokens
 
-Allowed logs are operational metadata only (IDs, counters, failures, blocked reasons) without secret material.
+The initial admin setup token is intentionally printed at startup so the operator can bootstrap the service. The Compose reset-token default and this bootstrap log are intentional project decisions; preserve them unless explicitly asked to change them. All other logs contain operational metadata only (IDs, counters, failures, blocked reasons), without secret material.
 
 Use security headers where appropriate:
 - `X-Frame-Options: DENY`
@@ -406,8 +351,8 @@ docker exec pastebox cat /etc/apk/repositories
 - Letting generated passwords include `=`.
 - Regressing index page to old simple layout.
 - Breaking line-number layout so numbers appear on the right.
-- Logging delete tokens or any secret fields.
-- Removing `MIRROR_URL` runtime override behavior for Docker Hub compose usage.
+- Logging secret fields other than the intentional initial admin setup-token log.
+- Removing `MIRROR_URL` runtime override behavior for published-container usage.
 - Replacing per-paste lock strategy with coarse global lock.
 - Switching upload validation back to full-file memory reads.
 
@@ -516,6 +461,21 @@ Use this section to record recurring lessons from error-driven code fixes. Each 
   Fix: Keep only the required `Copy curl example` button and render each data-policy command as its own labeled code block.
   Prevention: Preserve the established visual density of the homepage; add controls per example only when the request explicitly calls for them.
 
+- Problematic code area: `cmd/server/main.go` HTTP lifecycle and `Dockerfile` dependency installation.
+  Cause: The default HTTP server had no header/idle limits or signal-driven drain, and image builds regenerated dependencies instead of using the checked-in go.sum. CI selected a different toolchain from the deployment builder.
+  Fix: Use an explicit server with header/idle limits and bounded graceful shutdown; copy and verify go.sum, build read-only, and derive CI's Go version from Dockerfile.
+  Prevention: Test in-flight and stalled requests during shutdown; preserve streaming body behavior and keep deployment and validation toolchains aligned.
+
+- Problematic code area: README.md and README_ko.md runtime documentation insertion.
+  Cause: Matching `## ` as a substring also matched a `### Paste` preview heading and split its Markdown marker.
+  Fix: Restore `### Paste` and place the runtime paragraph before the explicit Healthcheck heading.
+  Prevention: Match complete Markdown headings and inspect the rendered structure or diff after scripted documentation edits.
+
+- Problematic code area: `templates/paste.html` truncated-paste full loading.
+  Cause: Since the preview feature introduced in `13ac26a`, every truncated response emitted `remainingPasteContent`, even though only one-time pastes include embedded remaining text. JavaScript interpreted the empty element as the full-load source and skipped the raw request for ordinary pastes.
+  Fix: Emit the embedded template only for `{{ if and .Truncated .OneTime }}`; ordinary pastes then use the existing authenticated raw-fetch path.
+  Prevention: Run browser coverage for both ordinary and one-time truncated pastes, verifying full content after confirmation, not only the button or template markup.
+
 ## 18. Commit Message Examples
 Use short, conventional commit messages:
 ```text
@@ -540,7 +500,7 @@ Keep Pastebox:
 When editing, preserve:
 - file-based paste storage
 - JSON sidecar metadata
-- SQLite scope limited to admin/session/settings/upload-disable
+- SQLite scope limited to local admin/session/settings/upload-disable and migration markers; preserve the existing optional MySQL backend
 - external templates under `templates/`
 - text-only upload policy
 - 1 GiB upload limit
@@ -551,61 +511,10 @@ When editing, preserve:
 - language fallback correctness
 - Docker runtime mirror/timezone behavior
 
-## 20. Planned CLI and Linux Packages
-The terminal client should be developed as an independent Go module inside this repository rather than under `cmd/pb`.
-
-Planned layout:
-```text
-pastebox/
-├── cli/
-│   ├── go.mod
-│   ├── main.go
-│   ├── config.go
-│   ├── upload.go
-│   ├── get.go
-│   ├── output.go
-│   ├── *_test.go
-│   └── packaging/
-│       └── nfpm.yaml
-├── package.md
-└── package_ko.md
-```
-
-CLI architecture and behavior:
-- The installed package name should be `pastebox-cli`, and the installed command should be `pb`.
-- Keep `cli/` as a separate Go module so CLI dependencies do not enter the server module.
-- The CLI must communicate with Pastebox only through the public HTTP API and must not import server `internal` packages.
-- Support file uploads with multipart requests so original filenames are preserved.
-- Support stdin uploads with streaming raw request bodies; do not load full uploads into memory.
-- Support temporary uploads by default plus permanent, once, custom expiration, generated password, custom code, and label options.
-- Support normal human-readable output, public-URL-only quiet output, and JSON output.
-- Support raw paste retrieval with `pb get`; send paste passwords through the `paste-password` header rather than a query string.
-- Never print secrets in diagnostic logs. Normal successful output may display the password and manage URL returned for that upload because the user needs those one-time results.
-- Keep CLI argument/config errors distinct from network/server errors through documented nonzero exit codes.
-
-CLI configuration:
-- Read configuration only from `~/.config/pastebox/config.json`.
-- Initially support only this structure, with no config schema version:
-  ```json
-  {
-    "server_url": "https://paste.example.com"
-  }
-  ```
-- Do not initially add profiles, `--server`, `PASTEBOX_URL`, `XDG_CONFIG_HOME`, alternate config paths, or config set/get/show commands.
-- Provide only `pb config validate` for explicit config inspection; normal CLI operations must use the same validation path automatically.
-- Validation errors must identify the config path and the precise problem. Include the JSON line and column when available, name unknown or mistyped fields, and explain missing fields, invalid value types, empty values, unsupported URL schemes, missing hosts, query/fragment usage, and embedded URL credentials.
-- Allow only `http://` and `https://` server URLs. Allow deployments below a URL path, normalize trailing slashes internally, and reject query strings, fragments, and embedded user credentials.
-- If the config file is missing, report its exact expected path and show a minimal valid example.
-- Package installation must not create a config file inside a user's home directory.
-
-Testing and packaging:
-- Run server tests and CLI-module tests separately because root `go test ./...` does not traverse a nested Go module.
-- Test file/stdin streaming, headers and policies, output modes, raw/password retrieval, URL joining, config diagnostics, HTTP error mapping, exit codes, and secret-safe failures with local HTTP test servers.
-- Build static CLI binaries with `CGO_ENABLED=0` for `linux/amd64` and `linux/arm64`.
-- Use nFPM from `cli/packaging/nfpm.yaml` to create Debian `.deb` packages and Arch Linux `.pkg.tar.zst` packages.
-- Map `amd64` to Debian `amd64` and Arch `x86_64`; map `arm64` to Debian `arm64` and Arch `aarch64`.
-- Normalize date-based Git tags for package versions so tags such as `v26.07.17-1` remain upgradeable on both Debian and Arch, while `pb version` retains the original Git tag and commit ID.
-- Produce SHA-256 checksums and verify package installation with Debian/Ubuntu and Arch Linux containers before attaching artifacts to a GitHub Release.
-- Extend the existing Docker-tag-to-Release workflow so CLI packages use the same release tag and are attached to the existing GitHub Release.
-- Keep CLI/package documentation in root `package.md` and `package_ko.md`; the main English and Korean READMEs should contain only concise links to the matching package documents.
-- Install the CLI binary at `/usr/bin/pb` and package documentation under `/usr/share/doc/pastebox-cli/`.
+## 20. CLI and Validation
+- The CLI is maintained in the separate `kmw0410/pastebox-cli` repository, linked from README.md and README_ko.md. Do not recreate a nested CLI module or packaging pipeline here unless requested.
+- `.github/workflows/validate.yml` runs for pull requests and is reused as the Docker Publish gate. Validation runs on GitHub-hosted runners; publishing remains on the self-hosted runner.
+- Validate with `go test -race ./...` and `go vet ./...` using the Docker builder's Go version.
+- MySQL/MariaDB integration tests use `PASTEBOX_TEST_MYSQL_DSN`, create a uniquely named temporary database, and drop only that database. The test account needs CREATE/DROP DATABASE permissions. Without that variable the integration test is skipped.
+- Browser tests live in `tests/browser/`, separate from runtime dependencies. Run `npm ci`, `npx playwright install chromium`, and `npm test` there; the harness builds a server with isolated temporary data on port 18080.
+- Keep browser coverage for search, left-side line numbers, line links, content-only copying, confirmed full loading, and one-time pastes.

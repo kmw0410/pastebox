@@ -44,67 +44,18 @@ CLI 패키지와 사용법은 [pastebox-cli](https://github.com/kmw0410/pastebox
 ### 디렉토리 구조
 ```text
 pastebox/
-├── .github/
-│   └── workflows/
-│       ├── docker-publish.yml
-│       └── release.yml
-├── AGENTS.md
-├── API.md
-├── API_ko.md
-├── DATA_POLICY.md
-├── DATA_POLICY_ko.md
+├── .github/workflows/       # validate.yml, docker-publish.yml, release.yml
+├── cmd/server/              # HTTP 처리, 서버 종료 처리, 관리자 기능과 테스트
+├── internal/                # 로컬/MySQL 저장, 관리자 데이터 저장과 테스트
+├── locales/                 # en.json, ko.json
+├── templates/               # HTML, css/, js/
+├── tests/browser/           # Chromium 회귀 테스트
 ├── Dockerfile
-├── LICENSE
-├── README.md
-├── README_ko.md
-├── 404.png
-├── admin.png
 ├── docker-compose.yml
 ├── docker-entrypoint.sh
 ├── go.mod
 ├── go.sum
-├── main.png
-├── paste.png
-├── password-protected.png
-├── cmd/
-│   └── server/
-│       ├── admin.go
-│       ├── app.go
-│       ├── auth.go
-│       ├── handler_clone.go
-│       ├── handler_index.go
-│       ├── handler_manage.go
-│       ├── handler_paste.go
-│       ├── handler_upload.go
-│       ├── i18n.go
-│       ├── logging.go
-│       ├── main.go
-│       ├── main_test.go
-│       ├── routes.go
-│       ├── upload_validation.go
-│       └── util.go
-├── internal/
-│   ├── admin_store.go
-│   ├── locks.go
-│   ├── metadata.go
-│   ├── mysql_store.go
-│   ├── secrets.go
-│   ├── store.go
-│   ├── store_local.go
-│   └── store_test.go
-├── locales/
-│   ├── en.json
-│   └── ko.json
-└── templates/
-    ├── 404.html
-    ├── admin_form.html
-    ├── admin_list.html
-    ├── admin_reset.html
-    ├── clone.html
-    ├── index.html
-    ├── manage.html
-    ├── password.html
-    └── paste.html
+└── README*, API*, DATA_POLICY*, AGENTS.md
 ```
 
 ### 어떻게 사용하나요?
@@ -112,8 +63,10 @@ pastebox/
 > Timezone 기본값이 Asia/Seoul로 되어있습니다. 현재 거주하는 국가에 맞게 설정하세요.
 
 1. 저장소를 클론하거나 `.zip` 파일로 다운로드하세요.
-2. Docker compose를 사용하여 서비스를 구동하세요. `docker compose up -d --build`로 로컬 빌드 후 실행할 수도 있으며, GHCR의 미리 빌드된 이미지를 사용할 수도 있습니다. 빌드된 이미지를 사용하려면 `docker-compose.yml`을 사용하세요.
-3. `http://localhost:3000`를 브라우저에서 접속하거나 NGINX, Caddy, Traefik을 통해 리버스 프록시를 구축하여 도메인으로 접속하세요. 정상적으로 구동이 되었다면 `curl`을 사용하여 이용할 수 있습니다.
+2. `docker compose up -d`를 실행하면 `docker-compose.yml`에 설정된 GHCR 이미지를 사용합니다. 로컬에서 빌드하려면 `docker build -t pastebox:local .`을 실행하고 Compose의 이미지를 `pastebox:local`로 설정하세요.
+3. `http://localhost:8080`를 브라우저에서 접속하거나 NGINX, Caddy, Traefik을 통해 리버스 프록시를 구축하여 도메인으로 접속하세요. 정상적으로 구동이 되었다면 `curl`을 사용하여 이용할 수 있습니다.
+
+HTTP 헤더 수신 제한은 10초, 유휴 연결 제한은 60초입니다. 대용량 스트리밍 전송을 위해 요청 본문과 응답 전체에는 시간 제한을 적용하지 않습니다. SIGINT/SIGTERM을 받으면 진행 중인 요청을 최대 30초 기다리며, Compose는 강제 종료 전 40초를 허용합니다.
 
 ### Healthcheck
 Pastebox는 컨테이너와 로드밸런서 상태 확인용으로 `GET /healthz`와 `HEAD /healthz`를 제공합니다.

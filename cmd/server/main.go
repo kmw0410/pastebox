@@ -4,13 +4,17 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	pastebox "pastebox/internal"
 )
 
 func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 	listenAddr := getenv("LISTEN_ADDR", ":8080")
 	dataDir := getenv("DATA_DIR", "/paste-data")
 	expireDays := getenvInt("EXPIRE_DAYS", 30)
@@ -58,11 +62,15 @@ func main() {
 					"error": err,
 				})
 			}
-			<-ticker.C
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+			}
 		}
 	}()
 
-	go monitorStoreHealth(store, 30*time.Second)
+	go monitorStoreHealth(ctx, store, 30*time.Second)
 
 	logEvent("server.started", map[string]any{
 		"data_dir":        dataDir,
@@ -79,7 +87,7 @@ func main() {
 		})
 	}
 
-	if err := http.ListenAndServe(listenAddr, a.httpHandler()); err != nil {
+	if err := serveHTTP(ctx, newHTTPServer(listenAddr, a.httpHandler()), shutdownTimeout); err != nil {
 		logFatalEvent("server.listen_failed", map[string]any{
 			"error":       err,
 			"listen_addr": listenAddr,
@@ -96,17 +104,20 @@ func staticFileHandler(prefix string, directory string, cacheControl string) htt
 	})
 }
 
-func monitorStoreHealth(store *pastebox.Store, interval time.Duration) {
+func monitorStoreHealth(parent context.Context, store *pastebox.Store, interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
 	var unhealthy bool
 
 	check := func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		ctx, cancel := context.WithTimeout(parent, 3*time.Second)
 		err := store.HealthCheck(ctx)
 		cancel()
 
+		if parent.Err() != nil {
+			return
+		}
 		if err != nil {
 			if !unhealthy {
 				logEvent("store.health_unhealthy", map[string]any{
@@ -128,7 +139,12 @@ func monitorStoreHealth(store *pastebox.Store, interval time.Duration) {
 
 	check()
 
-	for range ticker.C {
-		check()
+	for {
+		select {
+		case <-parent.Done():
+			return
+		case <-ticker.C:
+			check()
+		}
 	}
 }

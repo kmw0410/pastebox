@@ -3,6 +3,7 @@ services:
     image: ghcr.io/kmw0410/pastebox:latest
     container_name: pastebox
     restart: unless-stopped
+    stop_grace_period: 40s
     ports:
       - "8080:8080"
     environment:

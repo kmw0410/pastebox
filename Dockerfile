@@ -15,15 +15,12 @@ WORKDIR /src
 ARG VERSION=development
 ARG COMMIT=unknown
 
-COPY go.mod ./
+COPY go.mod go.sum ./
+RUN go mod download && go mod verify
 COPY cmd ./cmd
 COPY internal ./internal
 
-# Generate go.sum inside the Docker build context.
-# This fixes builds where go.sum does not exist on the host.
-RUN go mod tidy
-
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT}" -o /out/pastebox ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -mod=readonly -trimpath -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT}" -o /out/pastebox ./cmd/server
 
 FROM alpine:3.24.2
 

@@ -1,0 +1,73 @@
+name: Validate
+
+on:
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Read deployment Go version
+        id: go
+        run: sed -n 's/^FROM golang:\([0-9.]*\)-.*/version=\1/p' Dockerfile >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@v7
+        with:
+          go-version: ${{ steps.go.outputs.version }}
+          cache-dependency-path: go.sum
+      - run: go mod verify
+      - run: go test -race ./...
+      - run: go vet ./...
+      - run: node --check templates/js/kdl.min.js
+
+  mysql:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        database: ['mysql:8.4', 'mariadb:11.4']
+    services:
+      database:
+        image: ${{ matrix.database }}
+        env:
+          MYSQL_ROOT_PASSWORD: integration-only
+          MYSQL_ROOT_HOST: '%'
+        ports:
+          - 3306/tcp
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pintegration-only || mariadb-admin ping -h 127.0.0.1 -uroot -pintegration-only"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@v7
+      - name: Read deployment Go version
+        id: go
+        run: sed -n 's/^FROM golang:\([0-9.]*\)-.*/version=\1/p' Dockerfile >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@v7
+        with:
+          go-version: ${{ steps.go.outputs.version }}
+          cache-dependency-path: go.sum
+      - run: go test -race ./internal -run TestMySQLIntegration -count=1 -timeout=3m
+        env:
+          PASTEBOX_TEST_MYSQL_DSN: root:integration-only@tcp(127.0.0.1:${{ job.services.database.ports[3306] }})/?parseTime=true
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Read deployment Go version
+        id: go
+        run: sed -n 's/^FROM golang:\([0-9.]*\)-.*/version=\1/p' Dockerfile >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@v7
+        with:
+          go-version: ${{ steps.go.outputs.version }}
+          cache-dependency-path: go.sum
+      - run: npm ci
+        working-directory: tests/browser
+      - run: npx playwright install --with-deps chromium
+        working-directory: tests/browser
+      - run: npm test
+        working-directory: tests/browser

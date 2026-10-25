@@ -257,7 +257,10 @@ func TestPasteTemplateShowsFullLoadConfirmationForTruncatedContent(t *testing.T)
 	}
 
 	body := output.String()
-	for _, want := range []string{`id="loadFullButton"`, "Load full paste", `window.confirm("Load everything?")`, `id="remainingPasteContent"`, `id="remainingLinesNotice"`, "... (125 more lines)", "remainingLinesNotice.remove()", `id="qrButton"`, `data-src="?format=qr"`, `id="lineHighlight"`, "focusLineFromHash", "data-line", `id="pasteSearch"`, "openPasteSearch", "highlightSearchMatches", "paste_policy: manage_policy_temporary", "paste_expires:", "2026-09-12T12:00:00"} {
+	if strings.Contains(body, `<template id="remainingPasteContent">`) {
+		t.Fatal("ordinary pastes must fetch full content instead of using an empty embedded remainder")
+	}
+	for _, want := range []string{`id="loadFullButton"`, "Load full paste", `window.confirm("Load everything?")`, `id="remainingLinesNotice"`, "... (125 more lines)", "remainingLinesNotice.remove()", `id="qrButton"`, `data-src="?format=qr"`, `id="lineHighlight"`, "focusLineFromHash", "data-line", `id="pasteSearch"`, "openPasteSearch", "highlightSearchMatches", "paste_policy: manage_policy_temporary", "paste_expires:", "2026-09-12T12:00:00"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("rendered template does not contain %q", want)
 		}

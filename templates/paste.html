@@ -115,7 +115,7 @@
         <pre id="lineNumbers" class="is-hidden"></pre>
         <pre class="paste-code"><code id="pasteContent" class="language-{{ .Language }}">{{ .Content }}</code>{{ if .Truncated }}<span id="remainingLinesNotice" class="paste-more-lines">... ({{ if eq .RemainingLines 1 }}{{ t "paste_one_more_line" }}{{ else }}{{ printf (t "paste_more_lines") .RemainingLines }}{{ end }})</span>{{ end }}</pre>
       </div>
-      {{ if .Truncated }}
+      {{ if and .Truncated .OneTime }}
       <template id="remainingPasteContent">{{ .Remaining }}</template>
       {{ end }}
     </div>

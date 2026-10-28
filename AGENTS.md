@@ -394,6 +394,16 @@ Use this section to record recurring lessons from error-driven code fixes. Each 
 - Fix: how it was corrected, with a small code snippet when helpful.
 - Prevention: what to check before making similar changes again.
 
+- Problematic code area: `.github/workflows/docker-publish.yml`, `release.yml`, and `validate.yml` CI trust boundaries.
+  Cause: Checkout persisted a workflow-capable token across external actions, action versions used mutable tags, and release tags were filtered only by `^v` before interpolation into shell scripts. Git permits tag names containing shell substitutions. Validation also lacked a known-vulnerability check.
+  Fix: Pin external actions to verified full commit SHAs, disable checkout credential persistence, expose `WORKFLOW_TOKEN` only to the tag-push step through a temporary credential helper, use `GITHUB_TOKEN` for releases, pass tags through `env` and validate the date-tag format, restrict publishing to main and trusted workflow runs, and gate deployment with pinned govulncheck.
+  Prevention: Keep secrets out of persistent Git configuration, never interpolate tag/event values into `run` scripts, validate release tags as `^v[0-9]{2}[.][0-9]{2}[.][0-9]{2}(-[1-9][0-9]*)?$`, and preserve vulnerability checking in the reusable validation workflow.
+
+- Problematic code area: `.github/workflows/validate.yml` MySQL service port expression.
+  Cause: The integration job introduced in `0f37d8c` indexed the ports object with the number `3306`; GitHub Actions object keys require a string, which actionlint rejects.
+  Fix: Use `job.services.database.ports['3306']` for the dynamically mapped port.
+  Prevention: Run actionlint when changing workflow expressions, including existing reusable jobs.
+
 - Problematic code area: `Dockerfile` Go builder and the standard library embedded in the server binary.
   Cause: The builder remained pinned to Go 1.27.1 after security fixes were released for multipart header parsing, HTTP Range processing, and certificate verification. Runtime Alpine package upgrades do not replace the statically linked Go standard library.
   Fix: Build the server with the patched Go toolchain:

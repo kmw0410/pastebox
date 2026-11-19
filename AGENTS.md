@@ -404,13 +404,13 @@ Use this section to record recurring lessons from error-driven code fixes. Each 
   Fix: Use `job.services.database.ports['3306']` for the dynamically mapped port.
   Prevention: Run actionlint when changing workflow expressions, including existing reusable jobs.
 
-- Problematic code area: `Dockerfile` Go builder and the standard library embedded in the server binary.
-  Cause: The builder remained pinned to Go 1.27.1 after security fixes were released for multipart header parsing, HTTP Range processing, and certificate verification. Runtime Alpine package upgrades do not replace the statically linked Go standard library.
-  Fix: Build the server with the patched Go toolchain:
+- Problematic code area: `Dockerfile` Go builder, `go.mod` dependencies, and `docker-entrypoint.sh` runtime Alpine repository branch.
+  Cause: The builder remained pinned to Go 1.27.3 and older module versions after security fixes were released for `net/http` `MaxBytesReader` races (`CVE-2026-97054` / `GO-2026-6859`), `klauspost/compress` two-block zstd frame panics (`CVE-2026-116591` / `GO-2026-6865`), `go-sql-driver/mysql` handshake/LOAD DATA advisories (`GHSA-9qjq-77h9-895w`, `GHSA-4v5x-9mc8-gr98`), and bundled SQLite CVEs, while `docker-entrypoint.sh` still wrote `v3.23` repository paths on an Alpine 3.24 image.
+  Fix: Build the server with the patched Go toolchain, update module versions, cover `Dockerfile` with Dependabot, and align runtime mirror paths with `v3.24`:
   ```dockerfile
-  FROM golang:1.27.3-alpine3.24 AS builder
+  FROM golang:1.27.4-alpine3.24 AS builder
   ```
-  Prevention: Audit the Docker builder's Go version rather than the host Go version, run vulnerability checks with the builder toolchain for both supported architectures, and rebuild and redeploy the image after a Go security update.
+  Prevention: Audit the Docker builder's Go version rather than the host Go version, keep `docker-entrypoint.sh` mirror branch paths aligned with the `Dockerfile` Alpine minor release, run `govulncheck` with the builder toolchain, and rebuild and redeploy the image after Go or module security updates.
 
 - Problematic code area: `cmd/server/main_test.go` / `TestUploadHandlerCustomDataPolicyDuration`.
   Cause: The upload response formats `expires` with `time.RFC3339`, which has second precision, while the first test bounds compared against nanosecond-precision `time.Now()` values.

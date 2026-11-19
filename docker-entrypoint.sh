@@ -10,8 +10,8 @@ TZ="${TZ:-Asia/Seoul}"
 
 if [ -n "${MIRROR_URL:-}" ]; then
   printf '%s\n' \
-    "${MIRROR_URL%/}/v3.23/main" \
-    "${MIRROR_URL%/}/v3.23/community" \
+    "${MIRROR_URL%/}/v3.24/main" \
+    "${MIRROR_URL%/}/v3.24/community" \
     > /etc/apk/repositories
 fi
 

@@ -22,7 +22,7 @@ COPY internal ./internal
 
 RUN CGO_ENABLED=0 GOOS=linux go build -mod=readonly -trimpath -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT}" -o /out/pastebox ./cmd/server
 
-FROM alpine:3.24.2
+FROM alpine:3.24.4
 
 RUN printf '%s\n' \
   'https://mirror5.krfoss.org/alpine/v3.24/main' \

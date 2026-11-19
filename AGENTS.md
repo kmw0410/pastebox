@@ -394,6 +394,14 @@ Use this section to record recurring lessons from error-driven code fixes. Each 
 - Fix: how it was corrected, with a small code snippet when helpful.
 - Prevention: what to check before making similar changes again.
 
+- Problematic code area: `tests/browser/package.json` and `tests/browser/package-lock.json` Playwright version on GitHub Actions `ubuntu-latest` (`ubuntu-26.04`).
+  Cause: `@playwright/test` remained pinned to `1.56.1`, which only included host-platform and browser/dependency mappings up to Ubuntu `24.04`. On Ubuntu `26.04` runners, `npx playwright install --with-deps chromium` failed with `Cannot install dependencies for ubuntu26.04-x64 with Playwright 1.56.1!`.
+  Fix: Update `@playwright/test` and its lockfile to `1.65.1`, which includes official `ubuntu26.04-x64` and `ubuntu26.04-arm64` support:
+  ```json
+  "devDependencies": {"@playwright/test": "1.65.1"}
+  ```
+  Prevention: Update `tests/browser` Playwright packages when GitHub Actions `ubuntu-latest` runner images advance to a new Ubuntu LTS release.
+
 - Problematic code area: `.github/workflows/docker-publish.yml`, `release.yml`, and `validate.yml` CI trust boundaries.
   Cause: Checkout persisted a workflow-capable token across external actions, action versions used mutable tags, and release tags were filtered only by `^v` before interpolation into shell scripts. Git permits tag names containing shell substitutions. Validation also lacked a known-vulnerability check.
   Fix: Pin external actions to verified full commit SHAs, disable checkout credential persistence, expose `WORKFLOW_TOKEN` only to the tag-push step through a temporary credential helper, use `GITHUB_TOKEN` for releases, pass tags through `env` and validate the date-tag format, restrict publishing to main and trusted workflow runs, and gate deployment with pinned govulncheck.

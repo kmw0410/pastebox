@@ -2,5 +2,5 @@
   "name": "pastebox-browser-tests",
   "private": true,
   "scripts": {"test": "playwright test"},
-  "devDependencies": {"@playwright/test": "1.56.1"}
+  "devDependencies": {"@playwright/test": "1.65.1"}
 }
